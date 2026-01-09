@@ -164,17 +164,19 @@
 #ifdef USE_OTA
 #include <ArduinoOTA.h>
 #endif
-#ifdef USE_SPIFFS
-#include "SPIFFS.h"
-#define USE_FS SPIFFS
+#if defined(USE_SPIFFS)
+    #include "SPIFFS.h"
+    #define USE_FS SPIFFS
 #elif defined(USE_FATFS)
-#include "FFat.h"
-#define USE_FS FFat
+    #include "FFat.h"
+    #define USE_FS FFat
 #elif defined(USE_LITTLEFS)
-#include "LITTLEFS.h"
-#define USE_FS LITTLEFS
+    #include "LITTLEFS.h"
+    #define USE_FS LITTLEFS
 #endif
-#include "FS.h"
+#if defined(USE_SPIFFS) || defined(USE_FATFS) || defined(USE_LITTLEFS)
+    #include "FS.h"
+#endif
 
 ////////////////////////////////
 
