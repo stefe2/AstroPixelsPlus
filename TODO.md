@@ -178,46 +178,137 @@ void setPWM(uint16_t num, uint16_t targetMicros) override
 - [x] Compiler avec protocole Maestro ✅
 - [x] Compilation réussie: RAM 19.0%, Flash 77.5% ✅
 
-### 5.4 Test avec 1 servo physique (À FAIRE)
-**⚠️ Nécessite matériel Maestro connecté**
-- [ ] Câblage physique:
-  - ESP32 GPIO 19 (TX) → Maestro RX
-  - GND commun
-  - Alimenter Maestro séparément (5-6V)
-- [ ] Connecter 1 servo au **canal 0** du Maestro
-- [ ] Uploader firmware
-- [ ] Via Serial Monitor, envoyer: `:SM0,1500` (position neutre)
-- [ ] Vérifier servo bouge
-- [ ] Envoyer: `:SM0,1000` (position min)
-- [ ] Envoyer: `:SM0,2000` (position max)
+### 5.4 Test avec 1 servo physique ✅ VALIDÉ
+- [x] Câblage physique:
+  - ESP32 GPIO 19 (TX) → Maestro RX ✅
+  - GND commun ✅
+  - Maestro alimenté (5-6V) ✅
+- [x] Connecter 1 servo au **canal 0** du Maestro ✅
+- [x] Uploader firmware ✅
+- [x] Via Serial Monitor, envoyer: `:SM0,1500` (position neutre) ✅
+- [x] Vérifier servo bouge → **OUI, instantané** ✅
+- [x] Envoyer: `:SM0,1000` (position min) ✅
+- [x] Envoyer: `:SM0,2000` (position max) ✅
 
-✅ **Point de test:** Protocole implémenté et compile, prêt pour test hardware
+✅ **Point de test:** Servo répond instantanément, aucune erreur, protocole 100% fonctionnel!
 
-**Note:** Test hardware sera fait quand le Maestro sera physiquement connecté.
+**Résultats:** Communication Serial1, conversion µs→quart-µs, et protocole Compact validés en conditions réelles.
 
 ---
+
+## ✅ Étape 6 : Implémenter easing et animation (TERMINÉ)
+
+**🎯 Objectif:** Mouvements fluides avec interpolation temporelle
+
+### 6.1 Implémenter animate() - Interpolation temporelle
+```cpp
+virtual void animate() override
+{
+    uint32_t currentTime = millis();
     
-    // Marquer servo actif
-    fServos[num].fActive = true;
-    fServos[num].fCurrentPos = pulseWidth;
+    for (uint16_t i = 0; i < numServos; i++)
+    {
+        if (!fServos[i].fMoving) continue;
+        
+        // Check startDelay
+        if (currentTime < fServos[i].fMoveStartTime) continue;
+        
+        // Calculate elapsed time
+        uint32_t elapsed = currentTime - fServos[i].fMoveStartTime;
+        
+        // Movement complete?
+        if (elapsed >= fServos[i].fMoveDuration)
+        {
+            fServos[i].fCurrentPos = fServos[i].fTargetPos;
+            fServos[i].fMoving = false;
+            setPWM(i, fServos[i].fTargetPos);
+            continue;
+        }
+        
+        // Calculate completion (0.0 to 1.0)
+        float completion = (float)elapsed / (float)fServos[i].fMoveDuration;
+        
+        // Apply easing function if available
+        if (fServos[i].fEasing != nullptr)
+        {
+            completion = fServos[i].fEasing(completion);
+        }
+        
+        // Interpolate position
+        int32_t startPos = fServos[i].fStartPos;
+        int32_t targetPos = fServos[i].fTargetPos;
+        int32_t delta = targetPos - startPos;
+        uint16_t currentPos = startPos + (uint16_t)(delta * completion);
+        
+        // Update position if changed
+        if (currentPos != fServos[i].fCurrentPos)
+        {
+            fServos[i].fCurrentPos = currentPos;
+            setPWM(i, currentPos);
+        }
+    }
 }
 ```
-- [ ] Appeler setPWM directement (pas d'easing pour test)
-- [ ] Mettre à jour état interne
+- [x] Boucle sur tous les servos actifs ✅
+- [x] Vérifier startDelay avant de démarrer ✅
+- [x] Calculer elapsed time depuis fMoveStartTime ✅
+- [x] Calculer completion (0.0 → 1.0) ✅
+- [x] Appliquer easing si défini ✅
+- [x] Interpoler position entre fStartPos et fTargetPos ✅
+- [x] Appeler setPWM seulement si position change ✅
 
-### 5.3 Test avec 1 servo physique
-- [ ] Connecter Maestro TX Maestro → RX ESP32 (pas besoin de RX Maestro pour test)
-  - ESP32 GPIO 19 (TX) → Maestro RX
-  - GND commun
-  - Alimenter Maestro séparément (5-6V)
-- [ ] Connecter 1 servo au **canal 0** du Maestro
-- [ ] Compiler et uploader firmware
-- [ ] Via Serial Monitor, envoyer: `:SM0,1500` (position neutre)
-- [ ] Vérifier servo bouge
-- [ ] Envoyer: `:SM0,1000` (position min)
-- [ ] Envoyer: `:SM0,2000` (position max)
+### 6.2 Modifier _moveServoToPulse() - Setup animation
+```cpp
+virtual void _moveServoToPulse(uint16_t num, uint32_t startDelay, uint32_t moveTime,
+                               uint16_t startPos, uint16_t pos) override
+{
+    if (num >= numServos) return;
+    
+    // Immediate move if moveTime is 0
+    if (moveTime == 0)
+    {
+        fServos[num].fCurrentPos = pos;
+        fServos[num].fTargetPos = pos;
+        fServos[num].fMoving = false;
+        setPWM(num, pos);
+        return;
+    }
+    
+    // Setup animated movement
+    fServos[num].fStartPos = startPos;
+    fServos[num].fTargetPos = pos;
+    fServos[num].fMoveStartTime = millis() + startDelay;
+    fServos[num].fMoveDuration = moveTime;
+    fServos[num].fMoving = true;
+    fServos[num].fActive = true;
+}
+```
+- [x] Cas spécial: moveTime = 0 → mouvement instantané ✅
+- [x] Stocker fStartPos, fTargetPos, fMoveStartTime, fMoveDuration ✅
+- [x] Marquer fMoving = true ✅
+- [x] animate() gérera l'interpolation ✅
 
-✅ **Point de test:** 1 servo bouge avec commandes manuelles
+### 6.3 Compilation et test
+- [x] Ajouter fStartPos dans struct ServoState ✅
+- [x] Initialiser fStartPos dans constructeur ✅
+- [x] Compiler: RAM 19.0%, Flash 77.6% ✅
+
+### 6.4 Test hardware - Mouvements fluides ✅ VALIDÉ
+- [x] Uploader firmware avec animation ✅
+- [x] Tester commandes: `:SM0,500,1000`, `:SM0,500,2000`, `:SM0,500,1500` ✅
+- [x] Vérifier mouvement FLUIDE (pas instantané) ✅
+- [x] Mouvement progressif validé sur 500ms ✅
+- [x] Bug fix: vérification position actuelle avant démarrage animation ✅
+- [x] Syntaxe validée: `:SM<canal>,<durée_ms>,<position_µs>` ✅
+
+✅ **Point de test:** Mouvements fluides avec interpolation temporelle fonctionnent parfaitement!
+
+**Note:** animate() est appelé automatiquement par mainLoop() toutes les ~20ms
+
+**Bugs corrigés:**
+- fStartPos utilise fCurrentPos (position réelle) au lieu du paramètre startPos
+- setPWM ne modifie plus fCurrentPos (géré par animate())
+- Skip animation si déjà à la position cible
 
 ---
 
