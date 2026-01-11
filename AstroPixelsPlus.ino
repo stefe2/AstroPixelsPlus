@@ -21,6 +21,12 @@
 
 // Define USE_I2C_ADDRESS to enable slave mode. This will disable servo support
 // #define USE_I2C_ADDRESS 0x0a
+
+// Choix du contrôleur servo (un seul actif à la fois)
+// #define USE_SERVO_DIRECT      // Contrôle direct PWM ESP32/AVR
+#define USE_SERVO_PCA9685        // Actuel - PCA9685 I2C (garder actif pour l'instant)
+// #define USE_SERVO_MAESTRO     // Nouveau - Pololu Maestro Serial (à activer plus tard)
+
 #define USE_DEBUG // Define to enable debug diagnostic
 #define USE_WIFI  // Define to enable Wifi support
 #define USE_SPIFFS
@@ -134,6 +140,14 @@
 #define COMMAND_SERIAL Serial2
 
 ////////////////////////////////
+// Configuration Pololu Maestro (Serial1)
+// Serial1 utilisé pour contrôle servos Maestro (anciennement son)
+#define MAESTRO_SERIAL Serial1
+#define MAESTRO_RX_PIN PIN_AUX4  // GPIO 18 (anciennement SOUND_RX_PIN)
+#define MAESTRO_TX_PIN PIN_AUX5  // GPIO 19 (anciennement SOUND_TX_PIN)
+#define MAESTRO_BAUD 115200      // 115200 ou 9600 selon config Maestro
+
+////////////////////////////////
 
 #define MARC_SERIAL2_BAUD_RATE 2400
 #define MARC_SERIAL_PASS true
@@ -206,12 +220,11 @@
 #define CBI_LOAD_PIN PIN_AUX1
 
 ////////////////////////////////
-
-#define SOUND_SERIAL Serial1
-#define SOUND_RX_PIN PIN_AUX4
-#define SOUND_TX_PIN PIN_AUX5
-#define SOUND_BAUD 9600
-
+// ANCIEN CODE SON (désactivé - Serial1 utilisé par Maestro)
+// #define SOUND_SERIAL Serial1
+// #define SOUND_RX_PIN PIN_AUX4
+// #define SOUND_TX_PIN PIN_AUX5
+// #define SOUND_BAUD 9600
 ////////////////////////////////
 
 #if defined(USE_RSERIES_RLD_CURVED)
@@ -646,14 +659,22 @@ void setup()
     int soundStartup = preferences.getInt(PREFERENCE_MARCSOUND_STARTUP, MARC_SOUND_STARTUP);
     if (soundPlayer != MarcSound::kDisabled)
     {
-        SOUND_SERIAL.begin(SOUND_BAUD, SERIAL_8N1, SOUND_RX_PIN, SOUND_TX_PIN);
+        // Son désactivé - Serial1 utilisé par Maestro
+        // SOUND_SERIAL.begin(SOUND_BAUD, SERIAL_8N1, SOUND_RX_PIN, SOUND_TX_PIN);
+        DEBUG_PRINTLN("Sound module disabled - Serial1 reserved for Maestro");
+        
+        // Ancien code son (commenté)
         // Need to wait 3 seconds for sound modules to power up
-        delay(3000);
-        if (!sMarcSound.begin(soundPlayer, SOUND_SERIAL, soundStartup))
-        {
-            DEBUG_PRINTLN("FAILED TO INITALIZE SOUND MODULE");
-        }
-        sMarcSound.setVolume(preferences.getInt(PREFERENCE_MARCSOUND_VOLUME, MARC_SOUND_VOLUME) / 1000.0);
+        // delay(3000);
+        // if (!sMarcSound.begin(soundPlayer, SOUND_SERIAL, soundStartup))
+        // {
+        //     DEBUG_PRINTLN("FAILED TO INITALIZE SOUND MODULE");
+        // }
+        // sMarcSound.setVolume(preferences.getInt(PREFERENCE_MARCSOUND_VOLUME, MARC_SOUND_VOLUME) / 1000.0);
+    }
+    else
+    {
+        DEBUG_PRINTLN("Sound player set to disabled");
     }
 
     RLD.selectScrollTextLeft("... AstroPixels ....", LogicEngineRenderer::kBlue, 0, 15);

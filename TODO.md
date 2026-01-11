@@ -43,16 +43,401 @@ Le schéma de câblage contient:
 - [x] Initialiser LED dans setup() (ligne 617-619)
 - [x] Faire clignoter LED dans loop() (ligne 1102-1109)
 - [x] Compiler et tester
+- [x] **Commit changements** ✅
 
 **Implémentation:**
 - LED clignote à 1Hz (toutes les 500ms)
 - GPIO 2 = LED onboard ESP32
 - Permet monitoring visuel du fonctionnement CPU
 - Compilation réussie: RAM 19.2%, Flash 78.2%
+- Upload et test sur ESP32 validé ✅
 
 ---
 
-## 📝 Étape 3 : Créer ServoDispatchMaestro.h
+## ✅ Étape 3 : Configuration Maestro dans AstroPixelsPlus.ino (TERMINÉ)
+
+**🎯 Objectif:** Ajouter la configuration sans casser le code actuel (garde PCA9685 actif pour l'instant)
+
+### 3.1 Ajouter defines Maestro (ligne ~130-145)
+```cpp
+// Serial1 pour Maestro (anciennement son)
+#define MAESTRO_SERIAL Serial1
+#define MAESTRO_RX_PIN PIN_AUX4  // GPIO 18
+#define MAESTRO_TX_PIN PIN_AUX5  // GPIO 19
+#define MAESTRO_BAUD 115200      // 115200 ou 9600
+```
+- [x] Ajouter defines après COMMAND_SERIAL ✅
+- [x] Commenter (ne pas supprimer) ancien code SOUND_SERIAL ✅
+
+### 3.2 Ajouter directive de compilation (ligne ~22-28)
+```cpp
+// Choix du contrôleur servo (un seul actif)
+// #define USE_SERVO_DIRECT
+#define USE_SERVO_PCA9685  // Actuel - garde pour l'instant
+// #define USE_SERVO_MAESTRO  // Nouveau - à activer plus tard
+```
+- [x] Ajouter bloc choix contrôleur ✅
+- [x] Garder PCA9685 actif pour compilation ✅
+
+### 3.3 Désactiver code son dans setup()
+- [x] Commenter bloc init SOUND_SERIAL (ligne 662-669) ✅
+- [x] Ajouter message debug "Serial1 reserved for Maestro" ✅
+
+### 3.4 Test compilation
+- [x] Compiler avec configuration actuelle (PCA9685) ✅
+- [x] Vérifier aucune erreur ✅
+- [x] Compilation réussie: RAM 19.2%, Flash 78.2% ✅
+
+✅ **Point de test:** Code compile et fonctionne identique à avant (PCA9685 toujours actif)
+
+---
+
+## 📝 Étape 4 : Créer ServoDispatchMaestro.h minimal (TESTABLE)
+
+**🎯 Objectif:** Créer squelette de classe qui compile sans l'utiliser
+
+### 4.1 Créer fichier et structure de base
+**Fichier:** `.pio/libdeps/astropixelsplus/Reeltwo/src/ServoDispatchMaestro.h`
+
+- [ ] Créer fichier header guards
+- [ ] Include nécessaires (ServoDispatch.h)
+- [ ] Hériter de ServoDispatch, SetupEvent, AnimatedEvent
+- [ ] Template `<uint16_t numServos>`
+- [ ] Déclarer structure `ServoState` interne
+
+### 4.2 Constructor minimal
+```cpp
+ServoDispatchMaestro(HardwareSerial* serial, const ServoSettings* settings)
+    : fSerial(serial)
+{
+    // Charger settings depuis PROGMEM
+    for (uint16_t i = 0; i < numServos; i++)
+    {
+        // Init basic
+    }
+}
+```
+- [ ] Définir pointeur HardwareSerial
+- [ ] Init basique sans logique complexe
+
+### 4.3 Implémenter méthodes virtuelles (stubs)
+Toutes les méthodes pures retournent des valeurs par défaut:
+- [ ] `uint16_t getNumServos()` → return numServos
+- [ ] `uint8_t getPin(uint16_t num)` → return settings pin
+- [ ] `uint16_t getStart/End/Min/Max/Neutral()` → return settings values
+- [ ] `uint32_t getGroup()` → return settings group
+- [ ] `uint16_t currentPos()` → return 1500
+- [ ] `bool isActive()` → return false
+- [ ] `void disable()` → vide
+- [ ] `void setServo()` → vide
+- [ ] `void setPWM()` → vide (pas d'envoi encore)
+- [ ] `void stop()` → vide
+- [ ] Méthodes protected → vides
+- [ ] `void setup()` → Serial.begin() uniquement
+- [ ] `void animate()` → vide
+
+### 4.4 Test compilation avec Maestro
+- [ ] Modifier AstroPixelsPlus.ino ligne ~22:
+  - Commenter `#define USE_SERVO_PCA9685`
+  - Décommenter `#define USE_SERVO_MAESTRO`
+- [ ] Ajouter include conditionnel (ligne ~180):
+```cpp
+#ifdef USE_SERVO_MAESTRO
+    #include "ServoDispatchMaestro.h"
+#endif
+```
+- [ ] Ajouter instanciation conditionnelle (ligne ~314):
+```cpp
+#ifdef USE_SERVO_MAESTRO
+    ServoDispatchMaestro<SizeOfArray(servoSettings)> servoDispatch(&MAESTRO_SERIAL, servoSettings);
+#else
+    ServoDispatchPCA9685<SizeOfArray(servoSettings)> servoDispatch(&Wire, servoSettings);
+#endif
+```
+- [ ] Ajouter init Serial1 dans setup() (ligne ~638):
+```cpp
+#ifdef USE_SERVO_MAESTRO
+    MAESTRO_SERIAL.begin(MAESTRO_BAUD, SERIAL_8N1, MAESTRO_RX_PIN, MAESTRO_TX_PIN);
+    DEBUG_PRINTLN("Maestro servo controller initialized on Serial1");
+#endif
+```
+- [ ] **Compiler avec USE_SERVO_MAESTRO** activé
+- [ ] Vérifier compilation réussie
+- [ ] **NE PAS UPLOADER** (servos ne bougeront pas encore)
+
+✅ **Point de test:** Code compile avec Maestro (stubs), LED heartbeat OK
+
+---
+
+## 🔌 Étape 5 : Implémenter protocole Maestro Set Target (TESTABLE)
+
+**🎯 Objectif:** Faire bouger UN servo avec commande simple
+
+### 5.1 Implémenter setPWM() - Compact Protocol
+```cpp
+void setPWM(uint16_t num, uint16_t targetMicros) override
+{
+    if (num >= numServos || !fSerial) return;
+    
+    // Conversion µs → quart-µs (Maestro)
+    uint16_t target = targetMicros * 4;
+    
+    // Compact Protocol: 4 bytes
+    fSerial->write(0x84);                  // Set Target
+    fSerial->write(num & 0x7F);            // Canal (0-23)
+    fSerial->write(target & 0x7F);         // 7 bits bas
+    fSerial->write((target >> 7) & 0x7F);  // 7 bits hauts
+}
+```
+- [ ] Implémenter conversion µs → quart-µs
+- [ ] Envoyer 4 bytes selon protocole Compact
+- [ ] Ajouter validation (num < numServos)
+
+### 5.2 Implémenter setServo() basique
+```cpp
+void setServo(uint16_t num, uint32_t pulseWidth, 
+              uint16_t moveTimeMS, EasingMethod easing) override
+{
+    if (num >= numServos) return;
+    
+    // Pour test simple: ignorer easing/timing
+    setPWM(num, pulseWidth);
+    
+    // Marquer servo actif
+    fServos[num].fActive = true;
+    fServos[num].fCurrentPos = pulseWidth;
+}
+```
+- [ ] Appeler setPWM directement (pas d'easing pour test)
+- [ ] Mettre à jour état interne
+
+### 5.3 Test avec 1 servo physique
+- [ ] Connecter Maestro TX Maestro → RX ESP32 (pas besoin de RX Maestro pour test)
+  - ESP32 GPIO 19 (TX) → Maestro RX
+  - GND commun
+  - Alimenter Maestro séparément (5-6V)
+- [ ] Connecter 1 servo au **canal 0** du Maestro
+- [ ] Compiler et uploader firmware
+- [ ] Via Serial Monitor, envoyer: `:SM0,1500` (position neutre)
+- [ ] Vérifier servo bouge
+- [ ] Envoyer: `:SM0,1000` (position min)
+- [ ] Envoyer: `:SM0,2000` (position max)
+
+✅ **Point de test:** 1 servo bouge avec commandes manuelles
+
+---
+
+## 🎨 Étape 6 : Implémenter easing et animate() (TESTABLE)
+
+**🎯 Objectif:** Mouvements fluides avec interpolation
+
+### 6.1 Structure ServoState complète
+```cpp
+struct ServoState {
+    uint16_t fCurrentPos;     // Position actuelle µs
+    uint16_t fTargetPos;      // Position cible µs
+    uint32_t fMoveStartTime;  // millis() début mouvement
+    uint16_t fMoveDuration;   // Durée mouvement ms
+    EasingMethod fEasing;     // Méthode interpolation
+    bool fActive;             // Servo activé?
+    bool fMoving;             // En mouvement?
+};
+```
+- [ ] Déclarer array `ServoState fServos[numServos]`
+- [ ] Initialiser dans constructor
+
+### 6.2 Implémenter setServo() avec easing
+- [ ] Stocker target, startTime, duration, easing
+- [ ] Marquer fMoving = true
+- [ ] NE PAS appeler setPWM tout de suite
+
+### 6.3 Implémenter animate()
+```cpp
+void animate() override
+{
+    uint32_t now = millis();
+    
+    for (uint16_t i = 0; i < numServos; i++)
+    {
+        if (!fServos[i].fMoving) continue;
+        
+        uint32_t elapsed = now - fServos[i].fMoveStartTime;
+        
+        if (elapsed >= fServos[i].fMoveDuration)
+        {
+            // Mouvement terminé
+            fServos[i].fCurrentPos = fServos[i].fTargetPos;
+            fServos[i].fMoving = false;
+            setPWM(i, fServos[i].fCurrentPos);
+        }
+        else
+        {
+            // Interpoler position
+            float progress = (float)elapsed / fServos[i].fMoveDuration;
+            float eased = applyEasing(progress, fServos[i].fEasing);
+            
+            uint16_t newPos = fServos[i].fCurrentPos + 
+                (fServos[i].fTargetPos - fServos[i].fCurrentPos) * eased;
+            
+            setPWM(i, newPos);
+        }
+    }
+}
+```
+- [ ] Boucle sur tous servos actifs
+- [ ] Calculer progression 0.0-1.0
+- [ ] Appliquer easing
+- [ ] Interpoler position
+- [ ] Envoyer setPWM() à chaque frame
+
+### 6.4 Test mouvements fluides
+- [ ] Compiler et uploader
+- [ ] Envoyer `:OP00` (ouvrir tous panneaux)
+- [ ] Vérifier mouvements fluides (pas saccadés)
+- [ ] Envoyer `:CL00` (fermer)
+- [ ] Tester `:OF00` (flutter)
+
+✅ **Point de test:** Mouvements fluides avec easing fonctionnel
+
+---
+
+## 🎭 Étape 7 : Implémenter méthodes protected pour groupes (TESTABLE)
+
+**🎯 Objectif:** Commandes de groupe `:OP00`, `:CL00`, etc. fonctionnelles
+
+### 7.1 Implémenter _moveServoToPulse()
+- [ ] Appeler setServo() avec pulse length
+- [ ] Gérer easing/timing
+
+### 7.2 Implémenter _moveServoSetToPulse()
+- [ ] Boucler sur tous servos du groupe (mask)
+- [ ] Appeler _moveServoToPulse() pour chacun
+
+### 7.3 Test commandes de groupe
+- [ ] Connecter plusieurs servos (3-5 minimum)
+- [ ] Tester `:OP00` (ouvrir tous panneaux)
+- [ ] Tester `:CL00` (fermer tous)
+- [ ] Tester `:OP01` (ouvrir groupe 1)
+- [ ] Vérifier synchronisation
+
+✅ **Point de test:** Commandes de groupe fonctionnelles
+
+---
+
+## 🌊 Étape 8 : Tests séquences animées (TESTABLE)
+
+**🎯 Objectif:** Séquences complexes (Scream, Wave, etc.)
+
+### 8.1 Connecter tous les servos panneaux
+- [ ] 13 servos panneaux sur canaux 0-12
+- [ ] Vérifier mapping avec servoSettings[]
+- [ ] Alimenter correctement (5-6V, ampérage suffisant)
+
+### 8.2 Test séquences
+- [ ] `:SE01` (Scream) - open/close rapide
+- [ ] `:SE02` (Wave) - séquence vague
+- [ ] `:SE03` (Smirk Wave)
+- [ ] `:SE04` (Short Circuit)
+- [ ] `:SE05` (Cantina Wave)
+- [ ] `:SE06` (Leia)
+
+### 8.3 Valider timing
+- [ ] Vérifier fluidité
+- [ ] Pas de saccades
+- [ ] Pas de timeouts série
+
+✅ **Point de test:** Toutes séquences fonctionnelles
+
+---
+
+## 🎯 Étape 9 : Tests servos Holos (TESTABLE)
+
+**🎯 Objectif:** Valider holos H/V sur canaux 13-18
+
+### 9.1 Connecter servos holos
+- [ ] Canaux 13-14: Front holo (H/V)
+- [ ] Canaux 15-16: Top holo (H/V)
+- [ ] Canaux 17-18: Rear holo (H/V)
+
+### 9.2 Test mouvements holos
+- [ ] `*RD00` (random movement)
+- [ ] `$+` (speed up)
+- [ ] `$-` (slow down)
+- [ ] Vérifier `assignServos()` dans ServoEasing
+
+### 9.3 Test commandes directes
+- [ ] `~RTHPA000|0` (Holo to normal)
+- [ ] Tester différents modes holos
+
+✅ **Point de test:** Holos fonctionnels
+
+---
+
+## 🔍 Étape 10 : Debug & Optimisation (OPTIONNEL)
+
+### Issues possibles
+- [ ] Baudrate incorrect → Tester 115200 vs 9600
+- [ ] Servos tremblent → Vérifier alimentation
+- [ ] Positions inversées → Swap start/end dans servoSettings
+- [ ] Timeout série → Mesurer latence
+- [ ] Mémoire insuffisante → Optimiser ServoState
+
+### Optimisations
+- [ ] Mesurer latence setPWM()
+- [ ] Optimiser animate() si nécessaire
+- [ ] Réduire taille ServoState si RAM limitée
+
+---
+
+## 🔀 Étape 11 : Pass-through série externe - MaestroCommandRouter (TESTABLE)
+
+**🎯 Objectif:** Recevoir commandes Maestro externes via GPIO 18, router vers Maestro
+
+### 11.1 Créer MaestroCommandRouter.h (voir section détaillée plus bas)
+- [ ] Structure Command avec queue FIFO
+- [ ] Méthode sendInternal() pour ESP32
+- [ ] Lecture Serial1.available() dans animate()
+- [ ] Anti-collision 10ms entre commandes
+- [ ] Validation format commandes
+
+### 11.2 Modifier ServoDispatchMaestro
+- [ ] Passer par router au lieu d'écriture directe
+
+### 11.3 Tests pass-through
+- [ ] Test commandes internes seules
+- [ ] Test commandes externes seules (GPIO 18)
+- [ ] Test collision/arbitrage
+
+✅ **Point de test:** Pass-through externe fonctionnel
+
+---
+
+## 📚 Étape 12 : Documentation
+
+- [ ] Commenter ServoDispatchMaestro.h (Doxygen)
+- [ ] Mettre à jour README.md avec config Maestro
+- [ ] Documenter câblage dans [Wiring-Diagram.png](Wiring-Diagram.png)
+- [ ] Ajouter schéma Serial1 partagé
+- [ ] Documenter MaestroCommandRouter
+- [ ] Exemples commandes
+
+---
+
+## 🚀 Étape 13 : Finalisation
+
+- [ ] Commit tous les changements
+- [ ] Push branche feature/maestro-servo-controller
+- [ ] Créer Pull Request vers main
+- [ ] Tests finaux complets
+- [ ] Merger dans main
+- [ ] Tag version (v1.0.0-maestro)
+- [ ] Archiver branche PCA9685 (backup)
+
+---
+
+## 🔀 ANNEXE : Détails Étape 11 - MaestroCommandRouter
+
+**💡 Architecture:** Serial1 partagé (économise GPIO 4/5)
 ### 3.1 Structure de base
 - [ ] Créer fichier `.pio/libdeps/astropixelsplus/Reeltwo/src/ServoDispatchMaestro.h`
 - [ ] Hériter de ServoDispatch, SetupEvent, AnimatedEvent
@@ -210,133 +595,15 @@ Ligne ~638-649, remplacer bloc son:
 
 ---
 
-## 📊 Étape 7 : Validation & Optimisation
-- [ ] Mesurer latence communication série
-- [ ] Vérifier fluidité des mouvements
-- [ ] Tester avec 19 servos simultanés
-- [ ] Valider easing/interpolation
-- [ ] Tester toutes les commandes Marcduino
+## � ANNEXE : Détails Étape 11 - MaestroCommandRouter
 
----
+**💡 Architecture:** Serial1 partagé (économise GPIO 4/5)
 
-## 🔍 Étape 8 : Debug & Troubleshooting
-### Issues possibles
-- [ ] Baudrate incorrect → Ajuster 115200 vs 9600
-- [ ] Servos tremblent → Vérifier alimentation
-- [ ] Positions inversées → Swap start/end pulse
-- [ ] Timeout série → Ajouter délais
-- [ ] Conflits GPIO → Vérifier pinout
-
----
-
-## 📚 Étape 9 : Documentation
-- [ ] Documenter ServoDispatchMaestro.h (Doxygen)
-- [ ] Mettre à jour README.md
-- [ ] Ajouter schéma de câblage Maestro
-- [ ] Documenter configuration Serial1
-- [ ] Ajouter exemples commandes
-
----
-
-## 🚀 Étape 10 : Finalisation
-- [ ] Commit tous les changements
-- [ ] Push branche feature/maestro-servo-controller
-- [ ] Créer Pull Request
-- [ ] Merger dans main après validation
-- [ ] Tag version (v1.0.0-maestro)
-
----
-
-## 🔀 Étape 11 : Pass-through série externe (Serial1 partagé)
-
-**💡 Optimisation:** Communication unidirectionnelle ESP32→Maestro, pas besoin de RX depuis Maestro.  
-**Solution:** Utiliser GPIO 18 pour recevoir du module externe, GPIO 19 pour envoyer au Maestro.
-
-### 11.1 Configuration GPIO (Serial1 partagé)
-- [ ] ~~Pas besoin de GPIO 4/5~~ → **Économie de 2 GPIO!**
-- [ ] Câblage:
-  - Module externe TX → **GPIO 18 (RX Serial1)**
-  - **GPIO 19 (TX Serial1)** → Maestro RX
-  - Maestro TX → **non connecté** (pas de retour nécessaire)
-- [ ] Mettre à jour [Wiring-Diagram.png](Wiring-Diagram.png) avec ce câblage simplifié
-
-### 11.2 Créer MaestroCommandRouter.h
-**Fichier:** `.pio/libdeps/astropixelsplus/Reeltwo/src/MaestroCommandRouter.h`
-
-#### Structure de base
-- [ ] Créer classe `MaestroCommandRouter`
-- [ ] Ajouter pointeur `HardwareSerial* fSerial` (Serial1 partagé, plus besoin de 2 pointeurs)
-- [ ] Définir structure `Command` (data[16], length, timestamp, source)
-- [ ] Créer queue FIFO circulaire (32 commandes)
-- [ ] Variables état: `fBusy`, `fLastCommandTime`
-- [ ] Buffer réception externe: `uint8_t fRxBuffer[16]`, `fRxIndex`
-
-#### Méthodes publiques
-- [ ] `void setup(HardwareSerial* serial)` - Un seul port partagé
-- [ ] `void animate()` - Traitement queue + lecture Serial1.available()
-- [ ] `bool sendInternal(const uint8_t* data, uint8_t length)` - Depuis ESP32
-- [ ] ~~processExternalSerial()~~ → Intégré dans animate()
-
-#### Méthodes privées
-- [ ] `bool enqueueCommand(const uint8_t* data, uint8_t length, Source source)`
-- [ ] `void sendNextCommand()` - Dépile et envoie via Serial1.write()
-- [ ] `void readExternalCommands()` - Lecture Serial1.available() dans animate()
-- [ ] `bool validateCommand(const uint8_t* data, uint8_t length)` - Format Maestro
-- [ ] `bool isQueueFull()`
-
-#### Gestion anti-collision
-- [ ] Délai minimum 10ms entre commandes (`MIN_COMMAND_INTERVAL`)
-- [ ] Timeout 100ms pour commandes incomplètes depuis module externe
-- [ ] Validation format avant envoi:
-  - `0x84` Set Target → 4 bytes
-  - `0x90` Get Position → 2 bytes (si nécessaire pour debug)
-  - `0xA2` Go Home → 2 bytes
-  - Autres commandes selon protocole Maestro
-
-### 11.3 Modifier ServoDispatchMaestro.h
-- [ ] Ajouter pointeur `MaestroCommandRouter* fRouter`
-- [ ] Modifier constructeur pour accepter router
-- [ ] Remplacer tous `fSerial->write()` par `fRouter->sendInternal()`
-- [ ] Dans `setPWM()`: router au lieu d'écriture directe
-
-### 11.4 Modifier AstroPixelsPlus.ino
-
-#### Déclarations globales (ligne ~320)
-```cpp
-#ifdef USE_SERVO_MAESTRO
-    MaestroCommandRouter maestroRouter;
-#endif
+### Câblage
 ```
-
-#### Dans setup() (ligne ~650)
-```cpp
-#ifdef USE_SERVO_MAESTRO
-    // Serial1 déjà initialisé pour Maestro
-    maestroRouter.setup(&MAESTRO_SERIAL);  // Un seul port partagé
-    DEBUG_PRINTLN("Maestro command router initialized (shared Serial1)");
-    DEBUG_PRINTLN("Module externe → GPIO 18 (RX), GPIO 19 (TX) → Maestro");
-#endif
+Module externe TX → GPIO 18 (RX Serial1) → ESP32 → GPIO 19 (TX Serial1) → Maestro RX
+                                                     (Maestro TX non connecté)
 ```
-
-#### Dans loop() (ligne ~1155)
-```cpp
-#ifdef USE_SERVO_MAESTRO
-    maestroRouter.animate();  // Gère réception externe + envoi Maestro
-#endif
-```
-
-### 11.5 Tests & Validation
-- [ ] Compiler et vérifier taille mémoire
-- [ ] Test 1: Commandes internes seules (servo moves)
-- [ ] Test 2: Commandes externes seules (via GPIO 18)
-- [ ] Test 3: Commandes simultanées (détection collision)
-- [ ] Test 4: Surcharge queue (32+ commandes)
-- [ ] Test 5: Commandes invalides (validation)
-- [ ] Test 6: Mesurer latence end-to-end
-- [ ] Test 7: Vérifier timing 10ms entre commandes
-- [ ] Test 8: Vérifier pas de corruption avec RX/TX partagé
-
-### 11.6 Architecture (Serial1 partagé)
 ```
 ┌───────────────┐
 │ Module externe│ Commandes Maestro
