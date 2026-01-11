@@ -145,7 +145,7 @@ Toutes les méthodes pures retournent des valeurs par défaut:
 
 ---
 
-## 🔌 Étape 5 : Implémenter protocole Maestro Set Target (TESTABLE)
+## ✅ Étape 5 : Implémenter protocole Maestro Set Target (TERMINÉ)
 
 **🎯 Objectif:** Faire bouger UN servo avec commande simple
 
@@ -165,19 +165,37 @@ void setPWM(uint16_t num, uint16_t targetMicros) override
     fSerial->write((target >> 7) & 0x7F);  // 7 bits hauts
 }
 ```
-- [ ] Implémenter conversion µs → quart-µs
-- [ ] Envoyer 4 bytes selon protocole Compact
-- [ ] Ajouter validation (num < numServos)
+- [x] Implémenter conversion µs → quart-µs ✅
+- [x] Envoyer 4 bytes selon protocole Compact ✅
+- [x] Ajouter validation (num < numServos) ✅
+- [x] Debug messages optionnels (SERVO_DEBUG) ✅
 
 ### 5.2 Implémenter setServo() basique
-```cpp
-void setServo(uint16_t num, uint32_t pulseWidth, 
-              uint16_t moveTimeMS, EasingMethod easing) override
-{
-    if (num >= numServos) return;
-    
-    // Pour test simple: ignorer easing/timing
-    setPWM(num, pulseWidth);
+- [x] Appeler setPWM directement (pas d'easing pour test) ✅
+- [x] Mettre à jour état interne ✅
+
+### 5.3 Compilation et préparation test
+- [x] Compiler avec protocole Maestro ✅
+- [x] Compilation réussie: RAM 19.0%, Flash 77.5% ✅
+
+### 5.4 Test avec 1 servo physique (À FAIRE)
+**⚠️ Nécessite matériel Maestro connecté**
+- [ ] Câblage physique:
+  - ESP32 GPIO 19 (TX) → Maestro RX
+  - GND commun
+  - Alimenter Maestro séparément (5-6V)
+- [ ] Connecter 1 servo au **canal 0** du Maestro
+- [ ] Uploader firmware
+- [ ] Via Serial Monitor, envoyer: `:SM0,1500` (position neutre)
+- [ ] Vérifier servo bouge
+- [ ] Envoyer: `:SM0,1000` (position min)
+- [ ] Envoyer: `:SM0,2000` (position max)
+
+✅ **Point de test:** Protocole implémenté et compile, prêt pour test hardware
+
+**Note:** Test hardware sera fait quand le Maestro sera physiquement connecté.
+
+---
     
     // Marquer servo actif
     fServos[num].fActive = true;
