@@ -312,6 +312,106 @@ virtual void _moveServoToPulse(uint16_t num, uint32_t startDelay, uint32_t moveT
 
 ---
 
+## 📊 Valeurs PWM min/max par type de panneau
+
+**Source:** AstroPixelsPlus.ino, lignes 286-309 (servoSettings[])
+
+| Type          |  Canaux  | startPos | endPos | minPos | maxPos | Notes               |
+|---------------|----------|----------|--------|--------|--------|---------------------|
+| SMALL_PANEL   | 0-3      | 1350     | 2200   | 1000   | 2400   | Doors 4-7           |
+| MEDIUM_PANEL  | 4        | 1350     | 2200   | 1000   | 2400   | Door 5              |
+| BIG_PANEL     | 5        | 1350     | 2200   | 1000   | 2400   | Door 6              |
+| MINI_PANEL    | 6-7      | 1500     | 2000   | 1000   | 2400   | Avant gauche/droite |
+| PIE_PANEL     | 8-11     | 2100     | 1350   | 1000   | 2400   | Panels 9-10         |
+| TOP_PIE_PANEL | 12       | 2100     | 1350   | 1000   | 2400   | Top center          |
+| HOLO_HSERVO   | 13,15,17 | 1350     | 1350   | 1000   | 2400   | Horizontal servos   |
+| HOLO_VSERVO   | 14,16,18 | 1350     | 1350   | 1000   | 2400   | Vertical servos     |
+
+**Valeurs communes:**
+- **minPos**: 1000µs (limite physique min)
+- **maxPos**: 2400µs (limite physique max)
+- **neutral**: ~1500µs (calculé auto: (start+end)/2)
+
+**Accès dans le code:**
+```cpp
+uint16_t min = servoDispatch.getMinimum(canal);
+uint16_t max = servoDispatch.getMaximum(canal);
+uint16_t start = servoDispatch.getStart(canal);
+uint16_t end = servoDispatch.getEnd(canal);
+```
+
+---
+
+## 📡 Commandes Marcduino pour servos Maestro
+
+**Source:** MarcduinoPanel.h
+
+### Commandes de base
+
+|-----------------------|---------------------------|------------------|--------------------------------|
+| Commande              | Description               | Exemple          | Notes                          |
+|-----------------------|---------------------------|------------------|--------------------------------|
+| `:OP00`               | Ouvrir tous les panneaux  | `:OP00`          | Tous vers endPos (ex: 2200µs)  |
+| `:CL00`               | Fermer tous les panneaux  | `:CL00`          | Tous vers startPos (ex: 800µs) |
+| `:OF00`               | Flutter tous les panneaux | `:OF00`          | Variation aléatoire            |
+| `:SM<ch>,<dur>,<pos>` | Mouvement direct          | `:SM0,500,1500`  | Canal 0, 500ms, 1500µs         |
+| `:ST00`               | **Stop/Disable tous**     | `:ST00`          | Servos deviennent "mous"       |
+| `:SD<num>`            | **Disable un servo**      | `:SD0` ou `:SD4` | Un seul servo devient "mou"    |
+
+### Commandes Stop/Disable détaillées
+
+**`:ST00` - Stop All Servos**
+- **Fonction:** Arrête et désactive TOUS les servos (19 canaux)
+- **Comportement:**
+  1. Marque tous les servos `fActive = false` (arrête animate())
+  2. Attend 250ms pour vider buffer Maestro
+  3. Envoie `Set PWM = 0` (commande 0x60) à tous les canaux 0-18
+  4. Servos deviennent "mous" (pas de holding torque, bougent à la main)
+- **Usage:** Sécurité, maintenance, ou entre séquences
+- **Code source:** MarcduinoPanel.h ligne 10, ServoDispatchMaestro.h ligne 282
+
+**`:SD<num>` - Disable Servo**
+- **Fonction:** Désactive UN servo spécifique
+- **Syntaxe:** `:SD` suivi du numéro de canal (0-18)
+- **Exemples:**
+  - `:SD0` → Désactive servo canal 0 (SMALL_PANEL door 4)
+  - `:SD4` → Désactive servo canal 4 (MEDIUM_PANEL door 5)
+  - `:SD12` → Désactive servo canal 12 (TOP_PIE_PANEL)
+- **Comportement:**
+  1. Marque servo `fActive = false`
+  2. Attend 250ms
+  3. Envoie `Set PWM = 0` au canal spécifique
+  4. Servo devient "mou"
+- **Usage:** Ajustement mécanique individuel, test, debug
+- **Code source:** MarcduinoPanel.h ligne 16, ServoDispatchMaestro.h ligne 200
+
+### Protocole technique
+
+**Pololu Protocol - Set PWM (0x60):**
+```cpp
+// 6 bytes pour désactiver servo
+fSerial->write(0xAA);  // Start byte (Pololu Protocol)
+fSerial->write(0x01);  // Device ID (configuré Maestro)
+fSerial->write(0x60);  // Command: Set PWM (désactivation)
+fSerial->write(num);   // Channel number (0-23)
+fSerial->write(0x00);  // PWM on time low = 0 (OFF)
+fSerial->write(0x00);  // PWM on time high = 0 (OFF)
+```
+
+**Pourquoi 250ms de délai?**
+- À 115200 bauds, 1 commande (6 bytes) = ~0.5ms
+- Buffer Maestro peut contenir plusieurs commandes
+- 250ms garantit que toutes les commandes de mouvement sont traitées
+- Évite collision entre dernière position et commande disable
+- Sans ce délai: servos buzzent (conflits de commandes)
+
+**Pourquoi commande 0x60 au lieu de 0x04?**
+- `0x04` (Set Target) = Position PWM valide, servo reste actif même à target=0
+- `0x60` (Set PWM) = Contrôle direct du signal PWM, 0 = vraie désactivation
+- Résultat: servo "mou" (no holding torque) vs buzzing
+
+---
+
 ## 🎨 Étape 6 : Implémenter easing et animate() (TESTABLE)
 
 **🎯 Objectif:** Mouvements fluides avec interpolation
@@ -386,26 +486,87 @@ void animate() override
 
 ---
 
-## 🎭 Étape 7 : Implémenter méthodes protected pour groupes (TESTABLE)
+## ✅ Étape 7 : Implémenter méthodes protected pour groupes (TERMINÉ)
 
 **🎯 Objectif:** Commandes de groupe `:OP00`, `:CL00`, etc. fonctionnelles
 
 ### 7.1 Implémenter _moveServoToPulse()
-- [ ] Appeler setServo() avec pulse length
-- [ ] Gérer easing/timing
+- [x] Appeler setServo() avec pulse length ✅
+- [x] Gérer easing/timing ✅
+- [x] Variation aléatoire moveTime entre Min et Max pour mouvement naturel ✅
 
 ### 7.2 Implémenter _moveServoSetToPulse()
-- [ ] Boucler sur tous servos du groupe (mask)
-- [ ] Appeler _moveServoToPulse() pour chacun
+- [x] Boucler sur tous servos du groupe (mask) ✅
+- [x] Appeler _moveServoToPulse() pour chacun ✅
+- [x] Implémenter toutes les méthodes de groupe:
+  - `_moveServosToPulse()` ✅
+  - `_moveServosByPulse()` ✅
+  - `_moveServoSetToPulse()` ✅
+  - `_moveServoSetByPulse()` ✅
+  - `_moveServosTo()` ✅
+  - `_moveServoSetTo()` ✅
 
-### 7.3 Test commandes de groupe
-- [ ] Connecter plusieurs servos (3-5 minimum)
-- [ ] Tester `:OP00` (ouvrir tous panneaux)
-- [ ] Tester `:CL00` (fermer tous)
-- [ ] Tester `:OP01` (ouvrir groupe 1)
-- [ ] Vérifier synchronisation
+### 7.3 Test commandes de groupe ✅ VALIDÉ
+- [x] Connecter 5 servos (canaux 0-4) ✅
+- [x] Tester `:OP00` (ouvrir tous panneaux) → Tous bougent vers 2200µs ✅
+- [x] Tester `:CL00` (fermer tous) → Tous bougent vers 800µs ✅
+- [x] Mouvements synchronisés avec timing naturel ✅
 
-✅ **Point de test:** Commandes de groupe fonctionnelles
+### 7.4 Commandes Stop/Disable ajoutées
+- [x] **`:ST00`** → Arrête et désactive TOUS les servos ✅
+  - Appelle `servoDispatch.stop()` dans MarcduinoPanel.h
+  - Attend 250ms pour vider buffer Maestro
+  - Envoie commande `Set PWM = 0` (0x60) à tous les canaux
+  - Servos deviennent "mous" (pas de holding torque)
+  
+- [x] **`:SD<num>`** → Désactive UN servo spécifique ✅
+  - Exemple: `:SD0` désactive canal 0, `:SD4` désactive canal 4
+  - Appelle `servoDispatch.disable(num)` dans MarcduinoPanel.h
+  - Attend 250ms puis envoie `Set PWM = 0` (0x60) au canal
+  - Servo devient "mou" et peut être bougé à la main
+
+**Implémentation technique:**
+```cpp
+// MarcduinoPanel.h - Nouvelles commandes
+MARCDUINO_ACTION(StopAllServos, :ST00, ({
+    servoDispatch.stop();
+}))
+
+MARCDUINO_ACTION(DisableServo, :SD, ({
+    int32_t args[1] = { 0 };
+    char* cmd = (char*)Marcduino::getCommand();
+    uint8_t argcount = 0;
+    numberparams(cmd, argcount, args, SizeOfArray(args));
+    if (argcount >= 1)
+    {
+        servoDispatch.disable(args[0]);
+    }
+}))
+
+// ServoDispatchMaestro.h - Protocole Pololu
+void disable(uint16_t num) override
+{
+    fServos[num].fActive = false;
+    fServos[num].fMoving = false;
+    delay(250);  // Vider buffer Maestro
+    
+    // Set PWM = 0 (vraie désactivation)
+    fSerial->write(0xAA);  // Start byte
+    fSerial->write(0x01);  // Device ID
+    fSerial->write(0x60);  // Command: Set PWM
+    fSerial->write(num);   // Channel
+    fSerial->write(0x00);  // PWM off
+    fSerial->write(0x00);
+}
+```
+
+**Notes importantes:**
+- Délai 250ms critique: évite collision entre dernière position et commande disable
+- Commande `0x60` (Set PWM) vs `0x04` (Set Target): seul 0x60 désactive vraiment le PWM
+- Protocole Pololu complet (6 bytes) au lieu de Compact (4 bytes) pour accès commandes avancées
+- Device ID configuré à `0x01` dans Maestro Control Center (Serial Settings)
+
+✅ **Point de test:** Commandes de groupe, stop et disable tous fonctionnels et validés sur hardware
 
 ---
 

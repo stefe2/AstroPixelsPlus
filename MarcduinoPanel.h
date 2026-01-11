@@ -7,6 +7,25 @@ MARCDUINO_ACTION(CloseAllPanels, :CL00, ({
 
 ////////////////
 
+MARCDUINO_ACTION(StopAllServos, :ST00, ({
+    servoDispatch.stop();
+}))
+
+////////////////
+
+MARCDUINO_ACTION(DisableServo, :SD, ({
+    int32_t args[1] = { 0 };
+    char* cmd = (char*)Marcduino::getCommand();
+    uint8_t argcount = 0;
+    numberparams(cmd, argcount, args, SizeOfArray(args));
+    if (argcount >= 1)
+    {
+        servoDispatch.disable(args[0]);
+    }
+}))
+
+////////////////
+
 MARCDUINO_ACTION(OpenAllPanels, :OP00, ({
     SEQUENCE_PLAY_ONCE(servoSequencer, SeqPanelAllOpen, ALL_DOME_PANELS_MASK);
 }))
