@@ -24,8 +24,8 @@
 
 // Choix du contrôleur servo (un seul actif à la fois)
 // #define USE_SERVO_DIRECT      // Contrôle direct PWM ESP32/AVR
-#define USE_SERVO_PCA9685        // Actuel - PCA9685 I2C (garder actif pour l'instant)
-// #define USE_SERVO_MAESTRO     // Nouveau - Pololu Maestro Serial (à activer plus tard)
+// #define USE_SERVO_PCA9685        // Actuel - PCA9685 I2C (garder actif pour l'instant)
+#define USE_SERVO_MAESTRO     // Nouveau - Pololu Maestro Serial (à activer plus tard)
 
 #define USE_DEBUG // Define to enable debug diagnostic
 #define USE_WIFI  // Define to enable Wifi support
@@ -124,6 +124,10 @@
 
 #ifdef USE_I2C_ADDRESS
 #include "i2c/I2CReceiver.h"
+#include "ServoDispatchDirect.h"
+#elif defined(USE_SERVO_MAESTRO)
+#include "ServoDispatchMaestro.h"
+#elif defined(USE_SERVO_DIRECT)
 #include "ServoDispatchDirect.h"
 #else
 #include "ServoDispatchPCA9685.h"
@@ -328,8 +332,12 @@ const ServoSettings servoSettings[] PROGMEM = {
 
 #ifdef USE_I2C_ADDRESS
 ServoDispatchDirect<SizeOfArray(servoSettings)> servoDispatch(servoSettings);
+#elif defined(USE_SERVO_MAESTRO)
+ServoDispatchMaestro<SizeOfArray(servoSettings)> servoDispatch(&MAESTRO_SERIAL, servoSettings);
+#elif defined(USE_SERVO_DIRECT)
+ServoDispatchDirect<SizeOfArray(servoSettings)> servoDispatch(servoSettings);
 #else
-ServoDispatchPCA9685<SizeOfArray(servoSettings)> servoDispatch(servoSettings);
+ServoDispatchPCA9685<SizeOfArray(servoSettings)> servoDispatch(&Wire, servoSettings);
 #endif
 ServoSequencer servoSequencer(servoDispatch);
 AnimationPlayer player(servoSequencer);
@@ -632,6 +640,15 @@ void setup()
     pinMode(LED_BUILTIN, OUTPUT);
     digitalWrite(LED_BUILTIN, LOW);
     DEBUG_PRINTLN("LED heartbeat initialized on GPIO 2");
+
+    // Initialize Maestro Serial1 (if using Maestro)
+#ifdef USE_SERVO_MAESTRO
+    MAESTRO_SERIAL.begin(MAESTRO_BAUD, SERIAL_8N1, MAESTRO_RX_PIN, MAESTRO_TX_PIN);
+    DEBUG_PRINT("Maestro servo controller initialized on Serial1 (");
+    DEBUG_PRINT(MAESTRO_BAUD);
+    DEBUG_PRINTLN(" baud)");
+#endif
+
     if (!mountReadOnlyFileSystem())
     {
         DEBUG_PRINTLN("Failed to mount read only filesystem");
