@@ -188,6 +188,7 @@
 #define PIN_REAR_PSI 23
 #define PIN_FRONT_HOLO 25
 #define PIN_REAR_HOLO 26
+#define LED_BUILTIN 2  // LED onboard ESP32 pour heartbeat
 #define PIN_TOP_HOLO 27
 #define PIN_AUX1 2
 #define PIN_AUX2 4
@@ -613,6 +614,11 @@ void setup()
 
         marcduinoSerial.setStream(&COMMAND_SERIAL, &Serial);
     }
+
+    // LED heartbeat setup
+    pinMode(LED_BUILTIN, OUTPUT);
+    digitalWrite(LED_BUILTIN, LOW);
+    DEBUG_PRINTLN("LED heartbeat initialized on GPIO 2");
     if (!mountReadOnlyFileSystem())
     {
         DEBUG_PRINTLN("Failed to mount read only filesystem");
@@ -1076,6 +1082,11 @@ static unsigned sPos;
 static char sBuffer[CONSOLE_BUFFER_SIZE];
 
 ////////////////
+// LED heartbeat - clignotement 1Hz
+static uint32_t sLastHeartbeat = 0;
+static bool sHeartbeatState = false;
+
+////////////////
 
 #ifdef USE_I2C_ADDRESS
 I2CReceiverBase<CONSOLE_BUFFER_SIZE> i2cReceiver(USE_I2C_ADDRESS, [](char *cmd)
@@ -1090,6 +1101,15 @@ I2CReceiverBase<CONSOLE_BUFFER_SIZE> i2cReceiver(USE_I2C_ADDRESS, [](char *cmd)
 
 void mainLoop()
 {
+    // LED heartbeat - clignoter toutes les 500ms (1Hz)
+    uint32_t now = millis();
+    if (now - sLastHeartbeat >= 500)
+    {
+        sHeartbeatState = !sHeartbeatState;
+        digitalWrite(LED_BUILTIN, sHeartbeatState ? HIGH : LOW);
+        sLastHeartbeat = now;
+    }
+
     AnimatedEvent::process();
     sMarcSound.idle();
 #ifdef USE_MENUS

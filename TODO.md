@@ -38,11 +38,17 @@ Le schéma de câblage contient:
 
 ---
 
-## 🔨 Étape 2 : Ajouter LED heartbeat
-- [ ] Ajouter `#define LED_BUILTIN 2` (ligne ~181)
-- [ ] Initialiser LED dans setup() (ligne ~605)
-- [ ] Faire clignoter LED dans loop() (ligne ~1152)
-- [ ] Compiler et tester
+## ✅ Étape 2 : Ajouter LED heartbeat (TERMINÉ)
+- [x] Ajouter `#define LED_BUILTIN 2` (ligne 190)
+- [x] Initialiser LED dans setup() (ligne 617-619)
+- [x] Faire clignoter LED dans loop() (ligne 1102-1109)
+- [x] Compiler et tester
+
+**Implémentation:**
+- LED clignote à 1Hz (toutes les 500ms)
+- GPIO 2 = LED onboard ESP32
+- Permet monitoring visuel du fonctionnement CPU
+- Compilation réussie: RAM 19.2%, Flash 78.2%
 
 ---
 
