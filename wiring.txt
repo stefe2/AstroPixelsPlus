@@ -1,0 +1,6 @@
+Fil 1 = Marcduino Tx
+Fil 2 = Maestro Tx
+Fil 3 = 24V
+Fil 4 = 24V
+Fil 5 = GND
+Fil 6 = GND

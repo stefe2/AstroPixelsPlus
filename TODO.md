@@ -348,15 +348,16 @@ uint16_t end = servoDispatch.getEnd(canal);
 
 ### Commandes de base
 
-|-----------------------|---------------------------|------------------|--------------------------------|
-| Commande              | Description               | Exemple          | Notes                          |
-|-----------------------|---------------------------|------------------|--------------------------------|
-| `:OP00`               | Ouvrir tous les panneaux  | `:OP00`          | Tous vers endPos (ex: 2200µs)  |
-| `:CL00`               | Fermer tous les panneaux  | `:CL00`          | Tous vers startPos (ex: 800µs) |
-| `:OF00`               | Flutter tous les panneaux | `:OF00`          | Variation aléatoire            |
-| `:SM<ch>,<dur>,<pos>` | Mouvement direct          | `:SM0,500,1500`  | Canal 0, 500ms, 1500µs         |
-| `:ST00`               | **Stop/Disable tous**     | `:ST00`          | Servos deviennent "mous"       |
-| `:SD<num>`            | **Disable un servo**      | `:SD0` ou `:SD4` | Un seul servo devient "mou"    |
+ -----------------------------------------------------------------------------------------------------
+| Commande            | Description               | Exemple          | Notes                          |
+|---------------------|---------------------------|------------------|--------------------------------|
+| :OP00               | Ouvrir tous les panneaux  |                  |                                |
+| :CL00               | Fermer tous les panneaux  |                  |                                |
+| :OF00               | Flutter tous les panneaux |                  |                                |
+| :SM<ch>,<dur>,<pos> | Mouvement direct          | :SM0,500,1500    | Canal 0, 500ms, 1500µs         |
+| :ST00               | **Stop/Disable tous**     | :ST00            | Servos deviennent "mous"       |
+| :SD<num>            | **Disable un servo**      | :SD0 ou :SD4     | Un seul servo devient "mou"    |
+ -----------------------------------------------------------------------------------------------------
 
 ### Commandes Stop/Disable détaillées
 
@@ -397,13 +398,6 @@ fSerial->write(num);   // Channel number (0-23)
 fSerial->write(0x00);  // PWM on time low = 0 (OFF)
 fSerial->write(0x00);  // PWM on time high = 0 (OFF)
 ```
-
-**Pourquoi 250ms de délai?**
-- À 115200 bauds, 1 commande (6 bytes) = ~0.5ms
-- Buffer Maestro peut contenir plusieurs commandes
-- 250ms garantit que toutes les commandes de mouvement sont traitées
-- Évite collision entre dernière position et commande disable
-- Sans ce délai: servos buzzent (conflits de commandes)
 
 **Pourquoi commande 0x60 au lieu de 0x04?**
 - `0x04` (Set Target) = Position PWM valide, servo reste actif même à target=0
@@ -570,29 +564,41 @@ void disable(uint16_t num) override
 
 ---
 
-## 🌊 Étape 8 : Tests séquences animées (TESTABLE)
+## ✅ Étape 8 : Tests séquences animées (TERMINÉ)
 
 **🎯 Objectif:** Séquences complexes (Scream, Wave, etc.)
 
 ### 8.1 Connecter tous les servos panneaux
-- [ ] 13 servos panneaux sur canaux 0-12
-- [ ] Vérifier mapping avec servoSettings[]
-- [ ] Alimenter correctement (5-6V, ampérage suffisant)
+- [x] 5 servos connectés (canaux 0-4) pour tests initiaux ✅
+- [x] Vérifier mapping avec servoSettings[] ✅
+- [x] Alimenter correctement (5-6V) ✅
 
 ### 8.2 Test séquences
-- [ ] `:SE01` (Scream) - open/close rapide
-- [ ] `:SE02` (Wave) - séquence vague
-- [ ] `:SE03` (Smirk Wave)
-- [ ] `:SE04` (Short Circuit)
-- [ ] `:SE05` (Cantina Wave)
-- [ ] `:SE06` (Leia)
+- [x] `:SE01` (Scream) - Testé ✅
+- [x] `:SE02` (Wave) - Testé ✅
+- [x] `:SE03` (Smirk Wave) - Testé ✅
+- [x] `:SE04` (Short Circuit) - Testé ✅
+- [x] `:SE05` (Cantina Wave) - Testé ✅
+- [x] `:SE06` (Leia) - Testé ✅
 
 ### 8.3 Valider timing
-- [ ] Vérifier fluidité
-- [ ] Pas de saccades
-- [ ] Pas de timeouts série
+- [x] Fluidité générale validée ✅
+- [x] Pas de timeouts série ✅
+- [x] Communication Maestro stable ✅
 
-✅ **Point de test:** Toutes séquences fonctionnelles
+### 8.4 Ajustements PWM effectués
+- [x] Calibration positions fermées/ouvertes pour 5 servos ✅
+- [x] Valeurs ajustées dans servoSettings[] (lignes 286-309) ✅
+- [x] Tests avec valeurs réelles hardware ✅
+
+**Notes:**
+- Tests initiaux effectués avec 5 servos (canaux 0-4)
+- Ajustements PWM nécessaires identifiés et appliqués
+- Certaines positions nécessiteront ajustements fins supplémentaires
+- ⚠️ **Calibration complète avec tous les 13 servos à faire ultérieurement**
+- Fonctionnement général validé, protocole Maestro stable
+
+✅ **Point de test:** Séquences fonctionnelles, ajustements PWM identifiés, tests plus approfondis reportés
 
 ---
 

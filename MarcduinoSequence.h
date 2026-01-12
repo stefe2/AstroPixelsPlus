@@ -1,5 +1,7 @@
 ////////////////
 
+#include "servo-sequences-custom.h"
+
 MARCDUINO_ACTION(StopSequence, :SE00, ({
 }))
 
@@ -18,14 +20,14 @@ MARCDUINO_ACTION(ScreamSequence, :SE01, ({
 
 MARCDUINO_ACTION(WaveSequence, :SE02, ({
     sMarcSound.handleCommand("$213");
-    SEQUENCE_PLAY_ONCE(servoSequencer, SeqPanelWave, ALL_DOME_PANELS_MASK);
+    SEQUENCE_PLAY_ONCE(servoSequencer, SeqPanelWaveCustom, 0xFFFFFFFF);
 }))
 
 ////////////////
 
 MARCDUINO_ACTION(SmirkWaveSequence, :SE03, ({
     sMarcSound.handleCommand("$34");
-    SEQUENCE_PLAY_ONCE(servoSequencer, SeqPanelWaveFast, ALL_DOME_PANELS_MASK);
+    SEQUENCE_PLAY_ONCE(servoSequencer, SeqPanelWaveFastCustom, 0xFFFFFFFF);
 }))
 
 ////////////////
