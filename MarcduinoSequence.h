@@ -20,21 +20,21 @@ MARCDUINO_ACTION(ScreamSequence, :SE01, ({
 
 MARCDUINO_ACTION(WaveSequence, :SE02, ({
     sMarcSound.handleCommand("$213");
-    SEQUENCE_PLAY_ONCE(servoSequencer, SeqPanelWaveCustom, 0xFFFFFFFF);
+    SEQUENCE_PLAY_ONCE(servoSequencer, SeqPanelWaveCustom, ALL_DOME_PANELS_MASK);
 }))
 
 ////////////////
 
 MARCDUINO_ACTION(SmirkWaveSequence, :SE03, ({
     sMarcSound.handleCommand("$34");
-    SEQUENCE_PLAY_ONCE(servoSequencer, SeqPanelWaveFastCustom, 0xFFFFFFFF);
+    SEQUENCE_PLAY_ONCE(servoSequencer, SeqPanelWaveFastCustom, ALL_DOME_PANELS_MASK);
 }))
 
 ////////////////
 
 MARCDUINO_ACTION(OpenCloseWaveSequence, :SE04, ({
     sMarcSound.handleCommand("$36");
-    SEQUENCE_PLAY_ONCE(servoSequencer, SeqPanelOpenCloseWave, ALL_DOME_PANELS_MASK);
+    SEQUENCE_PLAY_ONCE(servoSequencer, SeqPanelOpenCloseWaveCustom, ALL_DOME_PANELS_MASK);
 }))
 
 ////////////////
@@ -123,7 +123,7 @@ MARCDUINO_ANIMATION(CantinaSequence, :SE07)
         "LE1104146\n"
         // Holo Short Circuit
         "HPA006|46\n"))
-    DO_SEQUENCE(SeqPanelDance, DOME_DANCE_PANELS_MASK)
+    DO_SEQUENCE(SeqPanelDanceCustom, ALL_DOME_PANELS_MASK)
     // Wait 46 seconds
     DO_WAIT_SEC(46)
     DO_RESET({
@@ -156,7 +156,7 @@ MARCDUINO_ANIMATION(DiscoSequence, :SE09)
 {
     DO_START()
     DO_ONCE({ sMarcSound.handleCommand("$D"); })
-    DO_SEQUENCE(SeqPanelLongDisco, DOME_DANCE_PANELS_MASK)
+    DO_SEQUENCE(SeqPanelLongDiscoCustom, ALL_DOME_PANELS_MASK)
     DO_ONCE({
         FLD.selectSequence(LogicEngineRenderer::RAINBOW);
         RLD.selectScrollTextLeft("STAR WARS R2-D2 ASTROMECH", LogicEngineRenderer::ColorVal(random(10)));
@@ -188,20 +188,20 @@ MARCDUINO_ACTION(ScreamPanelSequence, :SE51, ({
 ////////////////
 
 MARCDUINO_ACTION(WavePanelSequence, :SE52, ({
-    SEQUENCE_PLAY_ONCE(servoSequencer, SeqPanelWave, ALL_DOME_PANELS_MASK);
+    SEQUENCE_PLAY_ONCE(servoSequencer, SeqPanelWaveCustomSlow, ALL_DOME_PANELS_MASK);
 }))
 
 ////////////////
 
 MARCDUINO_ACTION(SmirkWavePanelSequence, :SE53, ({
-    SEQUENCE_PLAY_ONCE(servoSequencer, SeqPanelWaveFast, ALL_DOME_PANELS_MASK);
+    SEQUENCE_PLAY_ONCE(servoSequencer, SeqPanelWaveFastCustom, ALL_DOME_PANELS_MASK);
 }))
 
 ////////////////
 
 MARCDUINO_ACTION(OpenWaveSequence, :SE54, ({
     sMarcSound.handleCommand("$36");
-    SEQUENCE_PLAY_ONCE(servoSequencer, SeqPanelOpenCloseWave, ALL_DOME_PANELS_MASK);
+    SEQUENCE_PLAY_ONCE(servoSequencer, SeqPanelOpenCloseWaveCustom, ALL_DOME_PANELS_MASK);
 }))
 
 ////////////////
@@ -224,6 +224,12 @@ MARCDUINO_ACTION(RythmicPanelSequence, :SE57, ({
 
 ////////////////
 
+MARCDUINO_ACTION(OneByOnePanelSequence, :SE58, ({
+    SEQUENCE_PLAY_ONCE(servoSequencer, SeqPanelOneByOne, 0xFFFFFFFF);
+}))
+
+////////////////
+
 MARCDUINO_ANIMATION(HarlemShakeSequence, $815)
 {
     DO_START()
@@ -238,7 +244,7 @@ MARCDUINO_ANIMATION(HarlemShakeSequence, $815)
     // Wait 0.5 second
     DO_WAIT_MILLIS(500)
     // Start panel sequence
-    DO_SEQUENCE(SeqPanelLongHarlemShake, DOME_DANCE_PANELS_MASK)
+    DO_SEQUENCE(SeqPanelLongHarlemShakeCustom, ALL_DOME_PANELS_MASK)
     // Wait 10 second
     DO_WAIT_SEC(11)
     DO_COMMAND(F(
@@ -250,7 +256,7 @@ MARCDUINO_ANIMATION(HarlemShakeSequence, $815)
     // Beginning of Shake loop
     DO_LABEL(shake)
     // Play random
-    DO_SEQUENCE_RANDOM_STEP(SeqPanelLongHarlemShake, DOME_DANCE_PANELS_MASK)
+    DO_SEQUENCE_RANDOM_STEP(SeqPanelLongHarlemShakeCustom, ALL_DOME_PANELS_MASK)
     // Wait 50 seconds
     DO_WAIT_MILLIS(50)
     // Loop until total play time reaches 26.5 seconds
@@ -273,7 +279,7 @@ MARCDUINO_ANIMATION(GirlOnFireSequence, $821)
     DO_START()
     // Wait 3.5 seconds
     DO_WAIT_MILLIS(3500)
-    DO_SEQUENCE(SeqPanelDance, DOME_DANCE_PANELS_MASK)
+    DO_SEQUENCE(SeqPanelDanceCustom, ALL_DOME_PANELS_MASK)
     DO_COMMAND(F(
         // Fire logics
         "LE220055\n"

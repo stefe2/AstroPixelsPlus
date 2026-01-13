@@ -300,36 +300,48 @@ HoloLights topHolo(PIN_TOP_HOLO, HoloLights::kRGB, 3);
 #define PANEL_GROUP_8 (1L << 21)
 #define PANEL_GROUP_9 (1L << 22)
 #define PANEL_GROUP_10 (1L << 23)
+#define PANEL_GROUP_11 (1L << 24)
+#define PANEL_GROUP_12 (1L << 25)
+#define PANEL_GROUP_13 (1L << 26)
+#define PANEL_GROUP_14 (1UL << 27)
+#define PANEL_GROUP_15 (1UL << 28)
+#define PANEL_GROUP_16 (1UL << 29)
+#define PANEL_GROUP_17 (1UL << 30)
+#define PANEL_GROUP_18 (1UL << 31)
+
+#define EMPTY_AUX 0x4000
 
 ////////////////////////////////
 // These values will be configurable through the WiFi interface and stored in the preferences.
 const ServoSettings servoSettings[] PROGMEM = {
 #ifndef USE_I2C_ADDRESS
     // First PCA9685 controller
-    {1, 1840, 992, PANEL_GROUP_4 | SMALL_PANEL},  /* 0: door 4 */
-    {2, 1888, 992, PANEL_GROUP_3 | SMALL_PANEL},  /* 1: door 3 */
-    {3, 1872, 992, PANEL_GROUP_2 | SMALL_PANEL},  /* 2: door 2 */
-    {4, 1872, 992, PANEL_GROUP_1 | SMALL_PANEL},  /* 3: door 1 */
-    {5, 1872, 992, PANEL_GROUP_5 | MEDIUM_PANEL}, /* 4: door 5 */
-    {6, 2000, 992, PANEL_GROUP_6 | BIG_PANEL},    /* 5: door 9 */
-    {7, 2000, 992, MINI_PANEL},                   /* 6: mini door 2 */
-    {8, 2000, 992, MINI_PANEL},                   /* 7: mini front psi door */
-    {9, 2000, 992, PANEL_GROUP_10 | PIE_PANEL},   /* 8: pie panel 1 */
-    {10, 2000, 992, PANEL_GROUP_9 | PIE_PANEL},   /* 9: pie panel 2 */
-    {11, 1872, 992, PANEL_GROUP_8 | PIE_PANEL},   /* 10: pie panel 3 */
-    {12, 2552, 992, PANEL_GROUP_7 | PIE_PANEL},   /* 11: pie panel 4 */
-    {13, 2000, 992, TOP_PIE_PANEL},               /* 12: dome top panel */
-
-    // Second PCA9685 controller
-    {16, 1248, 1744, HOLO_HSERVO}, /* 13: horizontal front holo */
-    {17, 1248, 1744, HOLO_VSERVO}, /* 14: vertical front holo */
-    {18, 1248, 1744, HOLO_HSERVO}, /* 15: horizontal top holo */
-    {19, 1248, 1744, HOLO_VSERVO}, /* 16: vertical top holo */
-    {20, 1248, 1744, HOLO_VSERVO}, /* 17: vertical rear holo */
-    {21, 1248, 1744, HOLO_HSERVO}, /* 18: horizontal rear holo */
+    {0, 1840, 992,   PANEL_GROUP_1  | SMALL_PANEL},     // Maestro PIN 0: door 4
+    {1, 1888, 992,   PANEL_GROUP_2  | SMALL_PANEL},     // Maestro PIN 1: door 3
+    {2, 1872, 992,   PANEL_GROUP_3  | SMALL_PANEL},     // Maestro PIN 2: door 2
+    {3, 1872, 992,   PANEL_GROUP_4  | MEDIUM_PANEL},    // Maestro PIN 3: door 1
+    {4, 1872, 992,   PANEL_GROUP_5  | MEDIUM_PANEL},    // Maestro PIN 4: door 5
+    {5, 2000, 992,   PANEL_GROUP_6  | BIG_PANEL},       // Maestro PIN 5: door 9
+    {6, 2000, 992,   PANEL_GROUP_7  | PIE_PANEL},       // Maestro PIN 6: pie panel 1
+    {7, 2000, 992,   PANEL_GROUP_8  | PIE_PANEL},       // Maestro PIN 7: pie panel 2
+    {8, 2000, 992,   PANEL_GROUP_9  | PIE_PANEL},       // Maestro PIN 8: pie panel 3
+    {9, 1920, 992,   PANEL_GROUP_10 | PIE_PANEL},       // Maestro PIN 9: pie panel 4
+    {10, 1872, 992,  PANEL_GROUP_11 | MINI_PANEL},      // Maestro PIN 10: mini door 2
+    {11, 2552, 992,  PANEL_GROUP_12 | MINI_PANEL},      // Maestro PIN 11: mini front psi door
+    {12, 2000, 992,  PANEL_GROUP_13 | TOP_PIE_PANEL},   // Maestro PIN 12: dome top panel
+    {13, 1248, 1744, HOLO_HSERVO},                      // Maestro PIN 13: horizontal front holo
+    {14, 1248, 1744, HOLO_VSERVO},                      // Maestro PIN 14: vertical front holo
+    {15, 1248, 1744, HOLO_HSERVO},                      // Maestro PIN 15: horizontal top holo
+    {16, 1248, 1744, HOLO_VSERVO},                      // Maestro PIN 16: vertical top holo
+    {17, 1248, 1744, HOLO_VSERVO},                      // Maestro PIN 17: vertical rear holo
+    {18, 1248, 1744, HOLO_HSERVO},                      // Maestro PIN 18: horizontal rear holo
+    {19, 2000, 992,  PANEL_GROUP_14 | EMPTY_AUX},       // Maestro PIN 19: Empty
+    {20, 2000, 992,  PANEL_GROUP_15 | EMPTY_AUX},       // Maestro PIN 20: Empty
+    {21, 2000, 992,  PANEL_GROUP_16 | EMPTY_AUX},       // Maestro PIN 21: Empty
+    {22, 2000, 992,  PANEL_GROUP_17 | EMPTY_AUX},       // Maestro PIN 22: Empty
+    {23, 2000, 992,  PANEL_GROUP_18 | EMPTY_AUX},       // Maestro PIN 23: Empty
 #endif
 };
-
 
 #ifdef USE_I2C_ADDRESS
 ServoDispatchDirect<SizeOfArray(servoSettings)> servoDispatch(servoSettings);
@@ -340,7 +352,38 @@ ServoDispatchDirect<SizeOfArray(servoSettings)> servoDispatch(servoSettings);
 #else
 ServoDispatchPCA9685<SizeOfArray(servoSettings)> servoDispatch(&Wire, servoSettings);
 #endif
-ServoSequencer servoSequencer(servoDispatch);
+
+// Custom ServoSequencer that automatically disables servos when sequence finishes
+class ServoSequencerWithAutoStop : public ServoSequencer
+{
+private:
+    unsigned long fStopDelayMS = 0;
+    
+public:
+    ServoSequencerWithAutoStop(ServoDispatch& dispatch) : ServoSequencer(dispatch) {}
+    
+    virtual void animate() override
+    {
+        bool wasFinished = isFinished();
+        ServoSequencer::animate();
+        
+        // If sequence just finished, schedule servo stop after delay
+        if (!wasFinished && isFinished())
+        {
+            // Give servos 1000ms to reach their final position
+            fStopDelayMS = millis() + 700;
+        }
+        
+        // Check if it's time to stop servos
+        if (fStopDelayMS != 0 && millis() >= fStopDelayMS)
+        {
+            dispatch().stop();
+            fStopDelayMS = 0;
+        }
+    }
+};
+
+ServoSequencerWithAutoStop servoSequencer(servoDispatch);
 AnimationPlayer player(servoSequencer);
 MarcduinoSerial<> marcduinoSerial(player);
 
