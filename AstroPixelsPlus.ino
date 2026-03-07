@@ -6,38 +6,22 @@
  *
  */
 
-// Support for RSeries Logic Engine FLD and/or RLD lights (requires FastLED library)
-// Define USE_RSERIES_FLD to enable support for RSeries FLD
-// #define USE_RSERIES_FLD
-// Define USE_RSERIES_RLD to enable support for RSeries RLD
-// #define USE_RSERIES_RLD
-// Define USE_RSERIES_RLD_CURVED to enable support for RSeries RLD curved (AUX5 becomes clock pin)
-// #define USE_RSERIES_RLD_CURVED
-
-#if defined(USE_RSERIES_FLD) || defined(USE_RSERIES_RLD) || defined(USE_RSERIES_RLD_CURVED)
-// RSeries logics require FastLED
-#define USE_LEDLIB 0
-#endif
-
-// Define USE_I2C_ADDRESS to enable slave mode. This will disable servo support
-// #define USE_I2C_ADDRESS 0x0a
+// Choix du contrôleur servo (un seul actif à la fois)
+#define USE_SERVO_MAESTRO     // Nouveau - Pololu Maestro Serial (à activer plus tard)
 #define USE_DEBUG // Define to enable debug diagnostic
-#define USE_WIFI  // Define to enable Wifi support
+// #define USE_WIFI  // Define to enable Wifi support
 #define USE_SPIFFS
 #ifdef USE_WIFI
-#define USE_DROID_REMOTE // Define for droid remote support
 #define USE_MDNS
 #define USE_OTA
 #define USE_WIFI_WEB
-#define USE_WIFI_MARCDUINO
-// #define LIVE_STREAM
 #endif
 
 ////////////////////////////////
 
 // Replace with your network credentials
 #ifdef USE_WIFI
-#define REMOTE_ENABLED true // default disabled
+// REMOTE_ENABLED supprimé - télécommande désactivée
 #define WIFI_ENABLED true   // default enabled
 // Set these to your desired WiFi credentials.
 #define WIFI_AP_NAME "AstroPixels"
@@ -45,9 +29,9 @@
 #define WIFI_ACCESS_POINT true /* true if access point: false if joining existing wifi */
 #endif
 
-// SMQ device name for ESPNOW
-#define SMQ_HOSTNAME "Astro"
-#define SMQ_SECRET "Astromech"
+// Télécommande désactivée
+// #define SMQ_HOSTNAME "Astro"
+// #define SMQ_SECRET "Astromech"
 
 ///////////////////////////////////
 
@@ -61,11 +45,12 @@
 
 ////////////////////////////////
 
-#define PREFERENCE_REMOTE_ENABLED "remote"
-#define PREFERENCE_REMOTE_HOSTNAME "rhost"
-#define PREFERENCE_REMOTE_SECRET "rsecret"
-#define PREFERENCE_REMOTE_PAIRED "rpaired"
-#define PREFERENCE_REMOTE_LMK "rlmk"
+// Télécommande désactivée
+// #define PREFERENCE_REMOTE_ENABLED "remote"
+// #define PREFERENCE_REMOTE_HOSTNAME "rhost"
+// #define PREFERENCE_REMOTE_SECRET "rsecret"
+// #define PREFERENCE_REMOTE_PAIRED "rpaired"
+// #define PREFERENCE_REMOTE_LMK "rlmk"
 
 #define PREFERENCE_WIFI_ENABLED "wifi"
 #define PREFERENCE_WIFI_SSID "ssid"
@@ -80,13 +65,14 @@
 #define PREFERENCE_MARCWIFI_ENABLED "mwifi"
 #define PREFERENCE_MARCWIFI_SERIAL_PASS "mwifipass"
 
-#define PREFERENCE_MARCSOUND "msound"
-#define PREFERENCE_MARCSOUND_SERIAL "msoundser"
-#define PREFERENCE_MARCSOUND_VOLUME "mvolume"
-#define PREFERENCE_MARCSOUND_STARTUP "msoundstart"
-#define PREFERENCE_MARCSOUND_RANDOM "mrandom"
-#define PREFERENCE_MARCSOUND_RANDOM_MIN "mrandommin"
-#define PREFERENCE_MARCSOUND_RANDOM_MAX "mrandommax"
+// Son désactivé - Serial1 réservé pour Pololu Maestro
+// #define PREFERENCE_MARCSOUND "msound"
+// #define PREFERENCE_MARCSOUND_SERIAL "msoundser"
+// #define PREFERENCE_MARCSOUND_VOLUME "mvolume"
+// #define PREFERENCE_MARCSOUND_STARTUP "msoundstart"
+// #define PREFERENCE_MARCSOUND_RANDOM "mrandom"
+// #define PREFERENCE_MARCSOUND_RANDOM_MIN "mrandommin"
+// #define PREFERENCE_MARCSOUND_RANDOM_MAX "mrandommax"
 
 ////////////////////////////////
 
@@ -94,20 +80,82 @@
 
 ////////////////////////////////
 
-#if defined(USE_LCD_SCREEN) || defined(USE_DROID_REMOTE)
-#define USE_MENUS // Define if using menu system
-#endif
+// Écrans LCD désactivés
+// #if defined(USE_LCD_SCREEN) || defined(USE_DROID_REMOTE)
+// #define USE_MENUS // Define if using menu system
+// #endif
 
 ////////////////////////////////
 
-#ifdef USE_DROID_REMOTE
-#include "ReelTwoSMQ32.h"
-#else
+// Télécommande désactivée
+// #ifdef USE_DROID_REMOTE
+// #include "ReelTwoSMQ32.h"
+// #else
 #include "ReelTwo.h"
-#endif
+// #endif
 #include "dome/Logics.h"
 #include "dome/LogicEngineController.h"
 #include "dome/HoloLights.h"
+
+// Custom HoloLights that automatically disables servos after movements
+class HoloLightsWithAutoStop : public HoloLights
+{
+private:
+    unsigned long fStopDelayMS = 0;
+    byte fHServoNum = 0;
+    byte fVServoNum = 0;
+    ServoDispatch* fServoDispatchPtr = nullptr;
+    
+public:
+    HoloLightsWithAutoStop(uint8_t pixelPin, PixelType type, byte holoID) 
+        : HoloLights(pixelPin, type, holoID) {}
+    
+    void assignServos(ServoDispatch* servoDispatch, int hservo, int vservo)
+    {
+        HoloLights::assignServos(servoDispatch, hservo, vservo);
+        fServoDispatchPtr = servoDispatch;
+        fHServoNum = hservo;
+        fVServoNum = vservo;
+    }
+    
+    virtual void animate() override
+    {
+        HoloLights::animate();
+        
+        // Check if holo servos are currently moving
+        bool holoServosActive = false;
+        if (fServoDispatchPtr != nullptr)
+        {
+            holoServosActive = fServoDispatchPtr->isActive(fHServoNum) || 
+                              fServoDispatchPtr->isActive(fVServoNum);
+        }
+        
+        // If servos just stopped moving, schedule auto-stop
+        if (!holoServosActive && fStopDelayMS == 0)
+        {
+            // Give servos 1000ms to reach their final position before disabling
+            fStopDelayMS = millis() + 1000;
+        }
+        
+        // Reset delay if servos start moving again
+        if (holoServosActive)
+        {
+            fStopDelayMS = 0;
+        }
+        
+        // Check if it's time to stop servos
+        if (fStopDelayMS != 0 && millis() >= fStopDelayMS)
+        {
+            if (fServoDispatchPtr != nullptr)
+            {
+                fServoDispatchPtr->disable(fHServoNum);
+                fServoDispatchPtr->disable(fVServoNum);
+            }
+            fStopDelayMS = 0;
+        }
+    }
+};
+
 #include "dome/NeoPSI.h"
 #include "dome/FireStrip.h"
 #include "dome/BadMotivator.h"
@@ -116,13 +164,18 @@
 #include "body/DataPanel.h"
 #include "body/ChargeBayIndicator.h"
 
-#ifdef USE_I2C_ADDRESS
+#ifdef USE_MAESTRO_ADDRESS
 #include "i2c/I2CReceiver.h"
+#include "ServoDispatchDirect.h"
+#elif defined(USE_SERVO_MAESTRO)
+#include "ServoDispatchMaestro.h"
+#elif defined(USE_SERVO_DIRECT)
 #include "ServoDispatchDirect.h"
 #else
 #include "ServoDispatchPCA9685.h"
 #endif
 #include "ServoSequencer.h"
+#include "servo-sequences-custom.h"
 #include "core/Marcduino.h"
 
 #include <Preferences.h>
@@ -134,19 +187,29 @@
 #define COMMAND_SERIAL Serial2
 
 ////////////////////////////////
+// Configuration Pololu Maestro (Serial1)
+// Serial1 utilisé pour contrôle servos Maestro (anciennement son)
+#define MAESTRO_SERIAL Serial1
+#define MAESTRO_RX_PIN PIN_AUX4  // GPIO 18 (anciennement SOUND_RX_PIN)
+#define MAESTRO_TX_PIN PIN_AUX5  // GPIO 19 (anciennement SOUND_TX_PIN)
+#define MAESTRO_BAUD 115200      // 115200 ou 9600 selon config Maestro
 
-#define MARC_SERIAL2_BAUD_RATE 2400
+////////////////////////////////
+
+#define MARC_SERIAL2_BAUD_RATE 9600
 #define MARC_SERIAL_PASS true
 #define MARC_SERIAL_ENABLED true
 #define MARC_WIFI_ENABLED true
 #define MARC_WIFI_SERIAL_PASS true
-#define MARC_SOUND_PLAYER MarcSound::kDisabled
-#define MARC_SOUND_SERIAL 0
-#define MARC_SOUND_VOLUME 500 // 0 - 1000
-#define MARC_SOUND_STARTUP 255
-#define MARC_SOUND_RANDOM true
-#define MARC_SOUND_RANDOM_MIN 5000
-#define MARC_SOUND_RANDOM_MAX 30000
+
+// Son désactivé - Serial1 réservé pour Pololu Maestro
+// #define MARC_SOUND_PLAYER MarcSound::kDisabled
+// #define MARC_SOUND_SERIAL 0
+// #define MARC_SOUND_VOLUME 500 // 0 - 1000
+// #define MARC_SOUND_STARTUP 255
+// #define MARC_SOUND_RANDOM true
+// #define MARC_SOUND_RANDOM_MIN 5000
+// #define MARC_SOUND_RANDOM_MAX 30000
 
 #include "wifi/WifiAccess.h"
 
@@ -188,6 +251,7 @@
 #define PIN_REAR_PSI 23
 #define PIN_FRONT_HOLO 25
 #define PIN_REAR_HOLO 26
+#define LED_BUILTIN 2  // LED onboard ESP32 pour heartbeat
 #define PIN_TOP_HOLO 27
 #define PIN_AUX1 2
 #define PIN_AUX2 4
@@ -200,17 +264,17 @@
 #define PIN_REAR_LOGIC_CLOCK PIN_AUX5
 #endif
 
-#define CBI_DATAIN_PIN PIN_AUX3
-#define CBI_CLOCK_PIN PIN_AUX2
-#define CBI_LOAD_PIN PIN_AUX1
+// CBI pins supprimés - devices non utilisés
+// #define CBI_DATAIN_PIN PIN_AUX3
+// #define CBI_CLOCK_PIN PIN_AUX2
+// #define CBI_LOAD_PIN PIN_AUX1
 
 ////////////////////////////////
-
-#define SOUND_SERIAL Serial1
-#define SOUND_RX_PIN PIN_AUX4
-#define SOUND_TX_PIN PIN_AUX5
-#define SOUND_BAUD 9600
-
+// ANCIEN CODE SON (désactivé - Serial1 utilisé par Maestro)
+// #define SOUND_SERIAL Serial1
+// #define SOUND_RX_PIN PIN_AUX4
+// #define SOUND_TX_PIN PIN_AUX5
+// #define SOUND_BAUD 9600
 ////////////////////////////////
 
 #if defined(USE_RSERIES_RLD_CURVED)
@@ -235,24 +299,176 @@ HoloLights<PIN_FRONT_HOLO, NEO_GRB> frontHolo(1);
 HoloLights<PIN_REAR_HOLO, NEO_GRB> rearHolo(2);
 HoloLights<PIN_TOP_HOLO, NEO_GRB> topHolo(3);
 #else
-HoloLights frontHolo(PIN_FRONT_HOLO, HoloLights::kRGB, 1);
-HoloLights rearHolo(PIN_REAR_HOLO, HoloLights::kRGB, 2);
-HoloLights topHolo(PIN_TOP_HOLO, HoloLights::kRGB, 3);
+HoloLightsWithAutoStop frontHolo(PIN_FRONT_HOLO, HoloLights::kRGB, 1);
+HoloLightsWithAutoStop rearHolo(PIN_REAR_HOLO, HoloLights::kRGB, 2);
+HoloLightsWithAutoStop topHolo(PIN_TOP_HOLO, HoloLights::kRGB, 3);
 #endif
 
-// #if USE_FIRESTRIP_TEMPLATE
-//  FireStrip<PIN_AUX4> fireStrip;
-// #else
-//  FireStrip fireStrip(PIN_AUX4);
-// #endif
-//  BadMotivator badMotivator(PIN_AUX5);
+// Animateur de mouvement aléatoire continu des 3 holos
+class HoloAliveAnimator : public AnimatedEvent
+{
+public:
+    void enable(uint32_t minDelayMs, uint32_t maxDelayMs)
+    {
+        fMinDelay = minDelayMs;
+        fMaxDelay = maxDelayMs;
+        fEnabled = true;
+        uint32_t now = millis();
+        // Stagger initial aléatoire pour chaque holo (organic, non synchronisé)
+        fNextMoveTime[0] = now + random(500, fMinDelay);
+        fNextMoveTime[1] = now + random(500, fMinDelay) + random(0, fMinDelay / 2);
+        fNextMoveTime[2] = now + random(500, fMinDelay) + random(0, fMinDelay);
+    }
 
-// LedControlMAX7221<5> ledChain1(CBI_DATAIN_PIN, CBI_CLOCK_PIN, CBI_LOAD_PIN);
-// ChargeBayIndicator chargeBayIndicator(ledChain1);
-// DataPanel dataPanel(ledChain1);
-// TeecesPSI teecesPSI(ledChain1);
-// TeecesRearLogics teecesRLD(ledChain1);
-// TeecesFrontLogics teecesTFLD(ledChain1);
+    void disable()
+    {
+        fEnabled = false;
+        // Retour au centre (position 1) avec mouvement doux
+        frontHolo.moveHP(1, 500);
+        rearHolo.moveHP(1, 500);
+        topHolo.moveHP(1, 500);
+    }
+
+    virtual void animate() override
+    {
+        if (!fEnabled)
+            return;
+        uint32_t now = millis();
+        HoloLights* holos[3] = { &frontHolo, &rearHolo, &topHolo };
+        for (int i = 0; i < 3; i++)
+        {
+            if (now >= fNextMoveTime[i])
+            {
+                holos[i]->moveHP(random(0, 9), random(300, 700));
+                fNextMoveTime[i] = now + random(fMinDelay, fMaxDelay);
+            }
+        }
+    }
+
+private:
+    bool     fEnabled       = false;
+    uint32_t fNextMoveTime[3] = {0, 0, 0};
+    uint32_t fMinDelay      = 3000;
+    uint32_t fMaxDelay      = 8000;
+};
+HoloAliveAnimator holoAlive;
+
+// Animateur LED indépendant par holo : fondu bleu↔blanc aléatoire avec machine à états
+// Bypass complet de effectDimPulse (bugué : utilise 255/brightness au lieu de brightness)
+class HoloLEDAnimator : public AnimatedEvent
+{
+    static const uint8_t  kMaxBri = 40;   // luminosité max ≈ 16% (40/255)
+    static const uint32_t kFadeMs = 1500; // 1.5s fondu entrée/sortie
+
+    enum State : byte { kIdle, kFadeIn, kHold, kFadeOut };
+
+public:
+    void enable()
+    {
+        fEnabled = true;
+        uint32_t now = millis();
+        static const char* initCmds[3] = { "HPF0000", "HPR0000", "HPT0000" };
+        for (int i = 0; i < 3; i++)
+        {
+            CommandEvent::process(initCmds[i]); // reset fLEDFunction=0 sur chaque holo
+            fState[i] = kIdle;
+            fTimer[i] = now + random(500, 5000); // stagger aléatoire
+        }
+    }
+
+    void disable()
+    {
+        fEnabled = false;
+        HoloLights* holos[3] = { &frontHolo, &rearHolo, &topHolo };
+        for (int i = 0; i < 3; i++)
+        {
+            fState[i] = kIdle;
+            setColor(holos[i], 0, fWhite[i]);
+        }
+    }
+
+    virtual void animate() override
+    {
+        if (!fEnabled)
+            return;
+        uint32_t now = millis();
+        HoloLights* holos[3] = { &frontHolo, &rearHolo, &topHolo };
+        for (int i = 0; i < 3; i++)
+        {
+            uint32_t elapsed = now - fTimer[i];
+            switch (fState[i])
+            {
+                case kIdle:
+                    if (now >= fTimer[i])
+                    {
+                        fWhite[i] = (uint8_t)random(0, 101); // 0=bleu pur, 100=blanc pur
+                        fState[i] = kFadeIn;
+                        fTimer[i] = now;
+                    }
+                    break;
+
+                case kFadeIn:
+                {
+                    uint8_t bri = (elapsed >= kFadeMs) ?
+                        kMaxBri :
+                        (uint8_t)((uint32_t)kMaxBri * elapsed / kFadeMs);
+                    setColor(holos[i], bri, fWhite[i]);
+                    if (elapsed >= kFadeMs)
+                    {
+                        fHoldMs[i] = random(5000, 10000);
+                        fState[i]  = kHold;
+                        fTimer[i]  = now;
+                    }
+                    break;
+                }
+
+                case kHold:
+                    setColor(holos[i], kMaxBri, fWhite[i]);
+                    if (elapsed >= fHoldMs[i])
+                    {
+                        fState[i] = kFadeOut;
+                        fTimer[i] = now;
+                    }
+                    break;
+
+                case kFadeOut:
+                {
+                    uint8_t bri = (elapsed >= kFadeMs) ?
+                        0 :
+                        (uint8_t)((uint32_t)kMaxBri * (kFadeMs - elapsed) / kFadeMs);
+                    setColor(holos[i], bri, fWhite[i]);
+                    if (elapsed >= kFadeMs)
+                    {
+                        fState[i] = kIdle;
+                        fTimer[i] = now + random(3000, 9000);
+                    }
+                    break;
+                }
+            }
+        }
+    }
+
+private:
+    bool     fEnabled     = false;
+    State    fState[3]    = { kIdle, kIdle, kIdle };
+    uint32_t fTimer[3]    = { 0, 0, 0 };
+    uint32_t fHoldMs[3]   = { 0, 0, 0 };
+    uint8_t  fWhite[3]    = { 0, 0, 0 };  // 0=bleu pur … 100=blanc pur
+
+    // w=0 → (0,0,bri)  w=100 → (bri,bri,bri)
+    void setColor(HoloLights* holo, uint8_t bri, uint8_t w)
+    {
+        uint8_t rg = (uint8_t)((uint32_t)bri * w / 100);
+        uint16_t n = holo->numPixels();
+        for (uint16_t j = 0; j < n; j++)
+            holo->setPixelColor(j, rg, rg, bri);
+        holo->dirty();
+    }
+};
+HoloLEDAnimator holoLED;
+
+// FireStrip, BadMotivator supprimés - non utilisés
+// ChargeBayIndicator, DataPanel, TeecesPSI supprimés - non utilisés
 
 ////////////////////////////////
 
@@ -282,58 +498,121 @@ HoloLights topHolo(PIN_TOP_HOLO, HoloLights::kRGB, 3);
 #define PANEL_GROUP_8 (1L << 21)
 #define PANEL_GROUP_9 (1L << 22)
 #define PANEL_GROUP_10 (1L << 23)
+#define PANEL_GROUP_11 (1L << 24)
+#define PANEL_GROUP_12 (1L << 25)
+#define PANEL_GROUP_13 (1L << 26)
+#define PANEL_GROUP_14 (1UL << 27)
+#define PANEL_GROUP_15 (1UL << 28)
+#define PANEL_GROUP_16 (1UL << 29)
+#define PANEL_GROUP_17 (1UL << 30)
+#define PANEL_GROUP_18 (1UL << 31)
+
+#define EMPTY_AUX 0x4000
 
 ////////////////////////////////
 // These values will be configurable through the WiFi interface and stored in the preferences.
 const ServoSettings servoSettings[] PROGMEM = {
-#ifndef USE_I2C_ADDRESS
+#ifndef USE_MAESTRO_ADDRESS
     // First PCA9685 controller
-    {1, 800, 2200, PANEL_GROUP_4 | SMALL_PANEL},  /* 0: door 4 */
-    {2, 800, 2200, PANEL_GROUP_3 | SMALL_PANEL},  /* 1: door 3 */
-    {3, 800, 2200, PANEL_GROUP_2 | SMALL_PANEL},  /* 2: door 2 */
-    {4, 800, 2200, PANEL_GROUP_1 | SMALL_PANEL},  /* 3: door 1 */
-    {5, 800, 2200, PANEL_GROUP_5 | MEDIUM_PANEL}, /* 4: door 5 */
-    {6, 800, 2200, PANEL_GROUP_6 | BIG_PANEL},    /* 5: door 9 */
-    {7, 800, 2200, MINI_PANEL},                   /* 6: mini door 2 */
-    {8, 800, 2200, MINI_PANEL},                   /* 7: mini front psi door */
-    {9, 800, 2200, PANEL_GROUP_10 | PIE_PANEL},   /* 8: pie panel 1 */
-    {10, 800, 2200, PANEL_GROUP_9 | PIE_PANEL},   /* 9: pie panel 2 */
-    {11, 800, 2200, PANEL_GROUP_8 | PIE_PANEL},   /* 10: pie panel 3 */
-    {12, 800, 2200, PANEL_GROUP_7 | PIE_PANEL},   /* 11: pie panel 4 */
-    {13, 800, 2200, TOP_PIE_PANEL},               /* 12: dome top panel */
-
-    // Second PCA9685 controller
-    {16, 800, 2200, HOLO_HSERVO}, /* 13: horizontal front holo */
-    {17, 800, 2200, HOLO_VSERVO}, /* 14: vertical front holo */
-    {18, 800, 2200, HOLO_HSERVO}, /* 15: horizontal top holo */
-    {19, 800, 2200, HOLO_VSERVO}, /* 16: vertical top holo */
-    {20, 800, 2200, HOLO_VSERVO}, /* 17: vertical rear holo */
-    {21, 800, 2200, HOLO_HSERVO}, /* 18: horizontal rear holo */
+    {0, 1840, 992,   PANEL_GROUP_1  | SMALL_PANEL},     // Maestro PIN 0: door 4
+    {1, 1888, 992,   PANEL_GROUP_2  | SMALL_PANEL},     // Maestro PIN 1: door 3
+    {2, 1872, 992,   PANEL_GROUP_3  | SMALL_PANEL},     // Maestro PIN 2: door 2
+    {3, 1872, 992,   PANEL_GROUP_4  | MEDIUM_PANEL},    // Maestro PIN 3: door 1
+    {4, 1872, 992,   PANEL_GROUP_5  | MEDIUM_PANEL},    // Maestro PIN 4: door 5
+    {5, 2000, 992,   PANEL_GROUP_6  | BIG_PANEL},       // Maestro PIN 5: door 9
+    {6, 2000, 992,   PANEL_GROUP_7  | PIE_PANEL},       // Maestro PIN 6: pie panel 1
+    {7, 2000, 992,   PANEL_GROUP_8  | PIE_PANEL},       // Maestro PIN 7: pie panel 2
+    {8, 2000, 992,   PANEL_GROUP_9  | PIE_PANEL},       // Maestro PIN 8: pie panel 3
+    {9, 1920, 992,   PANEL_GROUP_10 | PIE_PANEL},       // Maestro PIN 9: pie panel 4
+    {10, 1872, 992,  PANEL_GROUP_11 | MINI_PANEL},      // Maestro PIN 10: mini door 2
+    {11, 2552, 992,  PANEL_GROUP_12 | MINI_PANEL},      // Maestro PIN 11: mini front psi door
+    {12, 2000, 992,  PANEL_GROUP_13 | TOP_PIE_PANEL},   // Maestro PIN 12: dome top panel
+    {13, 1248, 1744, HOLO_HSERVO},                      // Maestro PIN 13: horizontal front holo
+    {14, 1248, 1744, HOLO_VSERVO},                      // Maestro PIN 14: vertical front holo
+    {15, 1248, 1744, HOLO_HSERVO},                      // Maestro PIN 15: horizontal top holo
+    {16, 1248, 1744, HOLO_VSERVO},                      // Maestro PIN 16: vertical top holo
+    {17, 1248, 1744, HOLO_VSERVO},                      // Maestro PIN 17: vertical rear holo
+    {18, 1248, 1744, HOLO_HSERVO},                      // Maestro PIN 18: horizontal rear holo
+    {19, 2000, 992,  PANEL_GROUP_14 | EMPTY_AUX},       // Maestro PIN 19: Empty
+    {20, 2000, 992,  PANEL_GROUP_15 | EMPTY_AUX},       // Maestro PIN 20: Empty
+    {21, 2000, 992,  PANEL_GROUP_16 | EMPTY_AUX},       // Maestro PIN 21: Empty
+    {22, 2000, 992,  PANEL_GROUP_17 | EMPTY_AUX},       // Maestro PIN 22: Empty
+    {23, 2000, 992,  PANEL_GROUP_18 | EMPTY_AUX},       // Maestro PIN 23: Empty
 #endif
 };
 
-#ifdef USE_I2C_ADDRESS
+#ifdef USE_MAESTRO_ADDRESS
+ServoDispatchDirect<SizeOfArray(servoSettings)> servoDispatch(servoSettings);
+#elif defined(USE_SERVO_MAESTRO)
+ServoDispatchMaestro<SizeOfArray(servoSettings)> servoDispatch(&MAESTRO_SERIAL, servoSettings);
+#elif defined(USE_SERVO_DIRECT)
 ServoDispatchDirect<SizeOfArray(servoSettings)> servoDispatch(servoSettings);
 #else
-ServoDispatchPCA9685<SizeOfArray(servoSettings)> servoDispatch(servoSettings);
+ServoDispatchPCA9685<SizeOfArray(servoSettings)> servoDispatch(&Wire, servoSettings);
 #endif
-ServoSequencer servoSequencer(servoDispatch);
+
+// Custom ServoSequencer that automatically disables servos when sequence finishes
+class ServoSequencerWithAutoStop : public ServoSequencer
+{
+private:
+    unsigned long fStopDelayMS = 0;
+    // BUG FIX: isFinished() is already false when animate() first runs after play(),
+    // because play() sets fSequence != null before animate() is called.
+    // Solution: track the previous frame's finished state so wasFinished=true
+    // on the first animate() call after play(), triggering setSequenceActive(true).
+    bool fLastIsFinished = true;
+    
+public:
+    ServoSequencerWithAutoStop(ServoDispatch& dispatch) : ServoSequencer(dispatch) {}
+    
+    virtual void animate() override
+    {
+        bool wasFinished = fLastIsFinished;   // state from previous frame
+        ServoSequencer::animate();
+        bool nowFinished = isFinished();
+        fLastIsFinished = nowFinished;        // update for next frame
+        
+        // Notify dispatch when sequence starts/stops
+        if (wasFinished && !nowFinished)
+        {
+            // Sequence just started — prevent per-servo auto-stop during sequence
+            dispatch().setSequenceActive(true);
+        }
+        else if (!wasFinished && nowFinished)
+        {
+            // Sequence just finished — send close-all as safety net, then schedule global stop
+            // moveServosTo(mask, 125ms, 0.0=closed): ensures all panels physically close
+            // regardless of where the sequence left them
+            dispatch().moveServosTo(ALL_DOME_PANELS_MASK, 125, 0.0);
+            dispatch().setSequenceActive(false);
+            // 1500ms: 125ms movement + 1375ms margin before stop()
+            fStopDelayMS = millis() + 1500;
+        }
+        
+        // Check if it's time to stop all servos after sequence end
+        if (fStopDelayMS != 0 && millis() >= fStopDelayMS)
+        {
+            dispatch().stop();
+            fStopDelayMS = 0;
+        }
+    }
+};
+
+ServoSequencerWithAutoStop servoSequencer(servoDispatch);
 AnimationPlayer player(servoSequencer);
 MarcduinoSerial<> marcduinoSerial(player);
 
 /////////////////////////////////////////////////////////////////////////
 
-#include "MarcduinoSound.h"
-MarcSound::Module sSoundPlayer;
+// Son désactivé - Serial1 réservé pour Pololu Maestro
+// #include "MarcduinoSound.h"
+// MarcSound::Module sSoundPlayer;
 
 /////////////////////////////////////////////////////////////////////////
 
+// Variables pour effets personnalisés (utilisées dans effects/)
 #define NUM_LEDS 28 * 4
-uint32_t lastEvent;
 CRGB leds[NUM_LEDS];
-#ifdef LIVE_STREAM
-AsyncUDP udp;
-#endif
 
 enum
 {
@@ -393,9 +672,10 @@ void unmountFileSystems()
 void reboot()
 {
     DEBUG_PRINTLN("Restarting...");
-#ifdef USE_DROID_REMOTE
-    DisconnectRemote();
-#endif
+    // Télécommande désactivée
+    // #ifdef USE_DROID_REMOTE
+    // DisconnectRemote();
+    // #endif
     unmountFileSystems();
     preferences.end();
     delay(1000);
@@ -414,6 +694,8 @@ void resetSequence()
         "HPA000|0\n"   // Holo Projectors to Normal
         "CB00000\n"    // Charge Bay to Normal
         "DP00000\n")); // Data Panel to Normal
+    // Close all panels progressively (wave = sequential, no brownout risk)
+    SEQUENCE_PLAY_ONCE(servoSequencer, SeqPanelWaveCustom, ALL_DOME_PANELS_MASK);
 }
 
 ////////////////////////////////
@@ -471,8 +753,9 @@ bool numberparams(const char *cmd, uint8_t &argcount, int32_t *args, uint8_t max
 WifiAccess wifiAccess;
 bool wifiEnabled;
 bool wifiActive;
-bool remoteEnabled;
-bool remoteActive;
+// Télécommande désactivée
+// bool remoteEnabled;
+// bool remoteActive;
 TaskHandle_t eventTask;
 bool otaInProgress;
 #endif
@@ -483,6 +766,8 @@ WifiMarcduinoReceiver wifiMarcduinoReceiver(wifiAccess);
 
 ////////////////////////////////
 
+// Écrans LCD désactivés
+/*
 #ifdef USE_MENUS
 
 #include "Screens.h"
@@ -517,6 +802,7 @@ CommandScreenHandlerSMQ sDisplay;
 #include "menus/HoloScreen.h"
 
 #endif
+*/
 
 ////////////////////////////////
 
@@ -524,72 +810,15 @@ CommandScreenHandlerSMQ sDisplay;
 #include "WebPages.h"
 #endif
 
-#ifdef USE_DROID_REMOTE
-static bool sRemoteConnected;
-static bool sRemoteConnecting;
-static SMQAddress sRemoteAddress;
-#endif
+// Télécommande désactivée
+// #ifdef USE_DROID_REMOTE
+// static bool sRemoteConnected;
+// static bool sRemoteConnecting;
+// static SMQAddress sRemoteAddress;
+// #endif
 
 ////////////////////////////////
-
-void scan_i2c()
-{
-    unsigned nDevices = 0;
-    for (byte address = 1; address < 127; address++)
-    {
-        String name = "<unknown>";
-        Wire.beginTransmission(address);
-        byte error = Wire.endTransmission();
-        if (address == 0x70)
-        {
-            // All call address for PCA9685
-            name = "PCA9685:all";
-        }
-        if (address == 0x40)
-        {
-            // Adafruit PCA9685
-            name = "PCA9685";
-        }
-        if (address == 0x14)
-        {
-            // IA-Parts magic panel
-            name = "IA-Parts Magic Panel";
-        }
-        if (address == 0x20)
-        {
-            // IA-Parts periscope
-            name = "IA-Parts Periscope";
-        }
-        if (address == 0x16)
-        {
-            // PSIPro
-            name = "PSIPro";
-        }
-
-        if (error == 0)
-        {
-            Serial.print("I2C device found at address 0x");
-            if (address < 16)
-                Serial.print("0");
-            Serial.print(address, HEX);
-            Serial.print(" ");
-            Serial.println(name);
-            nDevices++;
-        }
-        else if (error == 4)
-        {
-            Serial.print("Unknown error at address 0x");
-            if (address < 16)
-                Serial.print("0");
-            Serial.println(address, HEX);
-        }
-    }
-    if (nDevices == 0)
-        Serial.println("No I2C devices found\n");
-    else
-        Serial.println("done\n");
-}
-
+// Fonction scan_i2c() supprimée - non utilisée
 ////////////////////////////////
 
 void setup()
@@ -602,7 +831,8 @@ void setup()
     }
 #ifdef USE_WIFI
     wifiEnabled = wifiActive = preferences.getBool(PREFERENCE_WIFI_ENABLED, WIFI_ENABLED);
-    remoteEnabled = remoteActive = preferences.getBool(PREFERENCE_REMOTE_ENABLED, REMOTE_ENABLED);
+    // Télécommande désactivée
+    // remoteEnabled = remoteActive = preferences.getBool(PREFERENCE_REMOTE_ENABLED, REMOTE_ENABLED);
 #endif
     PrintReelTwoInfo(Serial, "AstroPixelsPlus");
 
@@ -613,42 +843,43 @@ void setup()
 
         marcduinoSerial.setStream(&COMMAND_SERIAL, &Serial);
     }
+
+    // LED heartbeat setup
+    pinMode(LED_BUILTIN, OUTPUT);
+    digitalWrite(LED_BUILTIN, LOW);
+    DEBUG_PRINTLN("LED heartbeat initialized on GPIO 2");
+
+    // Initialize Maestro Serial1 (if using Maestro)
+#ifdef USE_SERVO_MAESTRO
+    MAESTRO_SERIAL.begin(MAESTRO_BAUD, SERIAL_8N1, MAESTRO_RX_PIN, MAESTRO_TX_PIN);
+    DEBUG_PRINT("Maestro servo controller initialized on Serial1 (");
+    DEBUG_PRINT(MAESTRO_BAUD);
+    DEBUG_PRINTLN(" baud)");
+#endif
+
     if (!mountReadOnlyFileSystem())
     {
         DEBUG_PRINTLN("Failed to mount read only filesystem");
     }
 
-#ifndef USE_I2C_ADDRESS
-    Wire.begin();
+#if !defined(USE_MAESTRO_ADDRESS) && !defined(USE_SERVO_MAESTRO) && !defined(USE_SERVO_DIRECT)
+    Wire.begin();  // Only needed for PCA9685 servo mode
 #endif
-    // scan_i2c();
     SetupEvent::ready();
 
-    // dataPanel.setSequence(DataPanel::kDisabled);
-    // chargeBayIndicator.setSequence(ChargeBayIndicator::kDisabled);
+    // Écrans LCD désactivés
+    // #ifdef USE_LCD_SCREEN
+    // sDisplay.setEnabled(sDisplay.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS));
+    // if (sDisplay.isEnabled())
+    // {
+    //     sDisplay.invertDisplay(false);
+    //     sDisplay.clearDisplay();
+    //     sDisplay.setRotation(2);
+    // }
+    // #endif
 
-#ifdef USE_LCD_SCREEN
-    sDisplay.setEnabled(sDisplay.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS));
-    if (sDisplay.isEnabled())
-    {
-        sDisplay.invertDisplay(false);
-        sDisplay.clearDisplay();
-        sDisplay.setRotation(2);
-    }
-#endif
-    MarcSound::Module soundPlayer = (MarcSound::Module)preferences.getInt(PREFERENCE_MARCSOUND, MARC_SOUND_PLAYER);
-    int soundStartup = preferences.getInt(PREFERENCE_MARCSOUND_STARTUP, MARC_SOUND_STARTUP);
-    if (soundPlayer != MarcSound::kDisabled)
-    {
-        SOUND_SERIAL.begin(SOUND_BAUD, SERIAL_8N1, SOUND_RX_PIN, SOUND_TX_PIN);
-        // Need to wait 3 seconds for sound modules to power up
-        delay(3000);
-        if (!sMarcSound.begin(soundPlayer, SOUND_SERIAL, soundStartup))
-        {
-            DEBUG_PRINTLN("FAILED TO INITALIZE SOUND MODULE");
-        }
-        sMarcSound.setVolume(preferences.getInt(PREFERENCE_MARCSOUND_VOLUME, MARC_SOUND_VOLUME) / 1000.0);
-    }
+    // Son désactivé - Serial1 réservé pour Pololu Maestro
+    DEBUG_PRINTLN("Sound module disabled - Serial1 reserved for Maestro");
 
     RLD.selectScrollTextLeft("... AstroPixels ....", LogicEngineRenderer::kBlue, 0, 15);
     FLD.selectScrollTextLeft("... R2D2 ...", LogicEngineRenderer::kRed, 0, 15);
@@ -668,6 +899,8 @@ void setup()
     // { 21, 800, 2200, HOLO_HSERVO },                /* 18: horizontal rear holo */
 
 #ifdef USE_WIFI
+    // Télécommande désactivée
+    /*
     if (remoteEnabled)
     {
 #ifdef USE_SMQ
@@ -761,6 +994,7 @@ void setup()
         }
 #endif
     }
+    */
     if (wifiEnabled)
     {
 #ifdef USE_WIFI_WEB
@@ -866,11 +1100,13 @@ void setup()
         0);
 #endif
     DEBUG_PRINTLN("Ready");
-    sMarcSound.playStartSound();
-    sMarcSound.setRandomMin(preferences.getInt(PREFERENCE_MARCSOUND_RANDOM_MIN, MARC_SOUND_RANDOM_MIN));
-    sMarcSound.setRandomMax(preferences.getInt(PREFERENCE_MARCSOUND_RANDOM_MAX, MARC_SOUND_RANDOM_MAX));
-    if (preferences.getInt(PREFERENCE_MARCSOUND_RANDOM, MARC_SOUND_RANDOM))
-        sMarcSound.startRandomInSeconds(13);
+
+    // Son désactivé - Serial1 réservé pour Pololu Maestro
+    // sMarcSound.playStartSound();
+    // sMarcSound.setRandomMin(preferences.getInt(PREFERENCE_MARCSOUND_RANDOM_MIN, MARC_SOUND_RANDOM_MIN));
+    // sMarcSound.setRandomMax(preferences.getInt(PREFERENCE_MARCSOUND_RANDOM_MAX, MARC_SOUND_RANDOM_MAX));
+    // if (preferences.getInt(PREFERENCE_MARCSOUND_RANDOM, MARC_SOUND_RANDOM))
+    //     sMarcSound.startRandomInSeconds(13);
 }
 
 ////////////////
@@ -923,7 +1159,8 @@ MARCDUINO_ACTION(WifiToggle, #APWIFI, ({
                  }))
 
 ////////////////
-
+// Télécommande désactivée
+/*
 MARCDUINO_ACTION(RemoteToggle, #APREMOTE, ({
 #ifdef USE_DROID_REMOTE
                      bool remoteSetting = remoteEnabled;
@@ -956,9 +1193,10 @@ MARCDUINO_ACTION(RemoteToggle, #APREMOTE, ({
                      }
 #endif
                  }))
-
+*/
 ////////////////
-
+// Télécommande désactivée
+/*
 MARCDUINO_ACTION(RemoteName, #APRNAME, ({
                      String newSecret = String(Marcduino::getCommand());
                      if (preferences.getString(PREFERENCE_REMOTE_SECRET, SMQ_HOSTNAME) != newSecret)
@@ -968,9 +1206,10 @@ MARCDUINO_ACTION(RemoteName, #APRNAME, ({
                          reboot();
                      }
                  }))
-
+*/
 ////////////////
-
+// Télécommande désactivée
+/*
 MARCDUINO_ACTION(RemoteSecret, #APRSECRET, ({
                      String newSecret = String(Marcduino::getCommand());
                      if (preferences.getString(PREFERENCE_REMOTE_SECRET, SMQ_HOSTNAME) != newSecret)
@@ -980,18 +1219,20 @@ MARCDUINO_ACTION(RemoteSecret, #APRSECRET, ({
                          reboot();
                      }
                  }))
-
+*/
 ////////////////
-
+// Télécommande désactivée
+/*
 MARCDUINO_ACTION(RemotePair, #APPAIR, ({
 #ifdef USE_DROID_REMOTE
                      printf("Pairing Started ...\n");
                      SMQ::startPairing();
 #endif
                  }))
-
+*/
 ////////////////
-
+// Télécommande désactivée
+/*
 MARCDUINO_ACTION(RemoteUnpair, #APUNPAIR, ({
                      if (preferences.remove(PREFERENCE_REMOTE_PAIRED))
                      {
@@ -1003,7 +1244,7 @@ MARCDUINO_ACTION(RemoteUnpair, #APUNPAIR, ({
                          printf("Not Paired...\n");
                      }
                  }))
-
+*/
 ////////////////
 
 MARCDUINO_ACTION(ClearPrefs, #APZERO, ({
@@ -1019,7 +1260,8 @@ MARCDUINO_ACTION(Restart, #APRESTART, ({
                  }))
 
 ////////////////
-
+// Télécommande désactivée
+/*
 #ifdef USE_SMQ
 // SMQ messages are received via ESPNOW.
 SMQMESSAGE(DIAL, {
@@ -1049,7 +1291,9 @@ SMQMESSAGE(SELECT, {
     sRemoteAddress = SMQ::messageSender();
 })
 #endif
-
+*/
+// Télécommande désactivée
+/*
 #ifdef USE_DROID_REMOTE
 static void DisconnectRemote()
 {
@@ -1069,16 +1313,21 @@ static void DisconnectRemote()
 #endif
 }
 #endif
-
+*/
 ////////////////
 
 static unsigned sPos;
 static char sBuffer[CONSOLE_BUFFER_SIZE];
 
 ////////////////
+// LED heartbeat - clignotement 1Hz
+static uint32_t sLastHeartbeat = 0;
+static bool sHeartbeatState = false;
 
-#ifdef USE_I2C_ADDRESS
-I2CReceiverBase<CONSOLE_BUFFER_SIZE> i2cReceiver(USE_I2C_ADDRESS, [](char *cmd)
+////////////////
+
+#ifdef USE_MAESTRO_ADDRESS
+I2CReceiverBase<CONSOLE_BUFFER_SIZE> i2cReceiver(USE_MAESTRO_ADDRESS, [](char *cmd)
                                                  {
     DEBUG_PRINT("[I2C] RECEIVED=\"");
     DEBUG_PRINT(cmd);
@@ -1090,11 +1339,21 @@ I2CReceiverBase<CONSOLE_BUFFER_SIZE> i2cReceiver(USE_I2C_ADDRESS, [](char *cmd)
 
 void mainLoop()
 {
+    // LED heartbeat - clignoter toutes les 500ms (1Hz)
+    uint32_t now = millis();
+    if (now - sLastHeartbeat >= 500)
+    {
+        sHeartbeatState = !sHeartbeatState;
+        digitalWrite(LED_BUILTIN, sHeartbeatState ? HIGH : LOW);
+        sLastHeartbeat = now;
+    }
+
     AnimatedEvent::process();
-    sMarcSound.idle();
-#ifdef USE_MENUS
-    sDisplay.process();
-#endif
+    // sMarcSound.idle(); // Son désactivé - Serial1 réservé pour Pololu Maestro
+    // Écrans LCD désactivés
+    // #ifdef USE_MENUS
+    // sDisplay.process();
+    // #endif
 
     if (Serial.available())
     {
@@ -1135,12 +1394,13 @@ void eventLoopTask(void *)
             webServer.handle();
 #endif
         }
-        if (remoteActive)
-        {
-#ifdef USE_SMQ
-            SMQ::process();
-#endif
-        }
+        // Télécommande désactivée
+        // if (remoteActive)
+        // {
+        // #ifdef USE_SMQ
+        //     SMQ::process();
+        // #endif
+        // }
 #ifdef USE_LVGL_DISPLAY
         statusDisplay.refresh();
 #endif

@@ -2,7 +2,27 @@
 
 MARCDUINO_ACTION(CloseAllPanels, :CL00, ({
     Marcduino::processCommand(player, "@4S3");
-    SEQUENCE_PLAY_ONCE(servoSequencer, SeqPanelAllClose, ALL_DOME_PANELS_MASK);
+    // Ferme tous les panneaux avec interpolation 125ms (filet de sécurité)
+    servoDispatch.moveServosTo(ALL_DOME_PANELS_MASK, 125, 0.0);
+}))
+
+////////////////
+
+MARCDUINO_ACTION(StopAllServos, :ST00, ({
+    servoDispatch.stop();
+}))
+
+////////////////
+
+MARCDUINO_ACTION(DisableServo, :SD, ({
+    int32_t args[1] = { 0 };
+    char* cmd = (char*)Marcduino::getCommand();
+    uint8_t argcount = 0;
+    numberparams(cmd, argcount, args, SizeOfArray(args));
+    if (argcount >= 1)
+    {
+        servoDispatch.disable(args[0]);
+    }
 }))
 
 ////////////////
@@ -397,13 +417,61 @@ MARCDUINO_ACTION(OpenPanelGroup10, :OP10, ({
 
 ////////////////
 
-MARCDUINO_ACTION(OpenTopPanels, :OP11, ({
+MARCDUINO_ACTION(OpenPanelGroup11, :OP11, ({
+    SEQUENCE_PLAY_ONCE(servoSequencer, SeqPanelAllOpen, PANEL_GROUP_11);
+}))
+
+////////////////
+
+MARCDUINO_ACTION(OpenPanelGroup12, :OP12, ({
+    SEQUENCE_PLAY_ONCE(servoSequencer, SeqPanelAllOpen, PANEL_GROUP_12);
+}))
+
+////////////////
+
+MARCDUINO_ACTION(OpenPanelGroup13, :OP13, ({
+    SEQUENCE_PLAY_ONCE(servoSequencer, SeqPanelAllOpen, PANEL_GROUP_13);
+}))
+
+////////////////
+
+MARCDUINO_ACTION(OpenPanelGroup14, :OP14, ({
+    SEQUENCE_PLAY_ONCE(servoSequencer, SeqPanelAllOpen, PANEL_GROUP_14);
+}))
+
+////////////////
+
+MARCDUINO_ACTION(OpenPanelGroup15, :OP15, ({
+    SEQUENCE_PLAY_ONCE(servoSequencer, SeqPanelAllOpen, PANEL_GROUP_15);
+}))
+
+////////////////
+
+MARCDUINO_ACTION(OpenPanelGroup16, :OP16, ({
+    SEQUENCE_PLAY_ONCE(servoSequencer, SeqPanelAllOpen, PANEL_GROUP_16);
+}))
+
+////////////////
+
+MARCDUINO_ACTION(OpenPanelGroup17, :OP17, ({
+    SEQUENCE_PLAY_ONCE(servoSequencer, SeqPanelAllOpen, PANEL_GROUP_17);
+}))
+
+////////////////
+
+MARCDUINO_ACTION(OpenPanelGroup18, :OP18, ({
+    SEQUENCE_PLAY_ONCE(servoSequencer, SeqPanelAllOpen, PANEL_GROUP_18);
+}))
+
+////////////////
+
+MARCDUINO_ACTION(OpenTopPanels, :OP19, ({
     SEQUENCE_PLAY_ONCE(servoSequencer, SeqPanelAllOpen, PIE_PANEL);
 }))
 
 ////////////////
 
-MARCDUINO_ACTION(OpenBottomPanels, :OP12, ({
+MARCDUINO_ACTION(OpenBottomPanels, :OP20, ({
     SEQUENCE_PLAY_ONCE(servoSequencer, SeqPanelAllOpen, DOME_PANELS_MASK);
 }))
 
@@ -468,13 +536,61 @@ MARCDUINO_ACTION(ClosePanelGroup10, :CL10, ({
 
 ////////////////
 
-MARCDUINO_ACTION(CloseTopPanels, :CL11, ({
+MARCDUINO_ACTION(ClosePanelGroup11, :CL11, ({
+    SEQUENCE_PLAY_ONCE(servoSequencer, SeqPanelAllClose, PANEL_GROUP_11);
+}))
+
+////////////////
+
+MARCDUINO_ACTION(ClosePanelGroup12, :CL12, ({
+    SEQUENCE_PLAY_ONCE(servoSequencer, SeqPanelAllClose, PANEL_GROUP_12);
+}))
+
+////////////////
+
+MARCDUINO_ACTION(ClosePanelGroup13, :CL13, ({
+    SEQUENCE_PLAY_ONCE(servoSequencer, SeqPanelAllClose, PANEL_GROUP_13);
+}))
+
+////////////////
+
+MARCDUINO_ACTION(ClosePanelGroup14, :CL14, ({
+    SEQUENCE_PLAY_ONCE(servoSequencer, SeqPanelAllClose, PANEL_GROUP_14);
+}))
+
+////////////////
+
+MARCDUINO_ACTION(ClosePanelGroup15, :CL15, ({
+    SEQUENCE_PLAY_ONCE(servoSequencer, SeqPanelAllClose, PANEL_GROUP_15);
+}))
+
+////////////////
+
+MARCDUINO_ACTION(ClosePanelGroup16, :CL16, ({
+    SEQUENCE_PLAY_ONCE(servoSequencer, SeqPanelAllClose, PANEL_GROUP_16);
+}))
+
+////////////////
+
+MARCDUINO_ACTION(ClosePanelGroup17, :CL17, ({
+    SEQUENCE_PLAY_ONCE(servoSequencer, SeqPanelAllClose, PANEL_GROUP_17);
+}))
+
+////////////////
+
+MARCDUINO_ACTION(ClosePanelGroup18, :CL18, ({
+    SEQUENCE_PLAY_ONCE(servoSequencer, SeqPanelAllClose, PANEL_GROUP_18);
+}))
+
+////////////////
+
+MARCDUINO_ACTION(CloseTopPanels, :CL19, ({
     SEQUENCE_PLAY_ONCE(servoSequencer, SeqPanelAllClose, PIE_PANEL);
 }))
 
 ////////////////
 
-MARCDUINO_ACTION(CloseBottomPanels, :CL12, ({
+MARCDUINO_ACTION(CloseBottomPanels, :CL20, ({
     SEQUENCE_PLAY_ONCE(servoSequencer, SeqPanelAllClose, DOME_PANELS_MASK);
 }))
 

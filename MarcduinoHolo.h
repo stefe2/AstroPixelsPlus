@@ -427,3 +427,63 @@ MARCDUINO_ACTION(HoloCommand, @HP, ({
 }))
 
 ////////////////
+
+MARCDUINO_ACTION(HoloAliveSlow, *HA01, ({
+    // Mouvement aléatoire lent des 3 holos (8-15s entre mouvements)
+    holoAlive.enable(8000, 15000);
+}))
+
+////////////////
+
+MARCDUINO_ACTION(HoloAliveMedium, *HA02, ({
+    // Mouvement aléatoire moyen des 3 holos (3-8s entre mouvements)
+    holoAlive.enable(3000, 8000);
+}))
+
+////////////////
+
+MARCDUINO_ACTION(HoloAliveFast, *HA03, ({
+    // Mouvement aléatoire rapide des 3 holos (1-4s entre mouvements)
+    holoAlive.enable(1000, 4000);
+}))
+
+////////////////
+
+MARCDUINO_ACTION(HoloAliveStop, *HZ00, ({
+    // Stopper le mouvement aléatoire et recentrer les holos
+    holoAlive.disable();
+}))
+
+////////////////
+
+MARCDUINO_ACTION(HoloVivantSlow, *HV01, ({
+    // R2 vivant lent (8–15s) : mouvements aléatoires + LEDs bleu↔blanc décalées
+    holoAlive.enable(8000, 15000);
+    holoLED.enable();
+}))
+
+////////////////
+
+MARCDUINO_ACTION(HoloVivantMedium, *HV02, ({
+    // R2 vivant moyen (3–8s) : mouvements aléatoires + LEDs bleu↔blanc décalées
+    holoAlive.enable(3000, 8000);
+    holoLED.enable();
+}))
+
+////////////////
+
+MARCDUINO_ACTION(HoloVivantFast, *HV03, ({
+    // R2 vivant rapide (1–4s) : mouvements aléatoires + LEDs bleu↔blanc décalées
+    holoAlive.enable(1000, 4000);
+    holoLED.enable();
+}))
+
+////////////////
+
+MARCDUINO_ACTION(HoloVivantStop, *HV00, ({
+    // Stopper R2 vivant : mouvement arrêté (centre) + LEDs éteintes
+    holoAlive.disable();
+    holoLED.disable();
+}))
+
+////////////////
