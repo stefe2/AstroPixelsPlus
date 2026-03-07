@@ -1,47 +1,199 @@
-# AstroPixelsPlus Firmware
-Alternative firmware sketch for the AstroPixels boards
+# AstroPixelsPlus — Custom Fork
 
-![AstroPixels](https://we-make-things.co.uk/wp-content/uploads/2022/10/PXL_20220423_103855938-scaled.jpg)
+> **This is a personal fork of the original [AstroPixelsPlus](https://github.com/reeltwo/AstroPixelsPlus)
+> firmware by [reeltwo](https://github.com/reeltwo), generously made available to the community.
+> All credit for the original work goes to the original author.
+> This fork adds support for a Pololu Maestro 24-channel servo controller and several
+> reliability improvements on top of the original codebase.**
 
-You can order AstroPixels boards here:
+> ⚠️ **Work in progress — this fork is actively evolving and is far from a final release.
+> Features may change, break, or be incomplete. Use at your own risk.**
+>
+> 📵 **WiFi and the web interface are currently disabled** in this build to free up resources
+> during development. Commands must be sent via serial (USB or Serial2/Marcduino).
 
-https://we-make-things.co.uk/product/astropixels/
+---
 
-# Web Based Installer
+## What's Different in This Fork
 
-Install pre-built firmware directly onto your ESP board using this web based installer.
-https://reeltwo.github.io/AstroPixels-Installer/
+### Pololu Maestro 24-Channel Servo Controller
 
-*Requires Chrome or Edge.*
+The original firmware uses a PCA9685 I²C servo controller. This fork replaces it with a
+**Pololu Maestro 24-channel** controller connected via Serial1 (GPIO 18/19, 115200 baud).
 
-Check out the Wiki for this firmware:
+A new class `ServoDispatchMaestro` was written to implement the full `ServoDispatch` interface
+using the Pololu Compact Serial Protocol. It handles:
 
-https://github.com/reeltwo/AstroPixelsPlus/wiki
+- ESP32-side temporal interpolation of servo positions (used instead of relying on the
+  Maestro's internal speed/acceleration settings, which proved unreliable at speed=0)
+- Per-servo enable/disable with PWM-off (command `0x60`) for true torque-free state
+- Automatic per-servo stop after 700 ms of inactivity (unless a sequence is active)
 
-**********
+**Wiring:**
 
-# Playground
+| ESP32 | Maestro |
+|-------|---------|
+| GPIO 19 (TX — Serial1) | RX |
+| GPIO 18 (RX — Serial1) | TX (optional) |
+| GND | GND |
 
-[![Logic Engine](https://thumbs.wokwi.com/projects/347975094870475347/thumbnail.jpg?tile&amp;t=1629669534812&amp;dark=1)](https://wokwi.com/projects/347975094870475347)
+Maestro configuration: Serial mode `UART, fixed baud rate`, 115200 baud, Device ID 1, CRC disabled.
 
-# REQUIREMENTS
+### Servo Sequencer Reliability Fixes
 
-Arduino IDE: https://www.arduino.cc/en/Main/Software  (1.8.13 or higher)
-NeoPixels: https://github.com/adafruit/Adafruit_NeoPixel/releases (1.10.5 or higher)
-Reeltwo: https://github.com/reeltwo/Reeltwo/releases  (1.1 or higher)
+Two bugs in the servo sequencer were identified and fixed:
 
-**********
+1. **`fLastIsFinished` bug** — `setSequenceActive(true)` was never called because
+   `play()` sets the sequence pointer synchronously before `animate()` runs.
+   On the first frame `isFinished()` already returns `false`, so the transition
+   was never detected. Per-servo 700 ms auto-stop timers would fire mid-sequence
+   and disable servos while they were still moving.
+   **Fix:** `fLastIsFinished = true` tracks the previous frame's finished state.
 
-The default WiFi credentials are:
+2. **Ghost position bug in `_moveServoToPulse`** — After `stop()`, `fActive = false`
+   but `fCurrentPos` retained a stale value from the previous `speed=0` sequence
+   (which sets `fCurrentPos` instantly without physical movement). Subsequent calls
+   to `:CL00` were silently skipped because `fCurrentPos == targetPos` appeared true.
+   **Fix:** Early-exit condition changed to `fActive && fCurrentPos == pos`.
 
-SSID: AstroPixels  
-Password: Astromech 
+### Automatic Close-All at Sequence End
 
-You can and should change this using the web interface. The default web address of the firmware is http://192.168.4.1
+When a sequence finishes, all dome panel servos are automatically moved to their
+closed position (`moveServosTo(ALL_DOME_PANELS_MASK, 125, 0.0)`) and then disabled
+after 1500 ms. This prevents panels from being left open accidentally.
 
-The Serial2 TTL header is by default a Marcduino serial command receiver running at 9600 baud. It will forward any serial data to Serial2 at 9600 baud. Allowing you to daisy chain the AstroPixels board with other Marcdunio compatible serial devices.
+### `:CL00` — Reliable Close All Panels
 
-**********
+`:CL00` now calls `servoDispatch.moveServosTo()` directly (instead of playing a
+sequence), making it work reliably at any time — even immediately after `stop()` or
+after a `speed=0` sequence.
+
+### New Interpolated Sequences: SE22–SE38
+
+The original sequences SE02–SE09 and SE50–SE58 use `speed=0` (Maestro manages
+movement internally), which is unreliable with the current Maestro configuration.
+
+New sequences SE22–SE38 are interpolated equivalents where the ESP32 guides the
+servos step-by-step at **speed=125 ms/step** — the identified physical minimum for
+reliable dome panel travel.
+
+| Command | Equivalent | Description |
+|---------|------------|-------------|
+| `:SE22` | SE02 | Wave |
+| `:SE23` | SE03 | Fast Wave |
+| `:SE24` | SE04 | Open/Close Wave |
+| `:SE25` | SE05 | Marching Ants (15 s) |
+| `:SE26` | SE06 | Short Circuit (8 s) |
+| `:SE27` | SE07 | Cantina Dance (46 s) |
+| `:SE28` | SE08 | Leia Message (45 s) |
+| `:SE29` | SE09 | Disco |
+| `:SE30` | SE50 | Scream — logics only |
+| `:SE31` | SE51 | Scream — panels only |
+| `:SE32` | SE52 | Slow Wave |
+| `:SE33` | SE53 | Fast Wave |
+| `:SE34` | SE54 | Open Wave |
+| `:SE35` | SE55 | Marching Ants |
+| `:SE36` | SE56 | Faint (open/close long) |
+| `:SE37` | SE57 | Rhythmic |
+| `:SE38` | SE58 | One by One |
+
+The original SE02–SE09 and SE50–SE58 are preserved unchanged as reference.
+
+> **Note:** Sequences `:SE00` (stop) and `:SE01` (Scream with logics) are unchanged.
+
+### Holo Projector Enhancements
+
+Two new animated subsystems have been added for the holo projectors:
+
+**HoloAliveAnimator** — Continuous random movement for all 3 holos, independently
+timed with staggered offsets for an organic feel. LEDs are not affected.
+
+| Command | Description |
+|---------|-------------|
+| `*HA01` | Start — Slow (8–15 s between moves) |
+| `*HA02` | Start — Medium (3–8 s between moves) |
+| `*HA03` | Start — Fast (1–4 s between moves) |
+| `*HZ00` | Stop — return to center |
+
+**HoloVivantAnimator ("R2 Alive")** — Combines continuous random movement with
+soft LED fades (blue↔white, 1.5 s fade in/out, 5–10 s on, 3–9 s off).
+Each holo is independent and offset in time.
+
+| Command | Description |
+|---------|-------------|
+| `*HV01` | Start — Slow (8–15 s) + LEDs |
+| `*HV02` | Start — Medium (3–8 s) + LEDs |
+| `*HV03` | Start — Fast (1–4 s) + LEDs |
+| `*HV00` | Stop — return to center, LEDs off |
+
+---
+
+## Hardware Configuration
+
+| Component | Details |
+|-----------|---------|
+| Controller | ESP32 |
+| Servo controller | Pololu Maestro 24-channel |
+| Servo serial | Serial1 — GPIO 18 (RX), GPIO 19 (TX), 115200 baud |
+| Marcduino serial | Serial2 — GPIO 16 (RX), GPIO 17 (TX), 9600 baud |
+| Panel servos | Maestro channels 0–12 |
+| Holo servos | Maestro channels 13–18 |
+
+### Maestro Channel Mapping
+
+| Channel | Servo | Type |
+|---------|-------|------|
+| 0 | Door 4 | SMALL_PANEL |
+| 1 | Door 3 | SMALL_PANEL |
+| 2 | Door 2 | SMALL_PANEL |
+| 3 | Door 1 | MEDIUM_PANEL |
+| 4 | Door 5 | MEDIUM_PANEL |
+| 5 | Door 9 | BIG_PANEL |
+| 6 | Pie 1 | PIE_PANEL |
+| 7 | Pie 2 | PIE_PANEL |
+| 8 | Pie 3 | PIE_PANEL |
+| 9 | Pie 4 | PIE_PANEL |
+| 10 | Mini 2 | MINI_PANEL |
+| 11 | Mini PSI | MINI_PANEL |
+| 12 | Top Center | TOP_PIE_PANEL |
+| 13 | Front Holo H | HOLO_HSERVO |
+| 14 | Front Holo V | HOLO_VSERVO |
+| 15 | Top Holo H | HOLO_HSERVO |
+| 16 | Top Holo V | HOLO_VSERVO |
+| 17 | Rear Holo H | HOLO_HSERVO |
+| 18 | Rear Holo V | HOLO_VSERVO |
+
+---
+
+## Original Firmware
+
+All original AstroPixelsPlus functionality is preserved.
+Please refer to the original project for documentation on logic displays, PSI,
+NeoPixel effects, WiFi configuration, and the web interface.
+
+- **Original repository:** https://github.com/reeltwo/AstroPixelsPlus
+- **Original wiki:** https://github.com/reeltwo/AstroPixelsPlus/wiki
+- **Web installer (original):** https://reeltwo.github.io/AstroPixels-Installer/
+- **AstroPixels boards:** https://we-make-things.co.uk/product/astropixels/
+
+### Default WiFi Credentials (original — currently disabled)
+
+> 📵 WiFi and the web interface (`http://192.168.4.1`) are **disabled** in this fork for now.
+> Use `#APWIFI1` to re-enable WiFi if needed.
+
+| Setting | Value |
+|---------|-------|
+| SSID | AstroPixels |
+| Password | Astromech |
+| Web interface | http://192.168.4.1 (disabled) |
+
+---
+
+## Original Documentation
+
+The sections below are preserved from the original README for reference.
+
+---
 
 # Configuration Commands Supported
 

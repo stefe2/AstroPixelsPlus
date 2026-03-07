@@ -249,41 +249,47 @@ Exemples : `*HP001` = Front bas, `*HP102` = Rear centre, `*HP203` = Top haut
 Exemples : `@0T1` = tous logics normal, `@1T5` = Front scream, `@2P6` = Rear PSI Leia
 
 ### Holos via Marcduino
-| Commande | Description |
-|----------|-------------|
-| `@6T1` | Front Holo ON |
-| `@6D` | Front Holo OFF |
-| `@7T1` | Top Holo ON |
-| `@7D` | Top Holo OFF |
-| `@8T1` | Rear Holo ON |
-| `@8D` | Rear Holo OFF |
+--------------------------------------
+| Commande   | Description           |
+|------------|-----------------------|
+| `@6T1`     | Front Holo ON         |
+| `@6D`      | Front Holo OFF        |
+| `@7T1`     | Top Holo ON           |
+| `@7D`      | Top Holo OFF          |
+| `@8T1`     | Rear Holo ON          |
+| `@8D`      | Rear Holo OFF         |
 | `@HP<cmd>` | Commande holo directe |
+--------------------------------------
 
 ---
 
 ## Commandes système
 
-| Commande | Description |
-|----------|-------------|
-| `~RT<cmd>` | Commande directe Reeltwo |
-| `@AP<cmd>` | Commande directe MD vers AstroPixels |
-| `#APWIFI` | Toggle WiFi ON/OFF *(WiFi actuellement désactivé)* |
-| `#APZERO` | Effacer toutes les préférences NVS (reset usine) |
-| `#APRESTART` | Redémarrer l'ESP32 |
+---------------------------------------------------------------------
+| Commande     | Description                                        |
+|--------------|----------------------------------------------------|
+| `~RT<cmd>`   | Commande directe Reeltwo                           |
+| `@AP<cmd>`   | Commande directe MD vers AstroPixels               |
+| `#APWIFI`    | Toggle WiFi ON/OFF *(WiFi actuellement désactivé)* |
+| `#APZERO`    | Effacer toutes les préférences NVS (reset usine)   |
+| `#APRESTART` | Redémarrer l'ESP32                                 |
+---------------------------------------------------------------------
 
 ---
 
 ## Récapitulatif des préfixes
 
-| Préfixe | Destination |
-|---------|-------------|
-| `:` | Panneaux / Séquences / Servo |
-| `*` | Holos (Marcduino standard) |
-| `@` | Logics / PSI / Holos alternatif |
-| `~RT` | Reeltwo direct |
-| `@AP` | AstroPixels direct |
-| `#AP` | Commandes système AstroPixelsPlus |
-| `$` | Séquences musicales (ex: `$815` Harlem Shake) |
+-----------------------------------------------------------
+| Préfixe | Destination                                   |
+|---------|-----------------------------------------------|
+| `:`     | Panneaux / Séquences / Servo                  |
+| `*`     | Holos (Marcduino standard)                    |
+| `@`     | Logics / PSI / Holos alternatif               |
+| `~RT`   | Reeltwo direct                                |
+| `@AP`   | AstroPixels direct                            |
+| `#AP`   | Commandes système AstroPixelsPlus             |
+| `$`     | Séquences musicales (ex: `$815` Harlem Shake) |
+-----------------------------------------------------------
 
 ---
 
@@ -302,7 +308,7 @@ Exemples : `@0T1` = tous logics normal, `@1T5` = Front scream, `@2P6` = Rear PSI
 | Serial mode  | UART, fixed baud rate |
 | Baud rate    | 115200                |
 | Device ID    | 1                     |
-| CRC disabled | ✓                     |
+| CRC disabled | X                     |
 ----------------------------------------
 
 ### Vitesse et accélération des servos
@@ -325,24 +331,26 @@ Le déplacement typique d'un panneau est ~850 µs (ex : 1350 → 2200 µs).
 **Canaux 13–18 (servos holos) :** laisser Speed=0 (illimité) pour mouvement vif.
 
 ### Mapping des canaux
-| Canal | Servo | Type |
-|-------|-------|------|
-| 0 | Door 4 | SMALL_PANEL |
-| 1 | Door 3 | SMALL_PANEL |
-| 2 | Door 2 | SMALL_PANEL |
-| 3 | Door 1 | MEDIUM_PANEL |
-| 4 | Door 5 | MEDIUM_PANEL |
-| 5 | Door 9 | BIG_PANEL |
-| 6 | Pie 1 | PIE_PANEL |
-| 7 | Pie 2 | PIE_PANEL |
-| 8 | Pie 3 | PIE_PANEL |
-| 9 | Pie 4 | PIE_PANEL |
-| 10 | Mini 2 | MINI_PANEL |
-| 11 | Mini PSI | MINI_PANEL |
-| 12 | Top Center | TOP_PIE_PANEL |
-| 13 | Front Holo H | HOLO_HSERVO |
-| 14 | Front Holo V | HOLO_VSERVO |
-| 15 | Top Holo H | HOLO_HSERVO |
-| 16 | Top Holo V | HOLO_VSERVO |
-| 17 | Rear Holo H | HOLO_HSERVO |
-| 18 | Rear Holo V | HOLO_VSERVO |
+----------------------------------------
+| Canal | Servo        | Type          |
+|-------|--------------|---------------|
+| 0     | Door 4       | SMALL_PANEL   |
+| 1     | Door 3       | SMALL_PANEL   |
+| 2     | Door 2       | SMALL_PANEL   |
+| 3     | Door 1       | MEDIUM_PANEL  |
+| 4     | Door 5       | MEDIUM_PANEL  |
+| 5     | Door 9       | BIG_PANEL     |
+| 6     | Pie 1        | PIE_PANEL     |
+| 7     | Pie 2        | PIE_PANEL     |
+| 8     | Pie 3        | PIE_PANEL     |
+| 9     | Pie 4        | PIE_PANEL     |
+| 10    | Mini 2       | MINI_PANEL    |
+| 11    | Mini PSI     | MINI_PANEL    |
+| 12    | Top Center   | TOP_PIE_PANEL |
+| 13    | Front Holo H | HOLO_HSERVO   |
+| 14    | Front Holo V | HOLO_VSERVO   |
+| 15    | Top Holo H   | HOLO_HSERVO   |
+| 16    | Top Holo V   | HOLO_VSERVO   |
+| 17    | Rear Holo H  | HOLO_HSERVO   |
+| 18    | Rear Holo V  | HOLO_VSERVO   |
+----------------------------------------
