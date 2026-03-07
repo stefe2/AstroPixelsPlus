@@ -1,10 +1,14 @@
-# AstroPixelsPlus — Custom Fork
+# AstroPixelsPlus — Kyber Edition
 
 > **This is a personal fork of the original [AstroPixelsPlus](https://github.com/reeltwo/AstroPixelsPlus)
 > firmware by [reeltwo](https://github.com/reeltwo), generously made available to the community.
 > All credit for the original work goes to the original author.
 > This fork adds support for a Pololu Maestro 24-channel servo controller and several
 > reliability improvements on top of the original codebase.**
+
+> 🎮 **This fork is specifically designed to work with the [Kyber Controller](https://www.facebook.com/groups/1341505756182087).**
+> The Marcduino command set has been tailored to match the Kyber Controller's output.
+> Join the Kyber Controller community on Facebook for support and discussion.
 
 > ⚠️ **Work in progress — this fork is actively evolving and is far from a final release.
 > Features may change, break, or be incomplete. Use at your own risk.**
@@ -38,23 +42,6 @@ using the Pololu Compact Serial Protocol. It handles:
 | GND | GND |
 
 Maestro configuration: Serial mode `UART, fixed baud rate`, 115200 baud, Device ID 1, CRC disabled.
-
-### Servo Sequencer Reliability Fixes
-
-Two bugs in the servo sequencer were identified and fixed:
-
-1. **`fLastIsFinished` bug** — `setSequenceActive(true)` was never called because
-   `play()` sets the sequence pointer synchronously before `animate()` runs.
-   On the first frame `isFinished()` already returns `false`, so the transition
-   was never detected. Per-servo 700 ms auto-stop timers would fire mid-sequence
-   and disable servos while they were still moving.
-   **Fix:** `fLastIsFinished = true` tracks the previous frame's finished state.
-
-2. **Ghost position bug in `_moveServoToPulse`** — After `stop()`, `fActive = false`
-   but `fCurrentPos` retained a stale value from the previous `speed=0` sequence
-   (which sets `fCurrentPos` instantly without physical movement). Subsequent calls
-   to `:CL00` were silently skipped because `fCurrentPos == targetPos` appeared true.
-   **Fix:** Early-exit condition changed to `fActive && fCurrentPos == pos`.
 
 ### Automatic Close-All at Sequence End
 
