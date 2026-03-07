@@ -42,6 +42,44 @@ static const ServoSequence SeqPanelWaveCustom PROGMEM =
     { 15,   B00000000, B00000000, B00000000, B00000000 },  // SMALL closes - done
 };
 
+// Wave sequence with cs compensated for speed=100ms interpolation
+// Each cs reduced by 10 vs SeqPanelWaveCustom so total duration = same as SE02 (2900ms)
+// Math: 14 steps × 100ms + 150cs × 10ms = 1400 + 1500 = 2900ms
+static const ServoSequence SeqPanelWaveCustomInterp PROGMEM =
+{
+    // Start: all closed
+    {  5,   B00000000, B00000000, B00000000, B00000000 },
+
+    // SMALL_PANEL (bit 0 = doors 4,3,2 - channels 0,1,2)
+    { 10,   B00000000, B00000000, B00000000, B00000001 },
+
+    // MEDIUM_PANEL (bit 1 = doors 1,5 - channels 3,4)
+    { 10,   B00000000, B00000000, B00000000, B00000010 },
+
+    // BIG_PANEL (bit 2 = door 9 - channel 5)
+    { 10,   B00000000, B00000000, B00000000, B00000100 },
+
+    // PIE_PANEL (bit 3 = pie 1,2,3,4 - channels 6,7,8,9)
+    { 15,   B00000000, B00000000, B00000000, B00001000 },
+
+    // TOP_PIE_PANEL (bit 4 = dome top - channel 12)
+    { 10,   B00000000, B00000000, B00000000, B00010000 },
+
+    // MINI_PANEL (bit 5 = mini 2, mini psi - channels 10,11)
+    { 10,   B00000000, B00000000, B00000000, B00100000 },
+
+    // Pause at the top (all open)
+    { 20,   B00000000, B00000000, B00000000, B00111111 },
+
+    // Return wave: close in reverse order
+    { 10,   B00000000, B00000000, B00000000, B00011111 },  // MINI closes
+    { 10,   B00000000, B00000000, B00000000, B00001111 },  // TOP_PIE closes
+    { 15,   B00000000, B00000000, B00000000, B00000111 },  // PIE closes
+    { 10,   B00000000, B00000000, B00000000, B00000011 },  // BIG closes
+    { 10,   B00000000, B00000000, B00000000, B00000001 },  // MEDIUM closes
+    {  5,   B00000000, B00000000, B00000000, B00000000 },  // SMALL closes - done
+};
+
 // Fast version of the custom wave
 static const ServoSequence SeqPanelWaveFastCustom PROGMEM =
 {

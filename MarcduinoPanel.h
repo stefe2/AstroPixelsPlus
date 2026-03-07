@@ -2,7 +2,8 @@
 
 MARCDUINO_ACTION(CloseAllPanels, :CL00, ({
     Marcduino::processCommand(player, "@4S3");
-    SEQUENCE_PLAY_ONCE(servoSequencer, SeqPanelAllClose, ALL_DOME_PANELS_MASK);
+    // Ferme tous les panneaux avec interpolation 125ms (filet de sécurité)
+    servoDispatch.moveServosTo(ALL_DOME_PANELS_MASK, 125, 0.0);
 }))
 
 ////////////////

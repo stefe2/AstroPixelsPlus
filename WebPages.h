@@ -23,9 +23,9 @@ WMenuData mainMenu[] = {
 WMenuData setupMenu[] = {
     { "Home", "/" },
     { "Serial", "/serial" },
-    { "Sound", "/sound" },
+    // { "Sound", "/sound" }, // Son désactivé - Serial1 réservé pour Maestro
     { "WiFi", "/wifi" },
-    { "Remote", "/remote" },
+    // { "Remote", "/remote" }, // Télécommande désactivée
     { "Firmware", "/firmware" },
     { "Back", "/" }
 };
@@ -233,6 +233,8 @@ bool marcSoundRandom;
 int marcSoundRandomMin;
 int marcSoundRandomMax;
 
+// Son désactivé - Serial1 réservé pour Maestro
+/*
 WElement soundContents[] = {
     WSelect("Sound Player", "soundPlayer",
         soundPlayer, SizeOfArray(soundPlayer),
@@ -301,6 +303,7 @@ WElement soundContents[] = {
     WVerticalAlign(),
     rseriesSVG
 };
+*/
 
 ////////////////////////////////
 
@@ -323,11 +326,11 @@ WElement wifiContents[] = {
     WPassword("Password:", "password",
         []()->String { return (wifiPass = preferences.getString(PREFERENCE_WIFI_PASS, WIFI_AP_PASSPHRASE)); },
         [](String val) { wifiPass = val; } ),
-    WLabel("WiFi Disables Droid Remote", "label2"),
+    // WLabel("WiFi Disables Droid Remote", "label2"), // Télécommande désactivée
     WHR(),
     WButton("Save", "save", []() {
         DEBUG_PRINTLN("WiFi Changed");
-        preferences.putBool(PREFERENCE_REMOTE_ENABLED, remoteEnabled);
+        // preferences.putBool(PREFERENCE_REMOTE_ENABLED, remoteEnabled); // Télécommande désactivée
         preferences.putBool(PREFERENCE_WIFI_ENABLED, wifiEnabled);
         preferences.putBool(PREFERENCE_WIFI_AP, wifiAP);
         preferences.putString(PREFERENCE_WIFI_SSID, wifiSSID);
@@ -342,6 +345,8 @@ WElement wifiContents[] = {
 
 ////////////////////////////////
 
+// Télécommande désactivée
+/*
 String remoteHostName;
 String remoteSecret;
 
@@ -369,6 +374,7 @@ WElement remoteContents[] = {
     WVerticalAlign(),
     rseriesSVG
 };
+*/
 
 ////////////////////////////////
 
@@ -405,9 +411,9 @@ WPage pages[] = {
       WPage("/logics", logicsContents, SizeOfArray(logicsContents)),
     WPage("/setup", setupContents, SizeOfArray(setupContents)),
       WPage("/serial", serialContents, SizeOfArray(serialContents)),
-      WPage("/sound", soundContents, SizeOfArray(soundContents)),
+      // WPage("/sound", soundContents, SizeOfArray(soundContents)), // Son désactivé
       WPage("/wifi", wifiContents, SizeOfArray(wifiContents)),
-      WPage("/remote", remoteContents, SizeOfArray(remoteContents)),
+      // WPage("/remote", remoteContents, SizeOfArray(remoteContents)), // Télécommande désactivée
       WPage("/firmware", firmwareContents, SizeOfArray(firmwareContents)),
         WUpload("/upload/firmware",
             [](Client& client)

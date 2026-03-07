@@ -602,6 +602,96 @@ void disable(uint16_t num) override
 
 ---
 
+## ✅ Étape 8b : Fonctionnalités Holo avancées (TERMINÉ)
+
+**🎯 Objectif:** Mouvement continu + effets LED doux pour les 3 holos
+
+### HoloAliveAnimator — Mouvement continu
+- [x] Classe `HoloAliveAnimator` (AnimatedEvent) dans AstroPixelsPlus.ino ✅
+- [x] 3 vitesses indépendantes par holo, timers staggered ✅
+- [x] `*HA01` — Lent (8–15s entre mouvements) ✅
+- [x] `*HA02` — Moyen (3–8s entre mouvements) ✅
+- [x] `*HA03` — Rapide (1–4s entre mouvements) ✅
+- [x] `*HZ00` — Stop + retour au centre ✅
+
+### HoloLEDAnimator — Effets LED sans flash
+- [x] Classe `HoloLEDAnimator` (AnimatedEvent) dans AstroPixelsPlus.ino ✅
+- [x] Machine à états : kIdle → kFadeIn → kHold → kFadeOut ✅
+- [x] Bypass de `effectDimPulse` (bugué : 255/brightness) — API NeoPixel directe ✅
+- [x] Fondu linéaire 1.5s entrée/sortie ✅
+- [x] Hold 5–10s aléatoire par holo ✅
+- [x] Idle 3–9s aléatoire par holo ✅
+- [x] Couleur aléatoire bleu↔blanc par cycle (w=0..100) ✅
+  - `w=0` → bleu pur `(0, 0, 40)` ; `w=100` → blanc pur `(40, 40, 40)`
+- [x] Luminosité max kMaxBri=40 (≈16%, subtil) ✅
+
+### R2 Vivant — Tout-en-un (HoloAlive + HoloLED)
+- [x] `*HV01` — Lent (8–15s) + LEDs ✅
+- [x] `*HV02` — Moyen (3–8s) + LEDs ✅
+- [x] `*HV03` — Rapide (1–4s) + LEDs ✅
+- [x] `*HV00` — Stop tout ✅
+- [x] command.md mis à jour ✅
+
+---
+
+## ✅ Étape 8c : Correctifs servo sequencer + séquences interpolées SE22-SE38 (TERMINÉ)
+
+**🎯 Objectif:** Fiabiliser les séquences de panneaux et créer des versions interpolées à speed=125ms
+
+### Bug fix — `fLastIsFinished` (ServoSequencerWithAutoStop)
+- [x] **Cause racine:** `play()` positionne `fSequence != null` avant `animate()` → au premier frame, `isFinished()` retourne déjà `false` → `setSequenceActive(true)` jamais appelé → chrono 700ms per-servo se déclenche en pleine séquence → servos désactivés en mouvement ✅
+- [x] Ajout `bool fLastIsFinished = true` pour tracker l'état du frame précédent ✅
+- [x] Transition `wasFinished && !nowFinished` → `setSequenceActive(true)` ✅
+- [x] Transition `!wasFinished && nowFinished` → `moveServosTo(ALL_DOME_PANELS_MASK, 125, 0.0)` + `setSequenceActive(false)` + `fStopDelayMS = millis() + 1500` ✅
+
+### Safety net — fermeture auto en fin de séquence
+- [x] `moveServosTo(ALL_DOME_PANELS_MASK, 125, 0.0)` envoyé automatiquement à la fin de chaque séquence ✅
+- [x] Servos désactivés via `dispatch().stop()` après 1 500 ms (125ms mouvement + 1375ms marge) ✅
+- [x] Plus de risque de laisser les panneaux ouverts après une séquence ✅
+
+### Bug fix — `fActive` dans `_moveServoToPulse` (ServoDispatchMaestro.h)
+- [x] **Cause racine:** après `stop()`, `fActive=false` mais `fCurrentPos` garde la dernière valeur (ghost position) → `:CL00` demandait 992µs, check `fCurrentPos==pos` court-circuitait la commande → rien envoyé au Maestro ✅
+- [x] Condition changée : `if (fServos[num].fCurrentPos == pos)` → `if (fServos[num].fActive && fServos[num].fCurrentPos == pos)` ✅
+
+### Correction `:CL00` (MarcduinoPanel.h)
+- [x] Remplacé `SEQUENCE_PLAY_ONCE` par `servoDispatch.moveServosTo(ALL_DOME_PANELS_MASK, 125, 0.0)` ✅
+- [x] `:CL00` fonctionne maintenant à tout moment, même après `stop()` ou séquence speed=0 ✅
+
+### Vitesse physique minimale identifiée
+- [x] speed=0 → Maestro gère seul, non fiable avec config actuelle ✅
+- [x] speed=100ms → inconsistant (servos n'arrivent pas à destination) ✅
+- [x] **speed=125ms → minimum fiable** pour panneaux dôme ✅
+- [x] speed=150ms → fiable mais ~5000ms total pour une wave ✅
+
+### Nouvelles séquences SE22-SE38 (MarcduinoSequence.h)
+> Versions interpolées des SE02-SE09 et SE50-SE58, speed=125ms par étape, fiables à 100%
+- [x] SE22 = SeqPanelWaveCustom + speed=125ms ✅
+- [x] SE23 = SeqPanelWaveFastCustom + speed=125ms ✅
+- [x] SE24 = SeqPanelOpenCloseWaveCustom + speed=125ms ✅
+- [x] SE25 = SeqPanelMarchingAnts + speed=125ms ✅
+- [x] SE26 = SeqPanelAllOpenCloseLong VARSPEED(125,125) ✅
+- [x] SE27 = SeqPanelDanceCustom + speed=125ms ✅
+- [x] SE28 = copie SE08 (pas de servos panneau — Leia) ✅
+- [x] SE29 = SeqPanelLongDiscoCustom + speed=125ms ✅
+- [x] SE30 = copie SE50 (pas de panneaux — logics seulement) ✅
+- [x] SE31 = SeqPanelAllOpenClose + speed=125ms ✅
+- [x] SE32 = SeqPanelWaveCustomSlow + speed=125ms ✅
+- [x] SE33 = SeqPanelWaveFastCustom + speed=125ms ✅
+- [x] SE34 = SeqPanelOpenCloseWaveCustom + speed=125ms ✅
+- [x] SE35 = SeqPanelMarchingAnts + speed=125ms ✅
+- [x] SE36 = SeqPanelAllOpenCloseLong VARSPEED(125,125) ✅
+- [x] SE37 = SeqPanelAllOpenCloseLong + speed=125ms ✅
+- [x] SE38 = SeqPanelOneByOne + speed=125ms mask=0xFFFFFFFF ✅
+- [x] SE02-SE09 et SE50-SE58 conservés identiques comme référence ✅
+- [x] `SeqPanelWaveCustomInterp` ajouté dans servo-sequences-custom.h (cs-10/étape, pour futurs servos plus rapides) ✅
+
+### Compilation et validation
+- [x] Compilation réussie (exit 0) ✅
+- [x] Tests hardware : SE22 validé ✅, `:CL00` validé ✅, fermeture auto fin séquence validée ✅
+- [x] command.md mis à jour avec SE22-SE38 ✅
+
+---
+
 ## 🎯 Étape 9 : Tests servos Holos (TESTABLE)
 
 **🎯 Objectif:** Valider holos H/V sur canaux 13-18
@@ -612,10 +702,10 @@ void disable(uint16_t num) override
 - [ ] Canaux 17-18: Rear holo (H/V)
 
 ### 9.2 Test mouvements holos
-- [ ] `*RD00` (random movement)
-- [ ] `$+` (speed up)
-- [ ] `$-` (slow down)
-- [ ] Vérifier `assignServos()` dans ServoEasing
+- [ ] `*RD01`/`*RD02`/`*RD03` (random movement one-shot)
+- [ ] `*HA01`/`*HA02`/`*HA03` (mouvement continu)
+- [ ] `*HV01`/`*HV02`/`*HV03` (vivant complet)
+- [ ] Vérifier fluidité fondu LED sur hardware
 
 ### 9.3 Test commandes directes
 - [ ] `~RTHPA000|0` (Holo to normal)
@@ -677,7 +767,17 @@ void disable(uint16_t num) override
 
 ## 🚀 Étape 13 : Finalisation
 
-- [ ] Commit tous les changements
+### Commit en attente (Étape 8c)
+> Fichiers modifiés depuis le dernier commit :
+- [ ] `AstroPixelsPlus.ino` — `fLastIsFinished` bug fix + `moveServosTo` safety net en fin de séquence
+- [ ] `ServoDispatchMaestro.h` — fix `fActive && fCurrentPos==pos` dans `_moveServoToPulse`
+- [ ] `MarcduinoPanel.h` — `:CL00` utilise `moveServosTo` directement
+- [ ] `MarcduinoSequence.h` — ajout SE22-SE38
+- [ ] `servo-sequences-custom.h` — ajout `SeqPanelWaveCustomInterp`
+- [ ] `command.md` — ajout SE22-SE38
+
+### Finalisation
+- [ ] Commit tous les changements (voir liste ci-dessus)
 - [ ] Push branche feature/maestro-servo-controller
 - [ ] Créer Pull Request vers main
 - [ ] Tests finaux complets
@@ -984,6 +1084,31 @@ Disponibles pour extension future (autres servos, HPL, etc.)
 
 ---
 
+## 📝 Journal des modifications
+
+### Session 2026-03-06
+- [x] **WiFi désactivé** — `// #define USE_WIFI` (code préservé, une ligne à décommenter pour réactiver)
+- [x] **Serial2 baud rate** — Changé de 2400 → **9600** (`#define MARC_SERIAL2_BAUD_RATE 9600`)
+- ⚠️ **Problème brownout identifié** — Commande `:CL00` (13 servos simultanés) cause `Brownout detector was triggered`
+  - **Cause:** Alimentation 5V unique partagée ESP32 + servos → pic de courant 6-10A
+  - **Solution recommandée:** Alimentation séparée 5V/10A pour Maestro+servos, 5V/2A pour ESP32, GND commun
+  - **Mitigation partielle:** Condensateur 2200µF (insuffisant pour 13 servos simultanés)
+  - **Statut:** Non résolu — action hardware requise
+- [x] **Panneaux ne se ferment plus après séquences** — `resetSequence()` joue maintenant `SeqPanelWaveCustom` pour fermer progressivement tous les panneaux (évite brownout, garantit fermeture complète)
+- [x] **command.md créé** — Référence complète de toutes les commandes Marcduino disponibles (panneaux, séquences `:SE00-:SE58`, holos, logics/PSI, système)
+- [x] **Auto-stop PWM après mouvements directs `:SM`/`:SQ`** — Implémenté dans `ServoDispatchMaestro.h`
+  - Nouveau champ `fStopTime` par servo (timer 700ms après atteinte de la cible)
+  - Nouveau flag `fSequenceActive` — annule les timers auto-stop pendant les séquences pour éviter coupure en plein mouvement
+  - `setSequenceActive()` ajouté dans `ServoDispatch.h` (virtual, no-op par défaut)
+  - `ServoSequencerWithAutoStop::animate()` signale début/fin de séquence via `setSequenceActive()`
+- [x] **I2C désactivé** — `Wire.begin()` n'est plus appelé en mode `USE_SERVO_MAESTRO`
+  - Cause du message `[I][esp32-hal-i2c.c:75] i2cInit()` au démarrage identifiée et corrigée
+  - Tous les composants LED (FLD, RLD, frontPSI, rearPSI, Holos) sont NeoPixel sur pin directe — aucun ne nécessite I2C
+  - Condition corrigée : `#if !defined(USE_MAESTRO_ADDRESS) && !defined(USE_SERVO_MAESTRO) && !defined(USE_SERVO_DIRECT)`
+
+---
+
 *Date création: 2026-01-09*
+*Dernière modification: 2026-03-06*
 *Projet: AstroPixelsPlus - Migration Maestro*
 *Développeur: stefe2*
