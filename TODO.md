@@ -692,6 +692,35 @@ void disable(uint16_t num) override
 
 ---
 
+## ✅ Étape 8d : Refactoring Serial2 — lecture directe (TERMINÉ)
+
+**🎯 Objectif:** Remplacer `MarcduinoSerial` (AnimatedEvent Reeltwo) par une lecture directe dans `mainLoop()`, identique au port USB — éliminant la dépendance fragile à la préférence NVS `"mserial"`.
+
+### Problème racine identifié
+- `MarcduinoSerial<> marcduinoSerial(player)` → constructeur sans stream → `fStream = nullptr`
+- `setStream(&COMMAND_SERIAL, &Serial)` uniquement appelé si `preferences.getBool("mserial", true)` → NVS pouvait être `false` (ancienne interface web ou `#APZERO`)
+- Résultat : `animate()` ne lisait jamais Serial2, commandes Kyber silencieusement ignorées
+
+### Changements apportés — `AstroPixelsPlus.ino`
+- [x] **`setup()`** : `COMMAND_SERIAL.begin(MARC_SERIAL2_BAUD_RATE, ...)` sorti du bloc `if (NVS)` → toujours initialisé ✅
+- [x] **Variables** : ajout `static unsigned sPos2` + `static char sBuffer2[CONSOLE_BUFFER_SIZE]` ✅
+- [x] **`mainLoop()`** : bloc `if (COMMAND_SERIAL.available())` indépendant avec `sBuffer2`/`sPos2`, accepte `\r` et `\n` ✅
+- [x] **Écho debug** : `Serial.print("[Serial2] ")` + `Serial.println(sBuffer2)` affiché au moment de l'exécution ✅
+- [x] **Pass-through USB→Serial2 supprimé** : plus nécessaire (`MARC_SERIAL_PASS`) ✅
+
+### Nettoyage code mort
+- [x] `MarcduinoSerial<> marcduinoSerial(player)` supprimé ✅
+- [x] `PREFERENCE_MARCSERIAL1`, `PREFERENCE_MARCSERIAL2`, `PREFERENCE_MARCSERIAL_PASS`, `PREFERENCE_MARCSERIAL_ENABLED` supprimés ✅
+- [x] `MARC_SERIAL_PASS true`, `MARC_SERIAL_ENABLED true` supprimés ✅
+- [x] `MARC_SERIAL2_BAUD_RATE 9600` conservé (toujours utilisé dans `COMMAND_SERIAL.begin()`) ✅
+
+### Validation
+- [x] Compilation réussie ✅
+- [x] **Test hardware : commandes Kyber Controller reçues et exécutées via Serial2 ✅**
+- [x] Écho `[Serial2] :SE22` visible dans moniteur série ✅
+
+---
+
 ## 🎯 Étape 9 : Tests servos Holos (TESTABLE)
 
 **🎯 Objectif:** Valider holos H/V sur canaux 13-18
@@ -767,9 +796,9 @@ void disable(uint16_t num) override
 
 ## 🚀 Étape 13 : Finalisation
 
-### Commit en attente (Étape 8c)
+### Commit en attente (Étapes 8c + 8d)
 > Fichiers modifiés depuis le dernier commit :
-- [ ] `AstroPixelsPlus.ino` — `fLastIsFinished` bug fix + `moveServosTo` safety net en fin de séquence
+- [ ] `AstroPixelsPlus.ino` — `fLastIsFinished` bug fix + `moveServosTo` safety net + refactoring Serial2 direct
 - [ ] `ServoDispatchMaestro.h` — fix `fActive && fCurrentPos==pos` dans `_moveServoToPulse`
 - [ ] `MarcduinoPanel.h` — `:CL00` utilise `moveServosTo` directement
 - [ ] `MarcduinoSequence.h` — ajout SE22-SE38

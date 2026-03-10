@@ -57,10 +57,6 @@
 #define PREFERENCE_WIFI_PASS "pass"
 #define PREFERENCE_WIFI_AP "ap"
 
-#define PREFERENCE_MARCSERIAL1 "mserial1"
-#define PREFERENCE_MARCSERIAL2 "mserial2"
-#define PREFERENCE_MARCSERIAL_PASS "mserialpass"
-#define PREFERENCE_MARCSERIAL_ENABLED "mserial"
 
 #define PREFERENCE_MARCWIFI_ENABLED "mwifi"
 #define PREFERENCE_MARCWIFI_SERIAL_PASS "mwifipass"
@@ -197,8 +193,6 @@ public:
 ////////////////////////////////
 
 #define MARC_SERIAL2_BAUD_RATE 9600
-#define MARC_SERIAL_PASS true
-#define MARC_SERIAL_ENABLED true
 #define MARC_WIFI_ENABLED true
 #define MARC_WIFI_SERIAL_PASS true
 
@@ -600,7 +594,6 @@ public:
 
 ServoSequencerWithAutoStop servoSequencer(servoDispatch);
 AnimationPlayer player(servoSequencer);
-MarcduinoSerial<> marcduinoSerial(player);
 
 /////////////////////////////////////////////////////////////////////////
 
@@ -836,13 +829,7 @@ void setup()
 #endif
     PrintReelTwoInfo(Serial, "AstroPixelsPlus");
 
-    if (preferences.getBool(PREFERENCE_MARCSERIAL_ENABLED, MARC_SERIAL_ENABLED))
-    {
-        COMMAND_SERIAL.begin(preferences.getInt(PREFERENCE_MARCSERIAL2, MARC_SERIAL2_BAUD_RATE), SERIAL_8N1, SERIAL2_RX_PIN, SERIAL2_TX_PIN);
-        // if (preferences.getBool(PREFERENCE_MARCSERIAL_PASS, MARC_SERIAL_PASS))
-
-        marcduinoSerial.setStream(&COMMAND_SERIAL, &Serial);
-    }
+    COMMAND_SERIAL.begin(MARC_SERIAL2_BAUD_RATE, SERIAL_8N1, SERIAL2_RX_PIN, SERIAL2_TX_PIN);
 
     // LED heartbeat setup
     pinMode(LED_BUILTIN, OUTPUT);
@@ -1318,6 +1305,8 @@ static void DisconnectRemote()
 
 static unsigned sPos;
 static char sBuffer[CONSOLE_BUFFER_SIZE];
+static unsigned sPos2;
+static char sBuffer2[CONSOLE_BUFFER_SIZE];
 
 ////////////////
 // LED heartbeat - clignotement 1Hz
@@ -1357,14 +1346,7 @@ void mainLoop()
 
     if (Serial.available())
     {
-
         int ch = Serial.read();
-        // ================================================================
-        if (preferences.getBool(PREFERENCE_MARCSERIAL_PASS, MARC_SERIAL_PASS))
-        {
-            COMMAND_SERIAL.write(ch); // send it out COMMAND_SERIAL
-        }
-        // ================================================================
         if (ch == 0x0A || ch == 0x0D)
         {
             Marcduino::processCommand(player, sBuffer);
@@ -1374,6 +1356,26 @@ void mainLoop()
         {
             sBuffer[sPos++] = ch;
             sBuffer[sPos] = '\0';
+        }
+    }
+
+    if (COMMAND_SERIAL.available())
+    {
+        int ch = COMMAND_SERIAL.read();
+        if (ch == 0x0A || ch == 0x0D)
+        {
+            if (sPos2 > 0)
+            {
+                Serial.print("[Serial2] ");
+                Serial.println(sBuffer2);
+            }
+            Marcduino::processCommand(player, sBuffer2);
+            sPos2 = 0;
+        }
+        else if (sPos2 < SizeOfArray(sBuffer2) - 1)
+        {
+            sBuffer2[sPos2++] = ch;
+            sBuffer2[sPos2] = '\0';
         }
     }
 }
