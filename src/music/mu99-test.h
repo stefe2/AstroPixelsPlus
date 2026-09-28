@@ -2,13 +2,15 @@
 
 static const MusicEvent sMusicMU99[] = {
     // Logics bleues qui flashent, holos bleus
-    MUSIC_CMD(0,     "LE1066000\nLE3066000\nHPA0055"),
+    // (la logic arrière affiche le titre « TEST » jusqu'à ~4,2 s)
+    MUSIC_CMD(0,     "LE1066000\nHPA0055"),
     MUSIC_PANELS(1000,  PIE_PANEL, 100, 300),
     MUSIC_PANELS(2000,  PIE_PANEL, 0, 300),
     MUSIC_HOLO(2500,    MUSIC_HOLO_FRONT, 3, 400),
     MUSIC_HOLO(2500,    MUSIC_HOLO_REAR, 6, 400),
     MUSIC_PANELS(3000,  SMALL_PANEL | MEDIUM_PANEL, 100, 300),
     MUSIC_PANELS(4000,  SMALL_PANEL | MEDIUM_PANEL, 0, 300),
+    MUSIC_CMD(4500,  "LE3066000"),
     // Logics en feu, PSI en arc-en-ciel
     MUSIC_CMD(5000,  "LE1220000\nLE3220000\nLE4100000\nLE5100000"),
     MUSIC_PANELS(6000,  ALL_DOME_PANELS_MASK, 100, 400),

@@ -6,8 +6,10 @@
 // séquences $815 ou :SE07 : toute autre commande l'interrompt, et sa remise à zéro s'exécute.
 // :MU00 (ou un numéro inconnu) arrête simplement la chanson en cours.
 //
-// Pendant la chanson, les mouvements aléatoires des holos (*HA, *HV) sont suspendus ; ils
-// reprennent à la fin s'ils étaient actifs.
+// Au départ, le titre de la chanson défile en blanc sur la logic arrière ; les chorégraphies
+// générées n'y envoient rien avant la fin du défilement. Pendant la chanson, les mouvements
+// aléatoires des holos (*HA, *HV) sont suspendus ; ils reprennent à la fin s'ils étaient actifs.
+// Chorégraphies générées par tools/music/build.py (voir docs/music.md).
 
 enum MusicEventKind : uint8_t
 {
@@ -16,15 +18,16 @@ enum MusicEventKind : uint8_t
     kMusicCommand   // commandes Reeltwo (LE…, HP…) séparées par \n
 };
 
+// 16 octets par événement : une chanson de 3 min en compte environ un millier
 struct MusicEvent
 {
     uint32_t timeMs;        // depuis le début de la chanson
+    const char* cmd;        // commandes
+    uint16_t mask;          // panneaux : types (SMALL_PANEL, PIE_PANEL, ALL_DOME_PANELS_MASK…)
+    uint16_t moveMs;        // durée du mouvement
     MusicEventKind kind;
     uint8_t a;              // panneaux : position en % ; holo : MUSIC_HOLO_*
     uint8_t b;              // holo : position (0 bas, 1 centre, 2 haut, 3 gauche, 6 droite…)
-    uint16_t moveMs;        // durée du mouvement
-    uint32_t mask;          // panneaux : groupes (SMALL_PANEL, PIE_PANEL, ALL_DOME_PANELS_MASK…)
-    const char* cmd;        // commandes
 };
 
 struct MusicSong
@@ -42,9 +45,9 @@ struct MusicSong
 #define MUSIC_HOLO_TOP   2
 #define MUSIC_HOLO_ALL   3
 
-#define MUSIC_PANELS(t, mask, pct, ms) { (t), kMusicPanels, (pct), 0, (ms), (mask), nullptr }
-#define MUSIC_HOLO(t, holo, pos, ms)   { (t), kMusicHolo, (holo), (pos), (ms), 0, nullptr }
-#define MUSIC_CMD(t, cmd)              { (t), kMusicCommand, 0, 0, 0, 0, (cmd) }
+#define MUSIC_PANELS(t, mask, pct, ms) { (t), nullptr, (mask), (ms), kMusicPanels, (pct), 0 }
+#define MUSIC_HOLO(t, holo, pos, ms)   { (t), nullptr, 0, (ms), kMusicHolo, (holo), (pos) }
+#define MUSIC_CMD(t, cmd)              { (t), (cmd), 0, 0, kMusicCommand, 0, 0 }
 #define MUSIC_SONG(num, title, events, durationMs, offsetMs) \
     { (num), (title), (events), SizeOfArray(events), (durationMs), (offsetMs) }
 
@@ -75,6 +78,7 @@ static void musicBegin(const MusicSong* song)
     holoAlive.suspend();
     if (sMusicResumeHoloLED)
         holoLED.disable();
+    RLD.selectScrollTextLeft(song->title, LogicEngineRenderer::kWhite, 0, 0);
     printf("Music :MU%02u %s\n", song->number, song->title);
 }
 

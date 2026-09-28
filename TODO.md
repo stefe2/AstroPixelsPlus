@@ -106,7 +106,8 @@ Chorégraphies musicales (`:MU01`–`:MU99`), branche `feature/musique` :
 - [x] Étape 1 : tests sur le droïde — `:MU99` complet (mi-course comprise) ; `*HA03` puis `:MU99` (holos
   suspendus puis repris seuls) ; `:MU99` interrompu par `:SE06` ; `:MU00` en cours de chanson. `errors: 0x0000`
   partout, boucle moy. 1,4 ms pendant la chanson
-- [ ] Étape 2 : script d'analyse des MP3 (tempo, battements, attaques, énergie par bande, sections) et génération
+- [x] Étape 2 : script d'analyse des MP3 et génération (`tools/music/`, `docs/music.md`) : 34 chansons `:MU01`–`:MU34`,
+  titre sur la logic arrière, prévisualisation `mp3/preview.html` ; compile (flash 56 %), **pas testé sur le droïde**
 - [ ] Étape 3 : test d'une chanson (MP3 joué sur le PC + `:MUnn` par USB)
 - [ ] Étape 4 : les 10 chansons, puis test avec le Kyber
 

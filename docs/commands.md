@@ -160,13 +160,13 @@ current configuration.
 
 ### Music choreographies (`:MU`)
 
-The Kyber starts the song and sends `:MUnn` at the same time. Each song is a timed list of panel, logic,
+The Kyber starts the song and sends `:MUnn` at the same time. The song title scrolls on the rear logic first. Each song is a timed list of panel, logic,
 PSI and holo events (`src/music/`). Random holo moves (`*HA`, `*HV`) pause during the song and resume
 after it. Any other sequence command stops the song; the droid is then reset (panels closed, logics normal).
 
 | Command | Description |
 | --- | --- |
-| `:MU01`–`:MU98` | Play song `nn` (unknown numbers are ignored) |
+| `:MU01`–`:MU34` | Play song `nn`: see the song table in [music.md](music.md) (unknown numbers are ignored) |
 | `:MU99` | Test choreography, no music (20 s) |
 | `:MU00` | Stop the current song |
 

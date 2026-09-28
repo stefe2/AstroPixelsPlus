@@ -606,7 +606,7 @@ current configuration.</p>
 </tbody>
 </table>
 <h3>Music choreographies (<code>:MU</code>)</h3>
-<p>The Kyber starts the song and sends <code>:MUnn</code> at the same time. Each song is a timed list of panel, logic,
+<p>The Kyber starts the song and sends <code>:MUnn</code> at the same time. The song title scrolls on the rear logic first. Each song is a timed list of panel, logic,
 PSI and holo events (<code>src/music/</code>). Random holo moves (<code>*HA</code>, <code>*HV</code>) pause during the song and resume
 after it. Any other sequence command stops the song; the droid is then reset (panels closed, logics normal).</p>
 <table>
@@ -618,8 +618,8 @@ after it. Any other sequence command stops the song; the droid is then reset (pa
 </thead>
 <tbody>
 <tr>
-<td><code>:MU01</code>–<code>:MU98</code></td>
-<td>Play song <code>nn</code> (unknown numbers are ignored)</td>
+<td><code>:MU01</code>–<code>:MU34</code></td>
+<td>Play song <code>nn</code>: see the song table in <a href="music.md">music.md</a> (unknown numbers are ignored)</td>
 </tr>
 <tr>
 <td><code>:MU99</code></td>

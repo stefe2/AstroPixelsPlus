@@ -15,3 +15,7 @@
 .Trashes
 .vs/
 /build
+
+# Musique du Kyber (droits d'auteur, taille) : jamais sur GitHub
+mp3/
+__pycache__/
