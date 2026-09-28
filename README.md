@@ -6,8 +6,7 @@
 > This fork adds support for a Pololu Maestro 24-channel servo controller and several
 > reliability improvements on top of the original codebase.**
 
-> 🎮 **This fork is specifically designed to work with the [Kyber Controller](https://www.facebook.com/groups/1341505756182087).**
-> The Marcduino command set has been tailored to match the Kyber Controller's output.
+> **This fork is specifically designed to work with the [Kyber Controller](https://www.facebook.com/groups/1341505756182087).**
 > Join the Kyber Controller community on Facebook for support and discussion.
 
 > ⚠️ **Work in progress — this fork is actively evolving and is far from a final release.
@@ -28,8 +27,7 @@ The original firmware uses a PCA9685 I²C servo controller. This fork replaces i
 A new class `ServoDispatchMaestro` was written to implement the full `ServoDispatch` interface
 using the Pololu Compact Serial Protocol. It handles:
 
-- ESP32-side temporal interpolation of servo positions (used instead of relying on the
-  Maestro's internal speed/acceleration settings, which proved unreliable at speed=0)
+- ESP32-side temporal interpolation of servo positions.
 - Per-servo enable/disable with PWM-off (command `0x60`) for true torque-free state
 - Automatic per-servo stop after 700 ms of inactivity (unless a sequence is active)
 
