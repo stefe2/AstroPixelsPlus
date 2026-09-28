@@ -12,8 +12,8 @@
 #define USE_SERVO_MAESTRO     // Nouveau - Pololu Maestro Serial (à activer plus tard)
 #define USE_DEBUG // Define to enable debug diagnostic
 // #define USE_WIFI  // Define to enable Wifi support
-#define USE_SPIFFS
 #ifdef USE_WIFI
+#define USE_SPIFFS  // Seulement avec le Wi-Fi ; sans Wi-Fi le système de fichiers n'est jamais lu
 #define USE_MDNS
 #define USE_OTA
 #define USE_WIFI_WEB
@@ -902,10 +902,12 @@ void setup()
     DEBUG_PRINTLN(" baud)");
 #endif
 
+#ifdef USE_SPIFFS
     if (!mountReadOnlyFileSystem())
     {
         DEBUG_PRINTLN("Failed to mount read only filesystem");
     }
+#endif
 
 #if !defined(USE_MAESTRO_ADDRESS) && !defined(USE_SERVO_MAESTRO) && !defined(USE_SERVO_DIRECT)
     Wire.begin();  // Only needed for PCA9685 servo mode

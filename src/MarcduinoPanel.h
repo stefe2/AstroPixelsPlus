@@ -1,7 +1,6 @@
 ////////////////
 
 MARCDUINO_ACTION(CloseAllPanels, :CL00, ({
-    Marcduino::processCommand(player, "@4S3");
     // Ferme tous les panneaux avec interpolation 125ms (filet de sécurité)
     servoDispatch.moveServosTo(ALL_DOME_PANELS_MASK, 125, 0.0);
 }))
@@ -105,7 +104,10 @@ MARCDUINO_ACTION(MoveServos, :SM, ({
     }
 }))
 
-MARCDUINO_ACTION(OpenCloseRepeatPanelGroupDynamic, :OCR$, ({
+// Commandes dynamiques :XX$<masque hex>[,<vitesse min>,<vitesse max>,<easing ouverture>,<easing fermeture>]
+// Vitesses en ms (défaut 10 et 50), easing 0 = aucun. Rien n'est fait si le masque vaut 0.
+static void playPanelGroupDynamic(const ServoStep* sequence, uint16_t length)
+{
     int32_t args[4] = { 10, 50, 0, 0 };
     char* cmd = (char*)Marcduino::getCommand();
     char* pstr = strchr(cmd, ',');
@@ -120,239 +122,61 @@ MARCDUINO_ACTION(OpenCloseRepeatPanelGroupDynamic, :OCR$, ({
     {
         Easing::Method onEasing = Easing::getEasingMethod(args[2]);
         Easing::Method offEasing = Easing::getEasingMethod(args[3]);
-        SEQUENCE_PLAY_ONCE_VARSPEED_EASING(servoSequencer, SeqPanelAllFOpenCloseRepeat, group, args[0], args[1], onEasing, offEasing);
+        servoSequencer.playVariableSpeed(sequence, length, group, args[0], args[1], 0.0, 1.0, onEasing, offEasing);
     }
+}
+#define PLAY_PANEL_GROUP_DYNAMIC(sequence) playPanelGroupDynamic(sequence, SizeOfArray(sequence))
+
+MARCDUINO_ACTION(OpenCloseRepeatPanelGroupDynamic, :OCR$, ({
+    PLAY_PANEL_GROUP_DYNAMIC(SeqPanelAllFOpenCloseRepeat);
 }))
 
 MARCDUINO_ACTION(FlutterPanelGroupDynamic, :OF$, ({
-    int32_t args[4] = { 10, 50, 0, 0 };
-    char* cmd = (char*)Marcduino::getCommand();
-    char* pstr = strchr(cmd, ',');
-    if (pstr != nullptr)
-    {
-        *pstr++ = '\0';
-        uint8_t argcount = 0;
-        numberparams(pstr, argcount, args, SizeOfArray(args));
-    }
-    uint32_t group = strtol(cmd, 0, 16);
-    if (group != 0)
-    {
-        Easing::Method onEasing = Easing::getEasingMethod(args[2]);
-        Easing::Method offEasing = Easing::getEasingMethod(args[3]);
-        SEQUENCE_PLAY_ONCE_VARSPEED_EASING(servoSequencer, SeqPanelAllFlutter, group, args[0], args[1], onEasing, offEasing);
-    }
+    PLAY_PANEL_GROUP_DYNAMIC(SeqPanelAllFlutter);
 }))
 
 MARCDUINO_ACTION(OpenClosePanelGroupDynamic, :OC$, ({
-    int32_t args[4] = { 10, 50, 0, 0 };
-    char* cmd = (char*)Marcduino::getCommand();
-    char* pstr = strchr(cmd, ',');
-    if (pstr != nullptr)
-    {
-        *pstr++ = '\0';
-        uint8_t argcount = 0;
-        numberparams(pstr, argcount, args, SizeOfArray(args));
-    }
-    uint32_t group = strtol(cmd, 0, 16);
-    if (group != 0)
-    {
-        Easing::Method onEasing = Easing::getEasingMethod(args[2]);
-        Easing::Method offEasing = Easing::getEasingMethod(args[3]);
-        SEQUENCE_PLAY_ONCE_VARSPEED_EASING(servoSequencer, SeqPanelAllOpenClose, group, args[0], args[1], onEasing, offEasing);
-    }
+    PLAY_PANEL_GROUP_DYNAMIC(SeqPanelAllOpenClose);
 }))
 
 MARCDUINO_ACTION(OpenClosePanelLongGroupDynamic, :OCL$, ({
-    int32_t args[4] = { 10, 50, 0, 0 };
-    char* cmd = (char*)Marcduino::getCommand();
-    char* pstr = strchr(cmd, ',');
-    if (pstr != nullptr)
-    {
-        *pstr++ = '\0';
-        uint8_t argcount = 0;
-        numberparams(pstr, argcount, args, SizeOfArray(args));
-    }
-    uint32_t group = strtol(cmd, 0, 16);
-    if (group != 0)
-    {
-        Easing::Method onEasing = Easing::getEasingMethod(args[2]);
-        Easing::Method offEasing = Easing::getEasingMethod(args[3]);
-        SEQUENCE_PLAY_ONCE_VARSPEED_EASING(servoSequencer, SeqPanelAllOpenCloseLong, group, args[0], args[1], onEasing, offEasing);
-    }
+    PLAY_PANEL_GROUP_DYNAMIC(SeqPanelAllOpenCloseLong);
 }))
 
 MARCDUINO_ACTION(WavePanelGroupDynamic, :OW$, ({
-    int32_t args[4] = { 10, 50, 0, 0 };
-    char* cmd = (char*)Marcduino::getCommand();
-    char* pstr = strchr(cmd, ',');
-    if (pstr != nullptr)
-    {
-        *pstr++ = '\0';
-        uint8_t argcount = 0;
-        numberparams(pstr, argcount, args, SizeOfArray(args));
-    }
-    uint32_t group = strtol(cmd, 0, 16);
-    if (group != 0)
-    {
-        Easing::Method onEasing = Easing::getEasingMethod(args[2]);
-        Easing::Method offEasing = Easing::getEasingMethod(args[3]);
-        SEQUENCE_PLAY_ONCE_VARSPEED_EASING(servoSequencer, SeqPanelWave, group, args[0], args[1], onEasing, offEasing);
-    }
+    PLAY_PANEL_GROUP_DYNAMIC(SeqPanelWave);
 }))
 
 MARCDUINO_ACTION(FastWavePanelGroupDynamic, :OWF$, ({
-    int32_t args[4] = { 10, 50, 0, 0 };
-    char* cmd = (char*)Marcduino::getCommand();
-    char* pstr = strchr(cmd, ',');
-    if (pstr != nullptr)
-    {
-        *pstr++ = '\0';
-        uint8_t argcount = 0;
-        numberparams(pstr, argcount, args, SizeOfArray(args));
-    }
-    uint32_t group = strtol(cmd, 0, 16);
-    if (group != 0)
-    {
-        Easing::Method onEasing = Easing::getEasingMethod(args[2]);
-        Easing::Method offEasing = Easing::getEasingMethod(args[3]);
-        SEQUENCE_PLAY_ONCE_VARSPEED_EASING(servoSequencer, SeqPanelWaveFast, group, args[0], args[1], onEasing, offEasing);
-    }
+    PLAY_PANEL_GROUP_DYNAMIC(SeqPanelWaveFast);
 }))
 
 MARCDUINO_ACTION(OpenCloseWavePanelGroupDynamic, :OWC$, ({
-    int32_t args[4] = { 10, 50, 0, 0 };
-    char* cmd = (char*)Marcduino::getCommand();
-    char* pstr = strchr(cmd, ',');
-    if (pstr != nullptr)
-    {
-        *pstr++ = '\0';
-        uint8_t argcount = 0;
-        numberparams(pstr, argcount, args, SizeOfArray(args));
-    }
-    uint32_t group = strtol(cmd, 0, 16);
-    if (group != 0)
-    {
-        Easing::Method onEasing = Easing::getEasingMethod(args[2]);
-        Easing::Method offEasing = Easing::getEasingMethod(args[3]);
-        SEQUENCE_PLAY_ONCE_VARSPEED_EASING(servoSequencer, SeqPanelOpenCloseWave, group, args[0], args[1], onEasing, offEasing);
-    }
+    PLAY_PANEL_GROUP_DYNAMIC(SeqPanelOpenCloseWave);
 }))
 
 MARCDUINO_ACTION(MarchingAntPanelGroupDynamic, :OMA$, ({
-    int32_t args[4] = { 10, 50, 0, 0 };
-    char* cmd = (char*)Marcduino::getCommand();
-    char* pstr = strchr(cmd, ',');
-    if (pstr != nullptr)
-    {
-        *pstr++ = '\0';
-        uint8_t argcount = 0;
-        numberparams(pstr, argcount, args, SizeOfArray(args));
-    }
-    uint32_t group = strtol(cmd, 0, 16);
-    if (group != 0)
-    {
-        Easing::Method onEasing = Easing::getEasingMethod(args[2]);
-        Easing::Method offEasing = Easing::getEasingMethod(args[3]);
-        SEQUENCE_PLAY_ONCE_VARSPEED_EASING(servoSequencer, SeqPanelMarchingAnts, group, args[0], args[1], onEasing, offEasing);
-    }
+    PLAY_PANEL_GROUP_DYNAMIC(SeqPanelMarchingAnts);
 }))
 
 MARCDUINO_ACTION(AlternatePanelGroupDynamic, :OAP$, ({
-    int32_t args[4] = { 10, 50, 0, 0 };
-    char* cmd = (char*)Marcduino::getCommand();
-    char* pstr = strchr(cmd, ',');
-    if (pstr != nullptr)
-    {
-        *pstr++ = '\0';
-        uint8_t argcount = 0;
-        numberparams(pstr, argcount, args, SizeOfArray(args));
-    }
-    uint32_t group = strtol(cmd, 0, 16);
-    if (group != 0)
-    {
-        Easing::Method onEasing = Easing::getEasingMethod(args[2]);
-        Easing::Method offEasing = Easing::getEasingMethod(args[3]);
-        SEQUENCE_PLAY_ONCE_VARSPEED_EASING(servoSequencer, SeqPanelAlternate, group, args[0], args[1], onEasing, offEasing);
-    }
+    PLAY_PANEL_GROUP_DYNAMIC(SeqPanelAlternate);
 }))
 
 MARCDUINO_ACTION(DancePanelGroupDynamic, :OD$, ({
-    int32_t args[4] = { 10, 50, 0, 0 };
-    char* cmd = (char*)Marcduino::getCommand();
-    char* pstr = strchr(cmd, ',');
-    if (pstr != nullptr)
-    {
-        *pstr++ = '\0';
-        uint8_t argcount = 0;
-        numberparams(pstr, argcount, args, SizeOfArray(args));
-    }
-    uint32_t group = strtol(cmd, 0, 16);
-    if (group != 0)
-    {
-        Easing::Method onEasing = Easing::getEasingMethod(args[2]);
-        Easing::Method offEasing = Easing::getEasingMethod(args[3]);
-        SEQUENCE_PLAY_ONCE_VARSPEED_EASING(servoSequencer, SeqPanelDance, group, args[0], args[1], onEasing, offEasing);
-    }
+    PLAY_PANEL_GROUP_DYNAMIC(SeqPanelDance);
 }))
 
 MARCDUINO_ACTION(ShakePanelGroupDynamic, :OS$, ({
-    int32_t args[4] = { 10, 50, 0, 0 };
-    char* cmd = (char*)Marcduino::getCommand();
-    char* pstr = strchr(cmd, ',');
-    if (pstr != nullptr)
-    {
-        *pstr++ = '\0';
-        uint8_t argcount = 0;
-        numberparams(pstr, argcount, args, SizeOfArray(args));
-    }
-    uint32_t group = strtol(cmd, 0, 16);
-    if (group != 0)
-    {
-        Easing::Method onEasing = Easing::getEasingMethod(args[2]);
-        Easing::Method offEasing = Easing::getEasingMethod(args[3]);
-        SEQUENCE_PLAY_ONCE_VARSPEED_EASING(servoSequencer, SeqPanelLongHarlemShake, group, args[0], args[1], onEasing, offEasing);
-    }
+    PLAY_PANEL_GROUP_DYNAMIC(SeqPanelLongHarlemShake);
 }))
 
 MARCDUINO_ACTION(OpenPanelGroupDynamic, :OP$, ({
-    int32_t args[4] = { 10, 50, 0, 0 };
-    char* cmd = (char*)Marcduino::getCommand();
-    char* pstr = strchr(cmd, ',');
-    if (pstr != nullptr)
-    {
-        *pstr++ = '\0';
-        uint8_t argcount = 0;
-        numberparams(pstr, argcount, args, SizeOfArray(args));
-    }
-    uint32_t group = strtol(cmd, 0, 16);
-    if (group != 0)
-    {
-        Easing::Method onEasing = Easing::getEasingMethod(args[2]);
-        Easing::Method offEasing = Easing::getEasingMethod(args[3]);
-        SEQUENCE_PLAY_ONCE_VARSPEED_EASING(servoSequencer, SeqPanelAllOpen, group, args[0], args[1], onEasing, offEasing);
-    }
+    PLAY_PANEL_GROUP_DYNAMIC(SeqPanelAllOpen);
 }))
 
 MARCDUINO_ACTION(ClosePanelGroupDynamic, :CL$, ({
-    int32_t args[4] = { 10, 50, 0, 0 };
-    char* cmd = (char*)Marcduino::getCommand();
-    char* pstr = strchr(cmd, ',');
-    if (pstr != nullptr)
-    {
-        *pstr++ = '\0';
-        uint8_t argcount = 0;
-        numberparams(pstr, argcount, args, SizeOfArray(args));
-    }
-    uint32_t group = strtol(cmd, 0, 16);
-    if (group != 0)
-    {
-        Easing::Method onEasing = Easing::getEasingMethod(args[2]);
-        Easing::Method offEasing = Easing::getEasingMethod(args[3]);
-        // servoDispatch.setServosEasingMethod(TOP_PIE_PANEL, Easing::BounceEaseOut);
-        // servoDispatch.moveServosToPulse(TOP_PIE_PANEL, 0, 1000, 1850);
-        // servoDispatch.moveServosToPulse(group, args[0], args[1], args[2], args[3]);
-        SEQUENCE_PLAY_ONCE_VARSPEED_EASING(servoSequencer, SeqPanelAllClose, group, args[0], args[1], onEasing, offEasing);
-    }
+    PLAY_PANEL_GROUP_DYNAMIC(SeqPanelAllClose);
 }))
 
 ////////////////

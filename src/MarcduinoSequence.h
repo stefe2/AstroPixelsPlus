@@ -353,7 +353,7 @@ MARCDUINO_ACTION(MarchingAntsPanelSequenceInterp, :SE35, ({
 
 MARCDUINO_ACTION(FaintPanelSequenceInterp, :SE36, ({
     // :SE56 avec interpolation ESP32 speed=125ms
-    DO_SEQUENCE_VARSPEED(SeqPanelAllOpenCloseLong, ALL_DOME_PANELS_MASK, 125, 125);
+    SEQUENCE_PLAY_ONCE_VARSPEED(servoSequencer, SeqPanelAllOpenCloseLong, ALL_DOME_PANELS_MASK, 125, 125);
 }))
 
 ////////////////
@@ -412,7 +412,7 @@ MARCDUINO_ACTION(MarchingAntsPanelSequence, :SE55, ({
 ////////////////
 
 MARCDUINO_ACTION(FaintPanelSequence, :SE56, ({
-    DO_SEQUENCE_VARSPEED(SeqPanelAllOpenCloseLong, ALL_DOME_PANELS_MASK, 700, 900);
+    SEQUENCE_PLAY_ONCE_VARSPEED(servoSequencer, SeqPanelAllOpenCloseLong, ALL_DOME_PANELS_MASK, 700, 900);
 }))
 
 ////////////////

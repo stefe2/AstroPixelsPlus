@@ -13,7 +13,7 @@ No manual step is needed after cloning. The modified Reeltwo 23.5.3 library live
 listed in [LOCAL-CHANGES.md](../lib/Reeltwo/LOCAL-CHANGES.md)); the other libraries are pinned in
 `platformio.ini` and downloaded by PlatformIO.
 
-Expected result: RAM about 25.8 KB (7.9 %), flash about 386 KB (29.4 %), no warnings.
+Expected result: RAM about 25.8 KB (7.9 %), flash about 345 KB (26.3 %), no warnings.
 
 ## Flash over USB
 
