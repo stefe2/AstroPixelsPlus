@@ -22,6 +22,8 @@ Après avoir flashé les corrections déjà faites (section 2) :
 - [ ] Contrôleur Serial2 (Kyber) : les commandes habituelles fonctionnent, une rafale n'en perd aucune (problème 7)
 - [ ] `:SM0,500,1500` bouge le panneau ; `:SM0,500,2400` s'arrête à 1840 µs (limite fermée du canal 0) (problème 11)
 - [ ] Séquences `:SE02`, `:SE22`, holos `*HA01` : mouvements identiques à avant (non-régression)
+- [ ] Au démarrage, le moniteur USB affiche `Reset reason: POWERON` ; `#APSTAT` répond, noter la durée de boucle moyenne et maximale (base pour le problème 9)
+- [ ] Lancer plusieurs séquences longues (`:SE07`, `$815`) : pas de redémarrage par le watchdog (`Reset reason: TASK_WDT`) (problème 8)
 
 ## 2. Corrections du firmware (plan d'action de la revue)
 
@@ -33,7 +35,7 @@ Dans l'ordre recommandé :
 - [x] Parseur série : ignorer une ligne vide, lire tous les caractères disponibles (bornés) à chaque tour (problèmes 5 et 7)
 - [x] `CustomLogicEffectSelector` : `<=` → `<` (problème 6, plantage sur l'effet 105) ; même erreur corrigée dans `LogicEffectDefaultSelector` (effet 25)
 - [x] `@1P60`/`@1P61`/`@2P60`/`@2P61` : la correspondance la plus longue l'emporte désormais (problème 14)
-- [ ] `enableLoopWDT()` et commande de diagnostic `#APSTAT` (problème 8)
+- [x] `enableLoopWDT()` et commande de diagnostic `#APSTAT` (problème 8)
 - [x] Bornage des impulsions `:SM`/`:SQ` aux limites du canal, comparaisons de temps sûres au rollover de `millis()` (problèmes 10 et 11)
 - [ ] Réduire le débit vers le Maestro, seulement si les mesures le justifient (problème 9)
 - [ ] Nettoyage : `:SE36`/`:SE56` lancés deux fois, `@4S3` mort dans `:CL00`, SPIFFS inutile, flag PSRAM, handlers `:OX$` dupliqués (problème 13)

@@ -294,5 +294,6 @@ Leading zeros disappear because the value is read as a number.
 | Command | Description |
 | --- | --- |
 | `#APRESTART` | Restart the ESP32 |
+| `#APSTAT` | Print diagnostics on USB: uptime, last reset reason, heap, loop stack, average and maximum loop time since the previous `#APSTAT` |
 | `#APZERO` | Erase all saved preferences, then restart |
 | `#APWIFI`, `#APWIFI0`, `#APWIFI1` | Toggle / disable / enable Wi-Fi. No effect in this build: Wi-Fi is compiled out (`USE_WIFI` not defined) |

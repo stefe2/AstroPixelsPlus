@@ -822,6 +822,56 @@ CommandScreenHandlerSMQ sDisplay;
 // Fonction scan_i2c() supprimée - non utilisée
 ////////////////////////////////
 
+////////////////////////////////
+// Diagnostic (#APSTAT)
+
+// Durée des tours de loop(), remise à zéro à chaque #APSTAT
+static uint32_t sLoopMaxUs = 0;
+static uint64_t sLoopTotalUs = 0;
+static uint32_t sLoopCount = 0;
+static bool sSkipLoopSample = false;  // le tour qui affiche #APSTAT n'est pas mesuré
+
+static const char *resetReasonName(esp_reset_reason_t reason)
+{
+    switch (reason)
+    {
+    case ESP_RST_POWERON:   return "POWERON";
+    case ESP_RST_EXT:       return "EXTERNAL";
+    case ESP_RST_SW:        return "SOFTWARE";
+    case ESP_RST_PANIC:     return "PANIC";
+    case ESP_RST_INT_WDT:   return "INTERRUPT_WDT";
+    case ESP_RST_TASK_WDT:  return "TASK_WDT";
+    case ESP_RST_WDT:       return "OTHER_WDT";
+    case ESP_RST_DEEPSLEEP: return "DEEPSLEEP";
+    case ESP_RST_BROWNOUT:  return "BROWNOUT";
+    case ESP_RST_SDIO:      return "SDIO";
+    default:                return "UNKNOWN";
+    }
+}
+
+static void printStatus()
+{
+    Serial.println("---- APSTAT ----");
+    Serial.printf("Uptime:         %lu s\n", (unsigned long)(millis() / 1000));
+    Serial.printf("Reset reason:   %s\n", resetReasonName(esp_reset_reason()));
+    Serial.printf("Heap free:      %u bytes\n", (unsigned)ESP.getFreeHeap());
+    Serial.printf("Heap min free:  %u bytes\n", (unsigned)ESP.getMinFreeHeap());
+    Serial.printf("Heap max block: %u bytes\n", (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_8BIT));
+    Serial.printf("Loop stack min: %u bytes free\n", (unsigned)uxTaskGetStackHighWaterMark(NULL));
+    if (sLoopCount > 0)
+    {
+        Serial.printf("Loop time:      avg %lu us, max %lu us (%lu loops)\n",
+                      (unsigned long)(sLoopTotalUs / sLoopCount), (unsigned long)sLoopMaxUs,
+                      (unsigned long)sLoopCount);
+    }
+    sLoopMaxUs = 0;
+    sLoopTotalUs = 0;
+    sLoopCount = 0;
+    sSkipLoopSample = true;
+}
+
+////////////////////////////////
+
 void setup()
 {
     REELTWO_READY();
@@ -1094,6 +1144,12 @@ void setup()
         &eventTask,
         0);
 #endif
+    // Watchdog de la boucle principale : redémarre l'ESP32 si loop() bloque plus de 5 s
+    // (CONFIG_ESP_TASK_WDT_TIMEOUT_S). Activé après setup() pour ne pas surveiller le démarrage.
+    enableLoopWDT();
+
+    Serial.print("Reset reason: ");
+    Serial.println(resetReasonName(esp_reset_reason()));
     DEBUG_PRINTLN("Ready");
 
     // Son désactivé - Serial1 réservé pour Pololu Maestro
@@ -1252,6 +1308,13 @@ MARCDUINO_ACTION(ClearPrefs, #APZERO, ({
 
 MARCDUINO_ACTION(Restart, #APRESTART, ({
                      reboot();
+                 }))
+
+////////////////
+// Diagnostic : état du système et durée des tours de boucle depuis le dernier #APSTAT
+
+MARCDUINO_ACTION(Status, #APSTAT, ({
+                     printStatus();
                  }))
 
 ////////////////
@@ -1425,5 +1488,16 @@ void eventLoopTask(void *)
 
 void loop()
 {
+    uint32_t start = micros();
     mainLoop();
+    uint32_t elapsed = micros() - start;
+    if (sSkipLoopSample)
+    {
+        sSkipLoopSample = false;
+        return;
+    }
+    if (elapsed > sLoopMaxUs)
+        sLoopMaxUs = elapsed;
+    sLoopTotalUs += elapsed;
+    sLoopCount++;
 }
