@@ -161,32 +161,12 @@ WElement logicsContents[] = {
 
 ////////////////////////////////
 
-String swBaudRates[] = {
-    "2400",
-    "9600",
-};
-
-int marcSerial1Baud;
-int marcSerial2Baud;
-bool marcSerialPass;
-bool marcSerialEnabled;
+// Serial2 est toujours actif à 9600 bauds (MARC_SERIAL2_BAUD_RATE) sans pass-through
+// depuis le commit 41139a9 : ses réglages ont été retirés de cette page.
 bool marcWifiEnabled;
 bool marcWifiSerialPass;
 
 WElement serialContents[] = {
-    WSelect("Serial2 Baud Rate", "serial2baud",
-        swBaudRates, SizeOfArray(swBaudRates),
-        []() { return (marcSerial2Baud = (preferences.getInt(PREFERENCE_MARCSERIAL2, MARC_SERIAL2_BAUD_RATE)) == 2400) ? 0 : 1; },
-        [](int val) { marcSerial2Baud = (val == 0) ? 2400 : 9600; } ),
-    WVerticalAlign(),
-    WCheckbox("Serial pass-through to Serial2", "serialpass",
-        []() { return (marcSerialPass = (preferences.getBool(PREFERENCE_MARCSERIAL_PASS, MARC_SERIAL_PASS))); },
-        [](bool val) { marcSerialPass = val; } ),
-    WVerticalAlign(),
-    WCheckbox("JawaLite on Serial2", "enabled",
-        []() { return (marcSerialEnabled = (preferences.getBool(PREFERENCE_MARCSERIAL_ENABLED, MARC_SERIAL_ENABLED))); },
-        [](bool val) { marcSerialEnabled = val; } ),
-    WVerticalAlign(),
     WCheckbox("JawaLite on Wifi (port 2000)", "wifienabled",
         []() { return (marcWifiEnabled = (preferences.getBool(PREFERENCE_MARCWIFI_ENABLED, MARC_WIFI_ENABLED))); },
         [](bool val) { marcWifiEnabled = val; } ),
@@ -196,10 +176,6 @@ WElement serialContents[] = {
         [](bool val) { marcWifiSerialPass = val; } ),
     WVerticalAlign(),
     WButton("Save", "save", []() {
-        preferences.putInt(PREFERENCE_MARCSERIAL1, marcSerial1Baud);
-        preferences.putInt(PREFERENCE_MARCSERIAL2, marcSerial2Baud);
-        preferences.putBool(PREFERENCE_MARCSERIAL_PASS, marcSerialPass);
-        preferences.putBool(PREFERENCE_MARCSERIAL_ENABLED, marcSerialEnabled);
         preferences.putBool(PREFERENCE_MARCWIFI_ENABLED, marcWifiEnabled);
         preferences.putBool(PREFERENCE_MARCWIFI_SERIAL_PASS, marcWifiSerialPass);
     }),

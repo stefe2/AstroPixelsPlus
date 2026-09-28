@@ -188,9 +188,8 @@ Wiring, power and Maestro settings are in <a href="hardware.md">hardware.md</a>.
 </tbody>
 </table>
 <ul>
-<li>End each command with CR (<code>\r</code>) or LF (<code>\n</code>).</li>
-<li>⚠️ Known issue: a command ending with <strong>CR+LF</strong> currently runs <strong>twice</strong>. Use CR only, or LF only.</li>
-<li>Commands are matched by prefix. Anything after the prefix is the command argument.</li>
+<li>End each command with CR (<code>\r</code>), LF (<code>\n</code>) or CR+LF. Empty lines are ignored.</li>
+<li>Commands are matched by prefix; the longest matching command wins. Anything after it is the command argument.</li>
 <li>Only one command/animation runs at a time: a new command stops the running one.</li>
 </ul>
 <h2>Prefixes</h2>
@@ -261,11 +260,9 @@ Wiring, power and Maestro settings are in <a href="hardware.md">hardware.md</a>.
 </tr>
 </tbody>
 </table>
-<blockquote>
-<p>⚠️ Under investigation: <code>:OP…</code> open commands may close again about 200 ms later (see
-<a href="review/revue-firmware.md">review, issue 4</a>). <code>:ST00</code> / <code>:SD&lt;n&gt;</code> send a Maestro command (<code>0x60</code>)
-that is not in the Pololu protocol (issue 2).</p>
-</blockquote>
+<p>Open commands (<code>:OP00</code>, <code>:OP01</code>–<code>:OP20</code>, <code>:OP$…</code>) leave the panels open until <code>:CL00</code> or another
+sequence. Outside sequences, every servo is released (no pulses) 0.7 s after reaching its position, and
+all servos 1.5 s after a sequence ends: open panels then hold by servo friction.</p>
 <h3>Panel groups</h3>
 <table>
 <thead>
@@ -337,7 +334,9 @@ that is not in the Pololu protocol (issue 2).</p>
 </tr>
 </tbody>
 </table>
-<p>Pulses are not limited by the firmware: set per-channel limits in the Maestro as a safety net.</p>
+<p>The firmware clamps every target pulse between the channel's closed and open pulses (see
+<a href="hardware.md#maestro-channel-mapping">hardware.md</a>, or the values set with <code>:SL</code>). To go further, widen
+the range with <code>:SL</code> first. Per-channel limits in the Maestro remain a useful second safety net.</p>
 <h3>Dynamic group animations</h3>
 <p>The <code>$</code> is part of the command. It is followed by a <strong>servo mask in hexadecimal</strong>, then optional
 parameters: <code>&lt;speedMin&gt;,&lt;speedMax&gt;,&lt;easingOn&gt;,&lt;easingOff&gt;</code> (defaults 10, 50, none, none).</p>
@@ -489,7 +488,7 @@ servos 1.5 s later.</p>
 <tr>
 <td><code>:SE26</code></td>
 <td><code>:SE06</code></td>
-<td>Short circuit: logics failure, then panels (≈ 14 s)</td>
+<td>Short circuit: logics alarm (2 s), then failure, then panels (≈ 16 s)</td>
 </tr>
 <tr>
 <td><code>:SE27</code></td>
@@ -597,7 +596,7 @@ current configuration.</p>
 </tr>
 <tr>
 <td><code>$815</code></td>
-<td>Harlem Shake (≈ 30 s)</td>
+<td>Harlem Shake: fire on all logics, panels shake (≈ 30 s)</td>
 </tr>
 <tr>
 <td><code>$821</code></td>
@@ -819,7 +818,7 @@ current configuration.</p>
 </tr>
 <tr>
 <td><code>@1P60</code> / <code>@1P61</code>, <code>@2P60</code> / <code>@2P61</code></td>
-<td>Front logic font: Latin / Aurabesh — ⚠️ currently broken: <code>@1P6</code> / <code>@2P6</code> (PSI Leia) also match and win</td>
+<td>Front logic font: Latin / Aurabesh</td>
 </tr>
 </tbody>
 </table>
@@ -918,31 +917,43 @@ current configuration.</p>
 <tr>
 <td>08</td>
 <td>Flip flop alt</td>
-<td>21</td>
-<td>Vertical scan line</td>
+<td>20</td>
+<td>Horizontal scan line</td>
 </tr>
 <tr>
 <td>09</td>
 <td>Color swap</td>
-<td>22</td>
-<td>Fire</td>
+<td>21</td>
+<td>Vertical scan line</td>
 </tr>
 <tr>
 <td>10</td>
 <td>Rainbow</td>
-<td>23</td>
-<td>PSI color wipe</td>
+<td>22</td>
+<td>Fire</td>
 </tr>
 <tr>
 <td>11</td>
 <td>Red alert</td>
+<td>23</td>
+<td>PSI color wipe</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td>24</td>
+<td>Pulse</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
 <td>99</td>
 <td>Random</td>
 </tr>
 </tbody>
 </table>
 <p>Custom effects of this firmware (three-digit effect, target required): 101 Plasma, 102 Metaballs,
-  103 Fractal, 104 Fade and scroll. ⚠️ Do not use 105: it crashes the firmware (review issue 6).
+  103 Fractal, 104 Fade and scroll. An unknown effect number falls back to Normal.
 - <strong>C — color</strong>: 1 red, 2 orange, 3 yellow, 4 green, 5 cyan, 6 blue, 7 purple, 8 magenta, 9 pink,
   0 effect default.
 - <strong>S — speed</strong> (1–9, 5 = default) or microphone sensitivity for red alert and mic effects.
@@ -1019,6 +1030,10 @@ current configuration.</p>
 <tr>
 <td><code>#APRESTART</code></td>
 <td>Restart the ESP32</td>
+</tr>
+<tr>
+<td><code>#APSTAT</code></td>
+<td>Print diagnostics on USB: uptime, last reset reason, heap, loop stack, average and maximum loop time since the previous <code>#APSTAT</code></td>
 </tr>
 <tr>
 <td><code>#APZERO</code></td>

@@ -1,7 +1,8 @@
 ////////////////
 
+// Normal = effet de démarrage du PSI (color wipe), pas l'effet NORMAL des logics (scintillement)
 MARCDUINO_ACTION(FPSINormalSequence, @1P1, ({
-    frontPSI.selectSequence(LogicEngineRenderer::NORMAL);
+    frontPSI.selectEffect(LogicEngineFrontPSIDefault.fDefaultEffect);
 }))
 
 ////////////////
@@ -43,7 +44,7 @@ MARCDUINO_ACTION(FPSIMarchSequence, @1P11, ({
 ////////////////
 
 MARCDUINO_ACTION(RPSINormalSequence, @2P1, ({
-    rearPSI.selectSequence(LogicEngineRenderer::NORMAL);
+    rearPSI.selectEffect(LogicEngineRearPSIDefault.fDefaultEffect);
 }))
 
 ////////////////
@@ -85,8 +86,8 @@ MARCDUINO_ACTION(RPSIMarchSequence, @2P11, ({
 ////////////////
 
 MARCDUINO_ACTION(PSINormalSequence, @0P1, ({
-    frontPSI.selectSequence(LogicEngineRenderer::NORMAL);
-    rearPSI.selectSequence(LogicEngineRenderer::NORMAL);
+    frontPSI.selectEffect(LogicEngineFrontPSIDefault.fDefaultEffect);
+    rearPSI.selectEffect(LogicEngineRearPSIDefault.fDefaultEffect);
 }))
 
 ////////////////

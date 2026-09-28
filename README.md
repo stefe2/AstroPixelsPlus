@@ -35,8 +35,6 @@
 ## Quick start
 
 ```bash
-pio pkg install
-bash patches/reeltwo/restore.sh   # required: restores the modified Reeltwo files
 pio run -t upload
 ```
 
@@ -56,14 +54,8 @@ Wiring diagram and full pinout in [docs/hardware.md](docs/hardware.md).
 
 ## Known issues
 
-The [firmware review](docs/review/revue-firmware.md) lists open issues. The main ones:
-
-- The Maestro "disable servo" command (`0x60`, used by `:ST00`, `:SD<n>` and the auto-release) is not part
-  of the Pololu protocol. Under investigation.
-- `:OP…` open commands may close again about 200 ms later because of the end-of-sequence auto-close.
-- A command ending with CR+LF runs twice.
-- `LE` effect 105 crashes the firmware.
-- `@1P60`/`@1P61`/`@2P60`/`@2P61` (front logic font) trigger the PSI Leia sequence instead.
+The [firmware review](docs/review/revue-firmware.md) and [TODO.md](TODO.md) track the remaining issues and the
+hardware tests still to run.
 
 ## Project layout
 
@@ -71,7 +63,7 @@ The [firmware review](docs/review/revue-firmware.md) lists open issues. The main
 | --- | --- |
 | `src/main.cpp` | Firmware entry point: device setup, servo table, main loop |
 | `src/` | Also the command handlers (`Marcduino*.h`), custom sequences, logic effects, web pages |
-| `patches/reeltwo/` | Local changes to the Reeltwo library, with a restore script |
+| `lib/Reeltwo/` | Reeltwo 23.5.3 with the local changes (Maestro driver) |
 | `firmware/` | Prebuilt binaries |
 | `tools/` | Binary merge script and HTML generator |
 | `docs/` | Documentation and diagrams |
@@ -87,10 +79,11 @@ password `Astromech`, web interface at <http://192.168.4.1>.
 
 ## Libraries
 
-- [Reeltwo](https://github.com/reeltwo/Reeltwo) 23.5.3, with local changes in `patches/reeltwo/`
-- [Adafruit NeoPixel](https://github.com/adafruit/Adafruit_NeoPixel)
+- [Reeltwo](https://github.com/reeltwo/Reeltwo) 23.5.3, included in `lib/Reeltwo/` with local changes
+  ([LOCAL-CHANGES.md](lib/Reeltwo/LOCAL-CHANGES.md))
+- [Adafruit NeoPixel](https://github.com/adafruit/Adafruit_NeoPixel) 1.15.2
 - [FastLED](https://github.com/FastLED/FastLED) 3.7.0
-- [DFRobotDFPlayerMini](https://github.com/DFRobot/DFRobotDFPlayerMini)
+- [DFRobotDFPlayerMini](https://github.com/DFRobot/DFRobotDFPlayerMini) 1.0.6
 
 ## License
 

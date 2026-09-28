@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include "driver/gpio.h"
 
 /**
  *
@@ -12,8 +13,8 @@
 #define USE_SERVO_MAESTRO     // Nouveau - Pololu Maestro Serial (à activer plus tard)
 #define USE_DEBUG // Define to enable debug diagnostic
 // #define USE_WIFI  // Define to enable Wifi support
-#define USE_SPIFFS
 #ifdef USE_WIFI
+#define USE_SPIFFS  // Seulement avec le Wi-Fi ; sans Wi-Fi le système de fichiers n'est jamais lu
 #define USE_MDNS
 #define USE_OTA
 #define USE_WIFI_WEB
@@ -95,64 +96,16 @@
 #include "dome/LogicEngineController.h"
 #include "dome/HoloLights.h"
 
-// Custom HoloLights that automatically disables servos after movements
-class HoloLightsWithAutoStop : public HoloLights
+// Vrai quand l'échéance est atteinte. Reste correct quand millis() repasse à 0 (après 49,7 jours),
+// contrairement à millis() >= deadline.
+static inline bool timeReached(uint32_t now, uint32_t deadline)
 {
-private:
-    unsigned long fStopDelayMS = 0;
-    byte fHServoNum = 0;
-    byte fVServoNum = 0;
-    ServoDispatch* fServoDispatchPtr = nullptr;
-    
-public:
-    HoloLightsWithAutoStop(uint8_t pixelPin, PixelType type, byte holoID) 
-        : HoloLights(pixelPin, type, holoID) {}
-    
-    void assignServos(ServoDispatch* servoDispatch, int hservo, int vservo)
-    {
-        HoloLights::assignServos(servoDispatch, hservo, vservo);
-        fServoDispatchPtr = servoDispatch;
-        fHServoNum = hservo;
-        fVServoNum = vservo;
-    }
-    
-    virtual void animate() override
-    {
-        HoloLights::animate();
-        
-        // Check if holo servos are currently moving
-        bool holoServosActive = false;
-        if (fServoDispatchPtr != nullptr)
-        {
-            holoServosActive = fServoDispatchPtr->isActive(fHServoNum) || 
-                              fServoDispatchPtr->isActive(fVServoNum);
-        }
-        
-        // If servos just stopped moving, schedule auto-stop
-        if (!holoServosActive && fStopDelayMS == 0)
-        {
-            // Give servos 1000ms to reach their final position before disabling
-            fStopDelayMS = millis() + 1000;
-        }
-        
-        // Reset delay if servos start moving again
-        if (holoServosActive)
-        {
-            fStopDelayMS = 0;
-        }
-        
-        // Check if it's time to stop servos
-        if (fStopDelayMS != 0 && millis() >= fStopDelayMS)
-        {
-            if (fServoDispatchPtr != nullptr)
-            {
-                fServoDispatchPtr->disable(fHServoNum);
-                fServoDispatchPtr->disable(fVServoNum);
-            }
-            fStopDelayMS = 0;
-        }
-    }
-};
+    return (int32_t)(now - deadline) >= 0;
+}
+
+// Les servos des holos sont relâchés par ServoDispatchMaestro 700 ms après chaque mouvement,
+// comme les autres servos. L'ancienne classe HoloLightsWithAutoStop renvoyait disable() toutes les
+// secondes quand les holos étaient au repos, ce qui mettait le Maestro en erreur (revue, problème 3).
 
 #include "dome/NeoPSI.h"
 #include "dome/FireStrip.h"
@@ -295,9 +248,9 @@ HoloLights<PIN_FRONT_HOLO, NEO_GRB> frontHolo(1);
 HoloLights<PIN_REAR_HOLO, NEO_GRB> rearHolo(2);
 HoloLights<PIN_TOP_HOLO, NEO_GRB> topHolo(3);
 #else
-HoloLightsWithAutoStop frontHolo(PIN_FRONT_HOLO, HoloLights::kRGB, 1);
-HoloLightsWithAutoStop rearHolo(PIN_REAR_HOLO, HoloLights::kRGB, 2);
-HoloLightsWithAutoStop topHolo(PIN_TOP_HOLO, HoloLights::kRGB, 3);
+HoloLights frontHolo(PIN_FRONT_HOLO, HoloLights::kRGB, 1);
+HoloLights rearHolo(PIN_REAR_HOLO, HoloLights::kRGB, 2);
+HoloLights topHolo(PIN_TOP_HOLO, HoloLights::kRGB, 3);
 #endif
 
 // Animateur de mouvement aléatoire continu des 3 holos
@@ -333,7 +286,7 @@ public:
         HoloLights* holos[3] = { &frontHolo, &rearHolo, &topHolo };
         for (int i = 0; i < 3; i++)
         {
-            if (now >= fNextMoveTime[i])
+            if (timeReached(now, fNextMoveTime[i]))
             {
                 holos[i]->moveHP(random(0, 9), random(300, 700));
                 fNextMoveTime[i] = now + random(fMinDelay, fMaxDelay);
@@ -395,7 +348,7 @@ public:
             switch (fState[i])
             {
                 case kIdle:
-                    if (now >= fTimer[i])
+                    if (timeReached(now, fTimer[i]))
                     {
                         fWhite[i] = (uint8_t)random(0, 101); // 0=bleu pur, 100=blanc pur
                         fState[i] = kFadeIn;
@@ -521,14 +474,14 @@ const ServoSettings servoSettings[] PROGMEM = {
     {8, 2000, 992,   PANEL_GROUP_9  | PIE_PANEL},       // Maestro PIN 8: pie panel 3
     {9, 1920, 992,   PANEL_GROUP_10 | PIE_PANEL},       // Maestro PIN 9: pie panel 4
     {10, 1872, 992,  PANEL_GROUP_11 | MINI_PANEL},      // Maestro PIN 10: mini door 2
-    {11, 2552, 992,  PANEL_GROUP_12 | MINI_PANEL},      // Maestro PIN 11: mini front psi door
+    {11, 1552, 992,  PANEL_GROUP_12 | MINI_PANEL},      // Maestro PIN 11: mini front psi door (1552 = limite du Maestro, vérifié)
     {12, 2000, 992,  PANEL_GROUP_13 | TOP_PIE_PANEL},   // Maestro PIN 12: dome top panel
     {13, 1248, 1744, HOLO_HSERVO},                      // Maestro PIN 13: horizontal front holo
     {14, 1248, 1744, HOLO_VSERVO},                      // Maestro PIN 14: vertical front holo
     {15, 1248, 1744, HOLO_HSERVO},                      // Maestro PIN 15: horizontal top holo
     {16, 1248, 1744, HOLO_VSERVO},                      // Maestro PIN 16: vertical top holo
-    {17, 1248, 1744, HOLO_VSERVO},                      // Maestro PIN 17: vertical rear holo
-    {18, 1248, 1744, HOLO_HSERVO},                      // Maestro PIN 18: horizontal rear holo
+    {17, 1248, 1744, HOLO_HSERVO},                      // Maestro PIN 17: horizontal rear holo (RHP-H dans le Maestro)
+    {18, 1248, 1744, HOLO_VSERVO},                      // Maestro PIN 18: vertical rear holo (RHP-V dans le Maestro)
     {19, 2000, 992,  PANEL_GROUP_14 | EMPTY_AUX},       // Maestro PIN 19: Empty
     {20, 2000, 992,  PANEL_GROUP_15 | EMPTY_AUX},       // Maestro PIN 20: Empty
     {21, 2000, 992,  PANEL_GROUP_16 | EMPTY_AUX},       // Maestro PIN 21: Empty
@@ -576,17 +529,21 @@ public:
         }
         else if (!wasFinished && nowFinished)
         {
-            // Sequence just finished — send close-all as safety net, then schedule global stop
-            // moveServosTo(mask, 125ms, 0.0=closed): ensures all panels physically close
-            // regardless of where the sequence left them
-            dispatch().moveServosTo(ALL_DOME_PANELS_MASK, 125, 0.0);
+            // Sequence just finished — close-all safety net, then schedule global stop.
+            // Pas de fermeture si la séquence est allée au bout en laissant des panneaux ouverts
+            // (:OP00, :OP01–:OP20, :OP$…, $720) : ils restent ouverts jusqu'à :CL00. Avant, ils se
+            // refermaient ~250 ms après l'ouverture (revue, problème 4). Une séquence interrompue
+            // par une autre commande est toujours refermée.
+            bool leftPanelsOpen = completed() && (lastServoSetMask() & ALL_DOME_PANELS_MASK) != 0;
+            if (!leftPanelsOpen)
+                dispatch().moveServosTo(ALL_DOME_PANELS_MASK, 125, 0.0);
             dispatch().setSequenceActive(false);
             // 1500ms: 125ms movement + 1375ms margin before stop()
             fStopDelayMS = millis() + 1500;
         }
         
         // Check if it's time to stop all servos after sequence end
-        if (fStopDelayMS != 0 && millis() >= fStopDelayMS)
+        if (fStopDelayMS != 0 && timeReached(millis(), fStopDelayMS))
         {
             dispatch().stop();
             fStopDelayMS = 0;
@@ -634,7 +591,7 @@ LogicEffect CustomLogicEffectSelector(unsigned selectSequence)
         LogicEffectMetaBalls,
         LogicEffectFractal,
         LogicEffectFadeAndScroll};
-    if (selectSequence >= 100 && selectSequence - 100 <= SizeOfArray(sCustomLogicEffects))
+    if (selectSequence >= 100 && selectSequence - 100 < SizeOfArray(sCustomLogicEffects))
     {
         return LogicEffect(sCustomLogicEffects[selectSequence - 100]);
     }
@@ -683,12 +640,18 @@ void resetSequence()
 {
     Marcduino::send(F("$s"));
     CommandEvent::process(F(
-        "LE000000|0\n" // LogicEngine devices to normal
+        // Sans "|0" : une commande LE de 9 caractères ou plus vise l'appareil dont l'ID est le
+        // premier chiffre (ici 0, qui n'existe pas) et aucune logic n'était remise à zéro
+        "LE000000\n"   // LogicEngine devices to normal
         "FSOFF\n"      // Fire Stripe Off
         "BMOFF\n"      // Bad Motiviator Off
         "HPA000|0\n"   // Holo Projectors to Normal
         "CB00000\n"    // Charge Bay to Normal
         "DP00000\n")); // Data Panel to Normal
+    // LE000000 met aussi les PSI sur l'effet NORMAL (scintillement) : les remettre sur leur
+    // effet de démarrage (color wipe)
+    frontPSI.selectEffect(LogicEngineFrontPSIDefault.fDefaultEffect);
+    rearPSI.selectEffect(LogicEngineRearPSIDefault.fDefaultEffect);
 }
 
 ////////////////////////////////
@@ -815,6 +778,56 @@ CommandScreenHandlerSMQ sDisplay;
 // Fonction scan_i2c() supprimée - non utilisée
 ////////////////////////////////
 
+////////////////////////////////
+// Diagnostic (#APSTAT)
+
+// Durée des tours de loop(), remise à zéro à chaque #APSTAT
+static uint32_t sLoopMaxUs = 0;
+static uint64_t sLoopTotalUs = 0;
+static uint32_t sLoopCount = 0;
+static bool sSkipLoopSample = false;  // le tour qui affiche #APSTAT n'est pas mesuré
+
+static const char *resetReasonName(esp_reset_reason_t reason)
+{
+    switch (reason)
+    {
+    case ESP_RST_POWERON:   return "POWERON";
+    case ESP_RST_EXT:       return "EXTERNAL";
+    case ESP_RST_SW:        return "SOFTWARE";
+    case ESP_RST_PANIC:     return "PANIC";
+    case ESP_RST_INT_WDT:   return "INTERRUPT_WDT";
+    case ESP_RST_TASK_WDT:  return "TASK_WDT";
+    case ESP_RST_WDT:       return "OTHER_WDT";
+    case ESP_RST_DEEPSLEEP: return "DEEPSLEEP";
+    case ESP_RST_BROWNOUT:  return "BROWNOUT";
+    case ESP_RST_SDIO:      return "SDIO";
+    default:                return "UNKNOWN";
+    }
+}
+
+static void printStatus()
+{
+    Serial.println("---- APSTAT ----");
+    Serial.printf("Uptime:         %lu s\n", (unsigned long)(millis() / 1000));
+    Serial.printf("Reset reason:   %s\n", resetReasonName(esp_reset_reason()));
+    Serial.printf("Heap free:      %u bytes\n", (unsigned)ESP.getFreeHeap());
+    Serial.printf("Heap min free:  %u bytes\n", (unsigned)ESP.getMinFreeHeap());
+    Serial.printf("Heap max block: %u bytes\n", (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_8BIT));
+    Serial.printf("Loop stack min: %u bytes free\n", (unsigned)uxTaskGetStackHighWaterMark(NULL));
+    if (sLoopCount > 0)
+    {
+        Serial.printf("Loop time:      avg %lu us, max %lu us (%lu loops)\n",
+                      (unsigned long)(sLoopTotalUs / sLoopCount), (unsigned long)sLoopMaxUs,
+                      (unsigned long)sLoopCount);
+    }
+    sLoopMaxUs = 0;
+    sLoopTotalUs = 0;
+    sLoopCount = 0;
+    sSkipLoopSample = true;
+}
+
+////////////////////////////////
+
 void setup()
 {
     REELTWO_READY();
@@ -831,6 +844,9 @@ void setup()
     PrintReelTwoInfo(Serial, "AstroPixelsPlus");
 
     COMMAND_SERIAL.begin(MARC_SERIAL2_BAUD_RATE, SERIAL_8N1, SERIAL2_RX_PIN, SERIAL2_TX_PIN);
+    // Rappel au niveau haut (repos UART) : sans contrôleur branché, l'entrée RX flotterait et
+    // des parasites seraient lus comme des caractères. gpio_pullup_en ne touche pas au routage UART.
+    gpio_pullup_en((gpio_num_t)SERIAL2_RX_PIN);
 
     // LED heartbeat setup
     pinMode(LED_BUILTIN, OUTPUT);
@@ -845,10 +861,12 @@ void setup()
     DEBUG_PRINTLN(" baud)");
 #endif
 
+#ifdef USE_SPIFFS
     if (!mountReadOnlyFileSystem())
     {
         DEBUG_PRINTLN("Failed to mount read only filesystem");
     }
+#endif
 
 #if !defined(USE_MAESTRO_ADDRESS) && !defined(USE_SERVO_MAESTRO) && !defined(USE_SERVO_DIRECT)
     Wire.begin();  // Only needed for PCA9685 servo mode
@@ -1087,6 +1105,12 @@ void setup()
         &eventTask,
         0);
 #endif
+    // Watchdog de la boucle principale : redémarre l'ESP32 si loop() bloque plus de 5 s
+    // (CONFIG_ESP_TASK_WDT_TIMEOUT_S). Activé après setup() pour ne pas surveiller le démarrage.
+    enableLoopWDT();
+
+    Serial.print("Reset reason: ");
+    Serial.println(resetReasonName(esp_reset_reason()));
     DEBUG_PRINTLN("Ready");
 
     // Son désactivé - Serial1 réservé pour Pololu Maestro
@@ -1248,6 +1272,13 @@ MARCDUINO_ACTION(Restart, #APRESTART, ({
                  }))
 
 ////////////////
+// Diagnostic : état du système et durée des tours de boucle depuis le dernier #APSTAT
+
+MARCDUINO_ACTION(Status, #APSTAT, ({
+                     printStatus();
+                 }))
+
+////////////////
 // Télécommande désactivée
 /*
 #ifdef USE_SMQ
@@ -1309,6 +1340,40 @@ static char sBuffer[CONSOLE_BUFFER_SIZE];
 static unsigned sPos2;
 static char sBuffer2[CONSOLE_BUFFER_SIZE];
 
+// Nombre maximum de caractères lus par port et par tour de boucle
+#define MAX_SERIAL_CHARS_PER_LOOP 64
+
+// Lit les caractères disponibles et exécute la commande à la fin de ligne (CR ou LF).
+// Une ligne vide est ignorée : avec CR+LF, le LF ne relance pas la commande précédente.
+// La lecture s'arrête après une commande : processCommand() programme l'animation pour le
+// tour suivant, une deuxième commande lue dans le même tour l'écraserait.
+static void readCommandSerial(Stream &port, char *buffer, unsigned &pos, const char *logPrefix)
+{
+    for (int i = 0; i < MAX_SERIAL_CHARS_PER_LOOP && port.available(); i++)
+    {
+        int ch = port.read();
+        if (ch == 0x0A || ch == 0x0D)
+        {
+            if (pos == 0)
+                continue;
+            buffer[pos] = '\0';
+            pos = 0;
+            if (logPrefix != nullptr)
+            {
+                Serial.print(logPrefix);
+                Serial.println(buffer);
+            }
+            Marcduino::processCommand(player, buffer);
+            return;
+        }
+        else if (pos < CONSOLE_BUFFER_SIZE - 1)
+        {
+            buffer[pos++] = ch;
+            buffer[pos] = '\0';
+        }
+    }
+}
+
 ////////////////
 // LED heartbeat - clignotement 1Hz
 static uint32_t sLastHeartbeat = 0;
@@ -1345,40 +1410,8 @@ void mainLoop()
     // sDisplay.process();
     // #endif
 
-    if (Serial.available())
-    {
-        int ch = Serial.read();
-        if (ch == 0x0A || ch == 0x0D)
-        {
-            Marcduino::processCommand(player, sBuffer);
-            sPos = 0;
-        }
-        else if (sPos < SizeOfArray(sBuffer) - 1)
-        {
-            sBuffer[sPos++] = ch;
-            sBuffer[sPos] = '\0';
-        }
-    }
-
-    if (COMMAND_SERIAL.available())
-    {
-        int ch = COMMAND_SERIAL.read();
-        if (ch == 0x0A || ch == 0x0D)
-        {
-            if (sPos2 > 0)
-            {
-                Serial.print("[Serial2] ");
-                Serial.println(sBuffer2);
-            }
-            Marcduino::processCommand(player, sBuffer2);
-            sPos2 = 0;
-        }
-        else if (sPos2 < SizeOfArray(sBuffer2) - 1)
-        {
-            sBuffer2[sPos2++] = ch;
-            sBuffer2[sPos2] = '\0';
-        }
-    }
+    readCommandSerial(Serial, sBuffer, sPos, nullptr);
+    readCommandSerial(COMMAND_SERIAL, sBuffer2, sPos2, "[Serial2] ");
 }
 
 ////////////////
@@ -1416,5 +1449,16 @@ void eventLoopTask(void *)
 
 void loop()
 {
+    uint32_t start = micros();
     mainLoop();
+    uint32_t elapsed = micros() - start;
+    if (sSkipLoopSample)
+    {
+        sSkipLoopSample = false;
+        return;
+    }
+    if (elapsed > sLoopMaxUs)
+        sLoopMaxUs = elapsed;
+    sLoopTotalUs += elapsed;
+    sLoopCount++;
 }

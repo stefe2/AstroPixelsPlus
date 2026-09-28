@@ -83,8 +83,12 @@ at speed 0.
 
 Maestro units: speed in 0.25 µs per 10 ms, acceleration in 0.25 µs per 10 ms per 80 ms.
 
-To check, and still unknown: the per-channel "On startup or error" mode and the min/max limits. See
-[review, issues 2 and 3](review/revue-firmware.md).
+Exported settings: [maestro/maestro_settings.txt](maestro/maestro_settings.txt). "On startup or error" is
+**Off** on all 24 channels, so any serial error stops every servo: the firmware must only send valid Pololu
+commands. The min/max limits match the closed/open pulses below.
+
+To check the Maestro while the ESP32 runs: close Maestro Control Center, then run
+`UscCmd --status` (in `C:\Program Files (x86)\Pololu\Maestro\bin`). `errors: 0x0000` is expected.
 
 ## Maestro channel mapping
 
@@ -103,16 +107,14 @@ From `servoSettings[]` in `src/main.cpp`. "Closed" and "open" are the pulses sen
 | 8 | Pie panel 3 | Pie panel | 9 | 2000 | 992 |
 | 9 | Pie panel 4 | Pie panel | 10 | 1920 | 992 |
 | 10 | Mini door 2 | Mini panel | 11 | 1872 | 992 |
-| 11 | Mini front PSI door | Mini panel | 12 | 2552 | 992 |
+| 11 | Mini front PSI door | Mini panel | 12 | 1552 | 992 |
 | 12 | Dome top panel | Top pie panel | 13 | 2000 | 992 |
 | 13 | Front holo, horizontal | Holo H | — | 1248 | 1744 |
 | 14 | Front holo, vertical | Holo V | — | 1248 | 1744 |
 | 15 | Top holo, horizontal | Holo H | — | 1248 | 1744 |
 | 16 | Top holo, vertical | Holo V | — | 1248 | 1744 |
-| 17 | Rear holo, vertical | Holo V | — | 1248 | 1744 |
-| 18 | Rear holo, horizontal | Holo H | — | 1248 | 1744 |
+| 17 | Rear holo, horizontal | Holo H | — | 1248 | 1744 |
+| 18 | Rear holo, vertical | Holo V | — | 1248 | 1744 |
 | 19–23 | Unused | — | 14–18 | 2000 | 992 |
 
-⚠️ Rear holo: the table above declares channel 17 vertical and 18 horizontal, but
-`rearHolo.assignServos(&servoDispatch, 17, 18)` uses 17 as horizontal and 18 as vertical. The rear holo axes are
-probably swapped. To check on the droid.
+Channel names in the Maestro (`RHP-H` = 17, `RHP-V` = 18) match `rearHolo.assignServos(&servoDispatch, 17, 18)`.

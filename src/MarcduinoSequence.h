@@ -72,8 +72,10 @@ MARCDUINO_ANIMATION(BeepCantinaSequence, :SE05)
 MARCDUINO_ANIMATION(ShortSequence, :SE06)
 {
     DO_START()
-    // Logic engine alarm
-    DO_COMMAND(F("LE105000"))
+    // Logic engine alarm (all), 3 s, remplacée par la panne au bout de 2 s.
+    // Avant : "LE105000" = effet 10 (arc-en-ciel), écrasé aussitôt par la panne, jamais visible
+    DO_COMMAND(F("LE010003"))
+    DO_WAIT_SEC(2)
     // Play scream-3 and wait 500ms (son désactivé)
     // DO_ONCE_AND_WAIT({ sMarcSound.handleCommand("$623");}, 500);
     // Logic engine failure
@@ -220,7 +222,8 @@ MARCDUINO_ANIMATION(ShortSequenceInterp, :SE26)
 {
     DO_START()
     // :SE06 avec interpolation ESP32 speed=125ms
-    DO_COMMAND(F("LE105000"))
+    DO_COMMAND(F("LE010003"))
+    DO_WAIT_SEC(2)
     DO_COMMAND(F(
         "LE20000\n"
         "HPA007|7\n"
@@ -353,7 +356,7 @@ MARCDUINO_ACTION(MarchingAntsPanelSequenceInterp, :SE35, ({
 
 MARCDUINO_ACTION(FaintPanelSequenceInterp, :SE36, ({
     // :SE56 avec interpolation ESP32 speed=125ms
-    DO_SEQUENCE_VARSPEED(SeqPanelAllOpenCloseLong, ALL_DOME_PANELS_MASK, 125, 125);
+    SEQUENCE_PLAY_ONCE_VARSPEED(servoSequencer, SeqPanelAllOpenCloseLong, ALL_DOME_PANELS_MASK, 125, 125);
 }))
 
 ////////////////
@@ -412,7 +415,7 @@ MARCDUINO_ACTION(MarchingAntsPanelSequence, :SE55, ({
 ////////////////
 
 MARCDUINO_ACTION(FaintPanelSequence, :SE56, ({
-    DO_SEQUENCE_VARSPEED(SeqPanelAllOpenCloseLong, ALL_DOME_PANELS_MASK, 700, 900);
+    SEQUENCE_PLAY_ONCE_VARSPEED(servoSequencer, SeqPanelAllOpenCloseLong, ALL_DOME_PANELS_MASK, 700, 900);
 }))
 
 ////////////////
@@ -448,7 +451,8 @@ MARCDUINO_ANIMATION(HarlemShakeSequence, $815)
     DO_WAIT_SEC(11)
     DO_COMMAND(F(
         // Fire logics
-        "LE100000\n"
+        // Avant : "LE100000" = effet 10 (arc-en-ciel) sur toutes les logics
+        "LE220000\n"
         // Holo Short Circuit
         "HPA002|12\n"))
 

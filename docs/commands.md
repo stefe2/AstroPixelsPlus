@@ -10,9 +10,8 @@ Wiring, power and Maestro settings are in [hardware.md](hardware.md).
 | USB (Serial) | USB connector | 115200 baud | Serial monitor |
 | Serial2 | GPIO 16 (RX), GPIO 17 (TX) | 9600 baud | Kyber / Marcduino controller, 3.3 V logic |
 
-- End each command with CR (`\r`) or LF (`\n`).
-- ⚠️ Known issue: a command ending with **CR+LF** currently runs **twice**. Use CR only, or LF only.
-- Commands are matched by prefix. Anything after the prefix is the command argument.
+- End each command with CR (`\r`), LF (`\n`) or CR+LF. Empty lines are ignored.
+- Commands are matched by prefix; the longest matching command wins. Anything after it is the command argument.
 - Only one command/animation runs at a time: a new command stops the running one.
 
 ## Prefixes
@@ -40,9 +39,9 @@ Wiring, power and Maestro settings are in [hardware.md](hardware.md).
 | `:ST00` | Stop and disable all servos |
 | `:SD<n>` | Disable servo `<n>` (for example `:SD4`) |
 
-> ⚠️ Under investigation: `:OP…` open commands may close again about 200 ms later (see
-> [review, issue 4](review/revue-firmware.md)). `:ST00` / `:SD<n>` send a Maestro command (`0x60`)
-> that is not in the Pololu protocol (issue 2).
+Open commands (`:OP00`, `:OP01`–`:OP20`, `:OP$…`) leave the panels open until `:CL00` or another
+sequence. Outside sequences, every servo is released (no pulses) 0.7 s after reaching its position, and
+all servos 1.5 s after a sequence ends: open panels then hold by servo friction.
 
 ### Panel groups
 
@@ -66,7 +65,9 @@ Wiring, power and Maestro settings are in [hardware.md](hardware.md).
 | `:SL<ch>,<start>,<end>[,<neutral>[,<group>]]` | Change the closed (`start`) and open (`end`) pulses of a channel until the next reboot (`<group>` in decimal) |
 | `:SF<easing>$<mask>` | Set the easing method (number) for all servos in `<mask>` (hexadecimal) |
 
-Pulses are not limited by the firmware: set per-channel limits in the Maestro as a safety net.
+The firmware clamps every target pulse between the channel's closed and open pulses (see
+[hardware.md](hardware.md#maestro-channel-mapping), or the values set with `:SL`). To go further, widen
+the range with `:SL` first. Per-channel limits in the Maestro remain a useful second safety net.
 
 ### Dynamic group animations
 
@@ -122,7 +123,7 @@ The ESP32 drives each step at 125 ms, the reliable minimum measured for the dome
 | `:SE23` | `:SE03` | Smirk wave (fast) |
 | `:SE24` | `:SE04` | Open/close wave |
 | `:SE25` | `:SE05` | Beep cantina: marching ants, logics, holo short circuit (15 s) |
-| `:SE26` | `:SE06` | Short circuit: logics failure, then panels (≈ 14 s) |
+| `:SE26` | `:SE06` | Short circuit: logics alarm (2 s), then failure, then panels (≈ 16 s) |
 | `:SE27` | `:SE07` | Cantina: dance, disco logics (46 s) |
 | `:SE28` | `:SE08` | Leia message (45 s), no panels |
 | `:SE29` | `:SE09` | Disco: long disco panels, rainbow logics (45 s) |
@@ -153,7 +154,7 @@ current configuration.
 | Command | Description |
 | --- | --- |
 | `$720` | Yoda "clear your mind": opens panel group 6, holo effect (15 s) |
-| `$815` | Harlem Shake (≈ 30 s) |
+| `$815` | Harlem Shake: fire on all logics, panels shake (≈ 30 s) |
 | `$821` | Girl on Fire (≈ 55 s) |
 
 ---
@@ -226,7 +227,7 @@ Example: `@0T5` = all logics in scream.
 | `@2M<text>` | Front logic, bottom line: scroll `<text>` left |
 | `@3M<text>` | Rear logic: scroll `<text>` left |
 | `@3P60` / `@3P61` | Rear logic font: Latin / Aurabesh |
-| `@1P60` / `@1P61`, `@2P60` / `@2P61` | Front logic font: Latin / Aurabesh — ⚠️ currently broken: `@1P6` / `@2P6` (PSI Leia) also match and win |
+| `@1P60` / `@1P61`, `@2P60` / `@2P61` | Front logic font: Latin / Aurabesh |
 
 ### Alternative holo commands
 
@@ -255,13 +256,15 @@ Send with `@APLE…` or `~RTLE…`. Format: `LE[L]EECSNN`.
   | 05 | Single color | 17 | Text scroll right |
   | 06 | Flashing color | 18 | Text scroll up |
   | 07 | Flip flop | 19 | Roaming pixel |
-  | 08 | Flip flop alt | 21 | Vertical scan line |
-  | 09 | Color swap | 22 | Fire |
-  | 10 | Rainbow | 23 | PSI color wipe |
-  | 11 | Red alert | 99 | Random |
+  | 08 | Flip flop alt | 20 | Horizontal scan line |
+  | 09 | Color swap | 21 | Vertical scan line |
+  | 10 | Rainbow | 22 | Fire |
+  | 11 | Red alert | 23 | PSI color wipe |
+  |  |  | 24 | Pulse |
+  |  |  | 99 | Random |
 
   Custom effects of this firmware (three-digit effect, target required): 101 Plasma, 102 Metaballs,
-  103 Fractal, 104 Fade and scroll. ⚠️ Do not use 105: it crashes the firmware (review issue 6).
+  103 Fractal, 104 Fade and scroll. An unknown effect number falls back to Normal.
 - **C — color**: 1 red, 2 orange, 3 yellow, 4 green, 5 cyan, 6 blue, 7 purple, 8 magenta, 9 pink,
   0 effect default.
 - **S — speed** (1–9, 5 = default) or microphone sensitivity for red alert and mic effects.
@@ -291,5 +294,6 @@ Leading zeros disappear because the value is read as a number.
 | Command | Description |
 | --- | --- |
 | `#APRESTART` | Restart the ESP32 |
+| `#APSTAT` | Print diagnostics on USB: uptime, last reset reason, heap, loop stack, average and maximum loop time since the previous `#APSTAT` |
 | `#APZERO` | Erase all saved preferences, then restart |
 | `#APWIFI`, `#APWIFI0`, `#APWIFI1` | Toggle / disable / enable Wi-Fi. No effect in this build: Wi-Fi is compiled out (`USE_WIFI` not defined) |
