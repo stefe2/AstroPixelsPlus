@@ -8,8 +8,8 @@
 >   Pololu ; `Set Target` à 0 (`0x04`) arrête bien les impulsions (problème 2 de la revue, à vérifier).
 > - Le brownout noté « non résolu » le 2026-03-06 est réglé : servos sur une alimentation 6 V séparée,
 >   aucune baisse de tension mesurée (voir [hardware.md](hardware.md)).
-> - Les chemins de fichiers cités (`command.md`, `Wiring-Diagram.png`, en-têtes à la racine) datent d'avant la
->   réorganisation du dépôt : voir `src/`, `docs/commands.md` et `docs/wiring/`.
+> - Les chemins de fichiers cités (`AstroPixelsPlus.ino`, `command.md`, `Wiring-Diagram.png`, en-têtes à la racine) datent d'avant la
+>   réorganisation du dépôt : voir `src/main.cpp`, `src/`, `docs/commands.md` et `docs/wiring/`.
 
 
 ## 📋 Objectif

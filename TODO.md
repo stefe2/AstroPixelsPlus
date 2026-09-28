@@ -38,6 +38,7 @@ Dans l'ordre recommandé :
 
 - [ ] Pass-through Maestro externe sur GPIO 18 (MaestroCommandRouter). Conception détaillée dans l'annexe « Étape 11 » de [l'historique](docs/maestro-migration-history.md)
 - [ ] Commenter `ServoDispatchMaestro.h` (Doxygen)
+- [ ] Réparer la compilation avec Wi-Fi (`#define USE_WIFI`) : `src/WebPages.h` utilise encore `PREFERENCE_MARCSERIAL*` et `MARC_SERIAL_*`, supprimés au commit 41139a9
 - [ ] Tag de version une fois les corrections validées (ex. `v1.0.0-maestro`)
 
 ## 5. Matériel — nouveau PCB (plus tard)

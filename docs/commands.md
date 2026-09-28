@@ -1,6 +1,6 @@
 # AstroPixelsPlus Command Reference
 
-Every command listed here is declared in the firmware source (`AstroPixelsPlus.ino` and `src/Marcduino*.h`).
+Every command listed here is declared in the firmware source (`src/main.cpp` and `src/Marcduino*.h`).
 Wiring, power and Maestro settings are in [hardware.md](hardware.md).
 
 ## Sending commands

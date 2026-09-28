@@ -1,3 +1,5 @@
+#include <Arduino.h>
+
 /**
  *
  * AstroPixelsPlus sketch operates as a I2C master that can optionally be connected to one or more
@@ -171,7 +173,7 @@ public:
 #include "ServoDispatchPCA9685.h"
 #endif
 #include "ServoSequencer.h"
-#include "src/servo-sequences-custom.h"
+#include "servo-sequences-custom.h"
 #include "core/Marcduino.h"
 
 #include <Preferences.h>
@@ -598,7 +600,7 @@ AnimationPlayer player(servoSequencer);
 /////////////////////////////////////////////////////////////////////////
 
 // Son désactivé - Serial1 réservé pour Pololu Maestro
-// #include "src/MarcduinoSound.h"
+// #include "MarcduinoSound.h"
 // MarcSound::Module sSoundPlayer;
 
 /////////////////////////////////////////////////////////////////////////
@@ -616,11 +618,11 @@ enum
     FADEANDSCROLL
 };
 
-#include "src/effects/BitmapEffect.h"
-#include "src/effects/FadeAndScrollEffect.h"
-#include "src/effects/FractalEffect.h"
-#include "src/effects/MeatBallsEffect.h"
-#include "src/effects/PlasmaEffect.h"
+#include "effects/BitmapEffect.h"
+#include "effects/FadeAndScrollEffect.h"
+#include "effects/FractalEffect.h"
+#include "effects/MeatBallsEffect.h"
+#include "effects/PlasmaEffect.h"
 
 ////////////////////////////////
 // Standard LogicEngine sequences are in the range 0-99. Custom sequences start at 100
@@ -732,11 +734,11 @@ bool numberparams(const char *cmd, uint8_t &argcount, int32_t *args, uint8_t max
 
 ////////////////////////////////
 
-#include "src/MarcduinoHolo.h"
-#include "src/MarcduinoLogics.h"
-#include "src/MarcduinoSequence.h"
-#include "src/MarcduinoPanel.h"
-#include "src/MarcduinoPSI.h"
+#include "MarcduinoHolo.h"
+#include "MarcduinoLogics.h"
+#include "MarcduinoSequence.h"
+#include "MarcduinoPanel.h"
+#include "MarcduinoPSI.h"
 
 ////////////////////////////////
 
@@ -749,6 +751,7 @@ bool wifiActive;
 // bool remoteActive;
 TaskHandle_t eventTask;
 bool otaInProgress;
+void eventLoopTask(void *);  // défini plus bas, créé dans setup()
 #endif
 
 #ifdef USE_WIFI_MARCDUINO
@@ -798,7 +801,7 @@ CommandScreenHandlerSMQ sDisplay;
 ////////////////////////////////
 
 #ifdef USE_WIFI_WEB
-#include "src/WebPages.h"
+#include "WebPages.h"
 #endif
 
 // Télécommande désactivée

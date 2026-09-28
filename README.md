@@ -69,8 +69,8 @@ The [firmware review](docs/review/revue-firmware.md) lists open issues. The main
 
 | Path | Content |
 | --- | --- |
-| `AstroPixelsPlus.ino` | Main sketch: device setup, servo table, main loop |
-| `src/` | Command handlers (`Marcduino*.h`), custom sequences, logic effects, web pages |
+| `src/main.cpp` | Firmware entry point: device setup, servo table, main loop |
+| `src/` | Also the command handlers (`Marcduino*.h`), custom sequences, logic effects, web pages |
 | `patches/reeltwo/` | Local changes to the Reeltwo library, with a restore script |
 | `firmware/` | Prebuilt binaries |
 | `tools/` | Binary merge script and HTML generator |

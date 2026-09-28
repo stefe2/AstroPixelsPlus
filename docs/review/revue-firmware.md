@@ -2,6 +2,8 @@
 
 27 septembre 2026 · stefe2
 
+> Le sketch `AstroPixelsPlus.ino` est devenu `src/main.cpp` après la revue ; les numéros de ligne ci-dessous sont ceux de `src/main.cpp`.
+>
 > Copie locale du document [Revue firmware AstroPixelsPlus](https://claude.ai/artifact/Tv9Uyd2ehb38JZWfKz8SkY). La version en ligne fait foi si les deux divergent.
 
 Le firmware est simple et sans risque mémoire ou de concurrence, mais cinq défauts fonctionnels et matériels sont à corriger avant de le considérer robuste. Revue statique du commit 41139a9 (+ modifications locales), compilée sans warning avec -Wall -Wextra.
@@ -95,12 +97,12 @@ Deux problèmes critiques, six importants, six de moindre portée. Les numéros 
 | N° | Sévérité | Problème | Où |
 | --- | --- | --- | --- |
 | 1 | CRITIQUE | Code servo hors contrôle de version | `.pio/libdeps/…/Reeltwo/src` |
-| 6 | CRITIQUE | Lecture hors limites, plantage sur une commande | `AstroPixelsPlus.ino:635` |
+| 6 | CRITIQUE | Lecture hors limites, plantage sur une commande | `src/main.cpp:637` |
 | 2 | IMPORTANT | Commande Maestro 0x60 invalide pour désactiver | `ServoDispatchMaestro.h:240`, `:325` |
-| 3 | IMPORTANT | Holos : `disable()` renvoyé chaque seconde | `AstroPixelsPlus.ino:130-151` |
-| 4 | IMPORTANT | Fermeture auto après `:OPxx` | `AstroPixelsPlus.ino:575-584` |
-| 5 | IMPORTANT | Double exécution sur CR+LF | `AstroPixelsPlus.ino:1345-1378` |
-| 7 | IMPORTANT | Un seul caractère lu par tour | `AstroPixelsPlus.ino:1345`, `:1360` |
+| 3 | IMPORTANT | Holos : `disable()` renvoyé chaque seconde | `src/main.cpp:132-153` |
+| 4 | IMPORTANT | Fermeture auto après `:OPxx` | `src/main.cpp:577-586` |
+| 5 | IMPORTANT | Double exécution sur CR+LF | `src/main.cpp:1348-1381` |
+| 7 | IMPORTANT | Un seul caractère lu par tour | `src/main.cpp:1348`, `:1363` |
 | 8 | IMPORTANT | Boucle principale sans watchdog | `setup()` |
 | 9 | AMÉLIORATION | Débit UART du Maestro | `ServoDispatchMaestro.h:95-151` |
 | 10 | AMÉLIORATION | Rollover de `millis()` après 49,7 jours | plusieurs fichiers |
@@ -167,7 +169,7 @@ Chaque tour, chaque servo en mouvement envoie 6 octets : 13 panneaux = 78 octets
 
 ### 10. AMÉLIORATION — Rollover de `millis()`
 
-`millis() >= deadline` (sketch lignes 143, 334, 396, 587) et `currentTime < fMoveStartTime` (`ServoDispatchMaestro.h:102`, `:113`). Après 49,7 jours, un servo peut rester figé ou un holo arrêter de bouger. **Correction :** `(int32_t)(now - deadline) >= 0`.
+`millis() >= deadline` (`src/main.cpp` lignes 145, 336, 398, 589) et `currentTime < fMoveStartTime` (`ServoDispatchMaestro.h:102`, `:113`). Après 49,7 jours, un servo peut rester figé ou un holo arrêter de bouger. **Correction :** `(int32_t)(now - deadline) >= 0`.
 
 ### 11. AMÉLIORATION — Impulsions non bornées
 

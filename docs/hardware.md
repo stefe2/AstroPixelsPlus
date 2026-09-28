@@ -88,7 +88,7 @@ To check, and still unknown: the per-channel "On startup or error" mode and the 
 
 ## Maestro channel mapping
 
-From `servoSettings[]` in `AstroPixelsPlus.ino`. "Closed" and "open" are the pulses sent for positions 0.0 and 1.0.
+From `servoSettings[]` in `src/main.cpp`. "Closed" and "open" are the pulses sent for positions 0.0 and 1.0.
 
 | Channel | Servo | Type | Group | Closed (µs) | Open (µs) |
 | --- | --- | --- | --- | --- | --- |
