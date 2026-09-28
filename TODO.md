@@ -42,12 +42,15 @@ Après les corrections 2, 3 et 4 (commit 94cbf35, flashé le même jour) :
 - [x] `:SM0,500,1500` : panneau tenu 0,7 s à l'arrivée puis relâché par Set Target 0 sur ce seul canal, aucune erreur
 - [x] `:OP00` : les panneaux restent ouverts, relâchés après 1,5 s, tiennent par friction (observé)
 - [x] `:CL00` : fermeture complète de tous les panneaux, porte 11 comprise, tenus 0,7 s puis relâchés, aucune erreur
+- [x] `*HA01` : les holos bougent, 431 lectures `UscCmd` sans erreur ; `*HZ00` les recentre et les arrête (canaux 13–18 à 0)
+- [x] `@1P6` puis `@1P1` : le PSI avant revient à son effet de démarrage (color wipe bleu/rouge), sans mélange avec Leia
+- [x] `:SE02` : séquence complète, tous les panneaux refermés à la fin, `errors: 0x0000`, 24 canaux relâchés
 
 Encore à faire :
 
 - [ ] Contrôleur Serial2 (Kyber) : les commandes habituelles fonctionnent, une rafale n'en perd aucune (problème 7)
 - [ ] `@1P11` : PSI March (non-régression)
-- [ ] `:SE02`, `*HA01`, `:OW$3F`, `:OP$3F,300,300` : même comportement qu'avant
+- [ ] `:OW$3F`, `:OP$3F,300,300` : même comportement qu'avant
 - [ ] Séquences longues (`:SE07`, `$815`) : pas de redémarrage par le watchdog (`Reset reason: TASK_WDT`) (problème 8)
 - [x] Porte 11 (canal 11) : se ferme complètement à 1552 µs, sans forcer
 - [x] `@1M` seul : le texte défile une fois après ~2 s d'écran noir (pas un défaut, il avait été manqué)
