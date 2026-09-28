@@ -99,7 +99,8 @@ public:
         for (uint16_t i = 0; i < numServos; i++)
         {
             // Per-servo auto-stop: cut PWM after servo reaches target (only outside sequences)
-            if (!fSequenceActive && fServos[i].fStopTime != 0 && currentTime >= fServos[i].fStopTime)
+            // Comparaisons par différence signée : correctes quand millis() repasse à 0 (49,7 jours)
+            if (!fSequenceActive && fServos[i].fStopTime != 0 && (int32_t)(currentTime - fServos[i].fStopTime) >= 0)
             {
                 fServos[i].fStopTime = 0;
                 disable(i);
@@ -110,7 +111,7 @@ public:
             if (!fServos[i].fMoving || !fServos[i].fActive) continue;
             
             // Check if we should start the movement (startDelay elapsed)
-            if (currentTime < fServos[i].fMoveStartTime) continue;
+            if ((int32_t)(currentTime - fServos[i].fMoveStartTime) < 0) continue;
             
             // Calculate elapsed time since movement started
             uint32_t elapsed = currentTime - fServos[i].fMoveStartTime;
@@ -140,7 +141,7 @@ public:
             int32_t startPos = fServos[i].fStartPos;
             int32_t targetPos = fServos[i].fTargetPos;
             int32_t delta = targetPos - startPos;
-            uint16_t currentPos = startPos + (uint16_t)(delta * completion);
+            uint16_t currentPos = startPos + (int32_t)(delta * completion);  // delta peut être négatif
             
             // Update position if changed
             if (currentPos != fServos[i].fCurrentPos)
@@ -211,7 +212,7 @@ public:
         if (scale < 0.0) scale = 0.0;
         if (scale > 1.0) scale = 1.0;
         
-        return start + (uint16_t)((end - start) * scale);
+        return start + (int32_t)((end - start) * scale);  // end < start pour les panneaux
     }
 
     virtual bool isActive(uint16_t num) override
@@ -345,7 +346,14 @@ protected:
                                    uint16_t startPos, uint16_t pos) override
     {
         if (num >= numServos) return;
-        
+
+        // Borner la cible aux limites du canal (positions fermé/ouvert de servoSettings[] ou :SL).
+        // Une impulsion hors plage envoyée par :SM, :SQ ou un déplacement relatif pourrait forcer un panneau.
+        if (pos < fSettings[num].fMinimum)
+            pos = fSettings[num].fMinimum;
+        else if (pos > fSettings[num].fMaximum)
+            pos = fSettings[num].fMaximum;
+
         // Skip only if servo is active AND already at target position.
         // If fActive=false (servo was disabled by stop()), fCurrentPos may be stale
         // (e.g. speed=0 sequences set fCurrentPos instantly without physical movement),

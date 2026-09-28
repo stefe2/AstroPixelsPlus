@@ -65,7 +65,9 @@ Wiring, power and Maestro settings are in [hardware.md](hardware.md).
 | `:SL<ch>,<start>,<end>[,<neutral>[,<group>]]` | Change the closed (`start`) and open (`end`) pulses of a channel until the next reboot (`<group>` in decimal) |
 | `:SF<easing>$<mask>` | Set the easing method (number) for all servos in `<mask>` (hexadecimal) |
 
-Pulses are not limited by the firmware: set per-channel limits in the Maestro as a safety net.
+The firmware clamps every target pulse between the channel's closed and open pulses (see
+[hardware.md](hardware.md#maestro-channel-mapping), or the values set with `:SL`). To go further, widen
+the range with `:SL` first. Per-channel limits in the Maestro remain a useful second safety net.
 
 ### Dynamic group animations
 

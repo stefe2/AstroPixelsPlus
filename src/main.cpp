@@ -95,6 +95,13 @@
 #include "dome/LogicEngineController.h"
 #include "dome/HoloLights.h"
 
+// Vrai quand l'échéance est atteinte. Reste correct quand millis() repasse à 0 (après 49,7 jours),
+// contrairement à millis() >= deadline.
+static inline bool timeReached(uint32_t now, uint32_t deadline)
+{
+    return (int32_t)(now - deadline) >= 0;
+}
+
 // Custom HoloLights that automatically disables servos after movements
 class HoloLightsWithAutoStop : public HoloLights
 {
@@ -142,7 +149,7 @@ public:
         }
         
         // Check if it's time to stop servos
-        if (fStopDelayMS != 0 && millis() >= fStopDelayMS)
+        if (fStopDelayMS != 0 && timeReached(millis(), fStopDelayMS))
         {
             if (fServoDispatchPtr != nullptr)
             {
@@ -333,7 +340,7 @@ public:
         HoloLights* holos[3] = { &frontHolo, &rearHolo, &topHolo };
         for (int i = 0; i < 3; i++)
         {
-            if (now >= fNextMoveTime[i])
+            if (timeReached(now, fNextMoveTime[i]))
             {
                 holos[i]->moveHP(random(0, 9), random(300, 700));
                 fNextMoveTime[i] = now + random(fMinDelay, fMaxDelay);
@@ -395,7 +402,7 @@ public:
             switch (fState[i])
             {
                 case kIdle:
-                    if (now >= fTimer[i])
+                    if (timeReached(now, fTimer[i]))
                     {
                         fWhite[i] = (uint8_t)random(0, 101); // 0=bleu pur, 100=blanc pur
                         fState[i] = kFadeIn;
@@ -586,7 +593,7 @@ public:
         }
         
         // Check if it's time to stop all servos after sequence end
-        if (fStopDelayMS != 0 && millis() >= fStopDelayMS)
+        if (fStopDelayMS != 0 && timeReached(millis(), fStopDelayMS))
         {
             dispatch().stop();
             fStopDelayMS = 0;

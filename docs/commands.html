@@ -336,7 +336,9 @@ that is not in the Pololu protocol (issue 2).</p>
 </tr>
 </tbody>
 </table>
-<p>Pulses are not limited by the firmware: set per-channel limits in the Maestro as a safety net.</p>
+<p>The firmware clamps every target pulse between the channel's closed and open pulses (see
+<a href="hardware.md#maestro-channel-mapping">hardware.md</a>, or the values set with <code>:SL</code>). To go further, widen
+the range with <code>:SL</code> first. Per-channel limits in the Maestro remain a useful second safety net.</p>
 <h3>Dynamic group animations</h3>
 <p>The <code>$</code> is part of the command. It is followed by a <strong>servo mask in hexadecimal</strong>, then optional
 parameters: <code>&lt;speedMin&gt;,&lt;speedMax&gt;,&lt;easingOn&gt;,&lt;easingOff&gt;</code> (defaults 10, 50, none, none).</p>
