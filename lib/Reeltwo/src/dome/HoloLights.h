@@ -303,7 +303,6 @@ public:
       */
     virtual void handleCommand(const char* cmd) override
     {
-        printf("COMMAND: %s\n", cmd);
         int durationSec = -1;
         byte typeState = 0;
         byte functionState = 0;

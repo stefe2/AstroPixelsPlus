@@ -50,11 +50,13 @@ Après les corrections 2, 3 et 4 (commit 94cbf35, flashé le même jour) :
   `$3F` est un masque de types de panneaux, pas de numéros ; `:OC$8` n'actionne que les 4 pie panels ; aucune erreur
 - [x] `:SE07` (Cantina, 46 s) : aucun redémarrage (uptime continu, `Reset reason: POWERON` inchangé), boucle moy. 1,4 ms,
   max 17 ms, pile loopTask 6,1 Ko libres, `errors: 0x0000` (problème 8)
+- [x] `$815` (Harlem Shake) : aucun redémarrage ; mais les logics restaient en arc-en-ciel à la fin (`LE000000|0`
+  de `resetSequence()` ignorée, voir section 2). Après correction : retour seul au scintillement, boucle moy. 448 µs,
+  max 10,9 ms (17,1 ms avec le `printf` des holos), `errors: 0x0000`
 
 Encore à faire :
 
 - [ ] Contrôleur Serial2 (Kyber) : les commandes habituelles fonctionnent, une rafale n'en perd aucune (problème 7)
-- [ ] Séquence longue `$815` : pas de redémarrage par le watchdog (`Reset reason: TASK_WDT`) (problème 8)
 - [x] Porte 11 (canal 11) : se ferme complètement à 1552 µs, sans forcer
 - [x] `@1M` seul : le texte défile une fois après ~2 s d'écran noir (pas un défaut, il avait été manqué)
 - [x] Holo arrière : le canal 17 est l'axe horizontal
@@ -75,6 +77,9 @@ Dans l'ordre recommandé :
 - [x] Nettoyage : `:SE36`/`:SE56` lancés deux fois, `@4S3` mort dans `:CL00`, SPIFFS inutile, flag PSRAM, handlers `:OX$` dupliqués (problème 13)
 - [x] Canal 11 (porte mini du PSI avant) : position fermée 2552 → 1552 µs (limite du Maestro, fermeture vérifiée sur le droïde)
 - [x] `@1P1`, `@2P1` et `resetSequence()` (`LE000000`) remettent les PSI en effet « Normal » (scintillement) au lieu de leur effet de démarrage (color wipe 23)
+- [x] `resetSequence()` : `LE000000|0` → `LE000000`. Une commande LE de 9 caractères ou plus vise l'appareil dont
+  l'ID est le premier chiffre (0 : aucun), les logics n'étaient jamais remises à zéro (code d'origine)
+- [x] `printf("COMMAND: …")` de débogage retiré de `HoloLights::handleCommand` (3 lignes par commande)
 - [x] Commentaire de `servoSettings[]` : canaux 17/18 du holo arrière inversés (17 = horizontal)
 
 ## 3. Holos (ancienne étape 9)

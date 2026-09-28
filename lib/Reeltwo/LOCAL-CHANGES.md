@@ -13,7 +13,7 @@ de Reeltwo ne sont pas nécessaires au build.
 | --- | --- |
 | `src/ServoDispatchMaestro.h` | Nouveau : pilote du Pololu Maestro (protocole Pololu sur Serial1). Cibles bornées aux limites du canal, temps sûrs au rollover de `millis()`. Relâchement d'un servo par Set Target 0 (et non 0x60), 700 ms après tout mouvement hors séquence |
 | `src/ServoDispatch.h` | Ajout de `virtual void setSequenceActive(bool)` |
-| `src/dome/HoloLights.h` | `fCounter = millis()` dans le reset des effets |
+| `src/dome/HoloLights.h` | `fCounter = millis()` dans le reset des effets. Suppression du `printf("COMMAND: …")` de débogage dans `handleCommand` (affiché une fois par holo pour chaque commande) |
 | `src/core/Marcduino.h` | `processCommand` : la correspondance la plus longue l'emporte (avant : la dernière déclarée) |
 | `src/ServoSequencer.h` | `lastServoSetMask()` et `completed()` : état de la dernière étape et fin naturelle de la séquence |
 | `src/dome/LogicEngine.h` | `LogicEffectDefaultSelector` : `>=` au lieu de `>`, l'effet 25 lisait hors du tableau |

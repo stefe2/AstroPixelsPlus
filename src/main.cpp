@@ -639,7 +639,9 @@ void resetSequence()
 {
     Marcduino::send(F("$s"));
     CommandEvent::process(F(
-        "LE000000|0\n" // LogicEngine devices to normal
+        // Sans "|0" : une commande LE de 9 caractères ou plus vise l'appareil dont l'ID est le
+        // premier chiffre (ici 0, qui n'existe pas) et aucune logic n'était remise à zéro
+        "LE000000\n"   // LogicEngine devices to normal
         "FSOFF\n"      // Fire Stripe Off
         "BMOFF\n"      // Bad Motiviator Off
         "HPA000|0\n"   // Holo Projectors to Normal
