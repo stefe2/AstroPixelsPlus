@@ -2432,7 +2432,8 @@ LogicEffect LogicEffectDefaultSelector(unsigned selectSequence)
     };
     if (selectSequence == LogicEngineDefaults::RANDOM)
         selectSequence = random(SizeOfArray(sLogicEffects));
-    if (selectSequence > SizeOfArray(sLogicEffects))
+    // AstroPixelsPlus : >= au lieu de > (l'effet 25 lisait hors du tableau)
+    if (selectSequence >= SizeOfArray(sLogicEffects))
         selectSequence = 0;
     return LogicEffect(sLogicEffects[selectSequence]);
 }

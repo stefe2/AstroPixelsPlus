@@ -36,21 +36,29 @@ public:
 
     static void processCommand(AnimationPlayer& player, const char* cmd)
     {
+        // AstroPixelsPlus : la correspondance la plus longue l'emporte (à longueur égale, la dernière déclarée).
+        // Avant, la dernière déclarée l'emportait : @1P6 (PSI Leia) masquait @1P60/@1P61 (police des logics).
         bool found = false;
+        AnimationStep bestAnimation = NULL;
+        int bestLen = -1;
         for (Marcduino* marc = *head(); marc != NULL; marc = marc->fNext)
         {
             int len = strlen_P(marc->fMarc);
             if (strncmp_P(cmd, marc->fMarc, len) == 0 ||
                 (marc->fMarc[0] == '@' && isdigit(cmd[0]) && strncmp_P(cmd, marc->fMarc+1, len-1) == 0 && len--))
             {
-                AnimationStep animation = marc->fAnimation;
-                if (animation != NULL)
+                if (marc->fAnimation != NULL && len >= bestLen)
                 {
-                    *command() = cmd + len;
-                    player.animateOnce(animation);
-                    found = true;
+                    bestAnimation = marc->fAnimation;
+                    bestLen = len;
                 }
             }
+        }
+        if (bestAnimation != NULL)
+        {
+            *command() = cmd + bestLen;
+            player.animateOnce(bestAnimation);
+            found = true;
         }
         // Check for unprocess Jawa lite command
         if (!found && *cmd == '@')

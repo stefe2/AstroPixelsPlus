@@ -13,6 +13,12 @@ Ils confirment ou infirment les déductions de la revue. À faire avant de corri
 - [ ] Maestro Control Center : enregistrer le fichier de réglages (*File → Save settings file*) et relever l'onglet *Errors* pendant que l'ESP32 tourne (problèmes 2 et 3)
 - [ ] Holo arrière : vérifier si les axes H/V des canaux 17 et 18 sont inversés
 
+Après avoir flashé les corrections déjà faites (section 2) :
+
+- [ ] `~RTLE11050000` (effet 105) et `~RTLE1250000` (effet 25) : aucun redémarrage, les logics reviennent à l'effet normal (problème 6)
+- [ ] `@1P61` puis `@1P60` : la police des logics avant change, le PSI ne passe pas en Leia (problème 14)
+- [ ] `@1P6` et `@1P11` : toujours PSI Leia et PSI March (non-régression)
+
 ## 2. Corrections du firmware (plan d'action de la revue)
 
 Dans l'ordre recommandé :
@@ -21,8 +27,8 @@ Dans l'ordre recommandé :
 - [ ] Désactivation des servos Maestro avec `Set Target` = 0 au lieu de `0x60` ; arrêt des holos seulement sur la transition actif → inactif (problèmes 2 et 3)
 - [ ] Fermeture automatique de fin de séquence seulement pour les séquences qui doivent finir fermées (problème 4)
 - [ ] Parseur série : ignorer une ligne vide, lire tous les caractères disponibles (bornés) à chaque tour (problèmes 5 et 7)
-- [ ] `CustomLogicEffectSelector` : `<=` → `<` (problème 6, plantage sur l'effet 105)
-- [ ] `@1P60`/`@1P61`/`@2P60`/`@2P61` : éviter que `@1P6`/`@2P6` (PSI Leia) prennent le dessus
+- [x] `CustomLogicEffectSelector` : `<=` → `<` (problème 6, plantage sur l'effet 105) ; même erreur corrigée dans `LogicEffectDefaultSelector` (effet 25)
+- [x] `@1P60`/`@1P61`/`@2P60`/`@2P61` : la correspondance la plus longue l'emporte désormais (problème 14)
 - [ ] `enableLoopWDT()` et commande de diagnostic `#APSTAT` (problème 8)
 - [ ] Bornage des impulsions `:SM`/`:SQ`/`:SL`, comparaisons de temps sûres au rollover de `millis()` (problèmes 10 et 11)
 - [ ] Réduire le débit vers le Maestro, seulement si les mesures le justifient (problème 9)

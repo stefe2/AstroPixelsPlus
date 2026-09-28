@@ -14,6 +14,8 @@ de Reeltwo ne sont pas nécessaires au build.
 | `src/ServoDispatchMaestro.h` | Nouveau : pilote du Pololu Maestro (protocole Pololu sur Serial1) |
 | `src/ServoDispatch.h` | Ajout de `virtual void setSequenceActive(bool)` |
 | `src/dome/HoloLights.h` | `fCounter = millis()` dans le reset des effets |
+| `src/core/Marcduino.h` | `processCommand` : la correspondance la plus longue l'emporte (avant : la dernière déclarée) |
+| `src/dome/LogicEngine.h` | `LogicEffectDefaultSelector` : `>=` au lieu de `>`, l'effet 25 lisait hors du tableau |
 
 Pour voir le détail des changements, comparer avec la version d'origine :
 

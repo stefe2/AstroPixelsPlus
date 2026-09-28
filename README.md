@@ -60,8 +60,6 @@ The [firmware review](docs/review/revue-firmware.md) lists open issues. The main
   of the Pololu protocol. Under investigation.
 - `:OP…` open commands may close again about 200 ms later because of the end-of-sequence auto-close.
 - A command ending with CR+LF runs twice.
-- `LE` effect 105 crashes the firmware.
-- `@1P60`/`@1P61`/`@2P60`/`@2P61` (front logic font) trigger the PSI Leia sequence instead.
 
 ## Project layout
 

@@ -190,7 +190,7 @@ Wiring, power and Maestro settings are in <a href="hardware.md">hardware.md</a>.
 <ul>
 <li>End each command with CR (<code>\r</code>) or LF (<code>\n</code>).</li>
 <li>⚠️ Known issue: a command ending with <strong>CR+LF</strong> currently runs <strong>twice</strong>. Use CR only, or LF only.</li>
-<li>Commands are matched by prefix. Anything after the prefix is the command argument.</li>
+<li>Commands are matched by prefix; the longest matching command wins. Anything after it is the command argument.</li>
 <li>Only one command/animation runs at a time: a new command stops the running one.</li>
 </ul>
 <h2>Prefixes</h2>
@@ -819,7 +819,7 @@ current configuration.</p>
 </tr>
 <tr>
 <td><code>@1P60</code> / <code>@1P61</code>, <code>@2P60</code> / <code>@2P61</code></td>
-<td>Front logic font: Latin / Aurabesh — ⚠️ currently broken: <code>@1P6</code> / <code>@2P6</code> (PSI Leia) also match and win</td>
+<td>Front logic font: Latin / Aurabesh</td>
 </tr>
 </tbody>
 </table>
@@ -918,31 +918,43 @@ current configuration.</p>
 <tr>
 <td>08</td>
 <td>Flip flop alt</td>
-<td>21</td>
-<td>Vertical scan line</td>
+<td>20</td>
+<td>Horizontal scan line</td>
 </tr>
 <tr>
 <td>09</td>
 <td>Color swap</td>
-<td>22</td>
-<td>Fire</td>
+<td>21</td>
+<td>Vertical scan line</td>
 </tr>
 <tr>
 <td>10</td>
 <td>Rainbow</td>
-<td>23</td>
-<td>PSI color wipe</td>
+<td>22</td>
+<td>Fire</td>
 </tr>
 <tr>
 <td>11</td>
 <td>Red alert</td>
+<td>23</td>
+<td>PSI color wipe</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td>24</td>
+<td>Pulse</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
 <td>99</td>
 <td>Random</td>
 </tr>
 </tbody>
 </table>
 <p>Custom effects of this firmware (three-digit effect, target required): 101 Plasma, 102 Metaballs,
-  103 Fractal, 104 Fade and scroll. ⚠️ Do not use 105: it crashes the firmware (review issue 6).
+  103 Fractal, 104 Fade and scroll. An unknown effect number falls back to Normal.
 - <strong>C — color</strong>: 1 red, 2 orange, 3 yellow, 4 green, 5 cyan, 6 blue, 7 purple, 8 magenta, 9 pink,
   0 effect default.
 - <strong>S — speed</strong> (1–9, 5 = default) or microphone sensitivity for red alert and mic effects.
