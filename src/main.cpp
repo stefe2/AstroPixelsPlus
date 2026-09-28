@@ -904,6 +904,11 @@ void setup()
     // { 20, 800, 2200, HOLO_VSERVO },                /* 17: vertical rear holo */
     // { 21, 800, 2200, HOLO_HSERVO },                /* 18: horizontal rear holo */
 
+    // Fermer les panneaux du dôme au démarrage (le Maestro reste sur « Off » au démarrage) ;
+    // le pilote les relâche 0,7 s après. Mouvement instantané : le pilote ne connaît pas encore
+    // la position réelle (il suppose la mi-course), une interpolation partirait de là.
+    servoDispatch.moveServosTo(ALL_DOME_PANELS_MASK, 0.0);
+
 #ifdef USE_WIFI
     // Télécommande désactivée
     /*

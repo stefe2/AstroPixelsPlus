@@ -57,6 +57,8 @@ Après les corrections 2, 3 et 4 (commit 94cbf35, flashé le même jour) :
   conservé) puis feu avec l'agitation des panneaux, retour seul à la normale
 
 Encore à faire :
+- [ ] Fermeture des panneaux au démarrage : validée au flash et avec `#APRESTART` (aucun à-coup, `errors: 0x0000`) ;
+  reste une vraie coupure d'alimentation (Maestro et ESP32 démarrent ensemble), panneaux ouverts avant
 
 - [ ] Contrôleur Serial2 (Kyber) : les commandes habituelles fonctionnent, une rafale n'en perd aucune (problème 7)
 - [x] Porte 11 (canal 11) : se ferme complètement à 1552 µs, sans forcer
