@@ -16,7 +16,7 @@ de Reeltwo ne sont pas nécessaires au build.
 | `src/dome/HoloLights.h` | `fCounter = millis()` dans le reset des effets. Suppression du `printf("COMMAND: …")` de débogage dans `handleCommand` (affiché une fois par holo pour chaque commande) |
 | `src/core/Marcduino.h` | `processCommand` : la correspondance la plus longue l'emporte (avant : la dernière déclarée) |
 | `src/ServoSequencer.h` | `lastServoSetMask()` et `completed()` : état de la dernière étape et fin naturelle de la séquence |
-| `src/dome/LogicEngine.h` | `LogicEffectDefaultSelector` : `>=` au lieu de `>`, l'effet 25 lisait hors du tableau |
+| `src/dome/LogicEngine.h` | `LogicEffectDefaultSelector` : `>=` au lieu de `>`, l'effet 25 lisait hors du tableau. Couleur 0 (`kWhite`) rendue en blanc par `renderText` (texte seulement) |
 
 Pour voir le détail des changements, comparer avec la version d'origine :
 

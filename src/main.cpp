@@ -887,8 +887,8 @@ void setup()
     // Son désactivé - Serial1 réservé pour Pololu Maestro
     DEBUG_PRINTLN("Sound module disabled - Serial1 reserved for Maestro");
 
-    RLD.selectScrollTextLeft("... AstroPixels ....", LogicEngineRenderer::kBlue, 0, 15);
-    FLD.selectScrollTextLeft("... R2D2 ...", LogicEngineRenderer::kRed, 0, 15);
+    RLD.selectScrollTextLeft("... R2-BLING ...", LogicEngineRenderer::kWhite, 0, 15);
+    FLD.selectScrollTextLeft("... R2-BLING ...", LogicEngineRenderer::kWhite, 0, 15);
 
     // Assign servos to holo projectors
     frontHolo.assignServos(&servoDispatch, 13, 14);
