@@ -605,6 +605,32 @@ current configuration.</p>
 </tr>
 </tbody>
 </table>
+<h3>Music choreographies (<code>:MU</code>)</h3>
+<p>The Kyber starts the song and sends <code>:MUnn</code> at the same time. Each song is a timed list of panel, logic,
+PSI and holo events (<code>src/music/</code>). Random holo moves (<code>*HA</code>, <code>*HV</code>) pause during the song and resume
+after it. Any other sequence command stops the song; the droid is then reset (panels closed, logics normal).</p>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>:MU01</code>–<code>:MU98</code></td>
+<td>Play song <code>nn</code> (unknown numbers are ignored)</td>
+</tr>
+<tr>
+<td><code>:MU99</code></td>
+<td>Test choreography, no music (20 s)</td>
+</tr>
+<tr>
+<td><code>:MU00</code></td>
+<td>Stop the current song</td>
+</tr>
+</tbody>
+</table>
 <hr />
 <h2>Holo projectors (<code>*</code>)</h2>
 <p>Holo numbers: <code>01</code> front, <code>02</code> rear, <code>03</code> top.</p>

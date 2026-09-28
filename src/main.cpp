@@ -159,6 +159,11 @@ public:
         topHolo.moveHP(1, 500);
     }
 
+    // Pause sans recentrer les holos (chorégraphie musicale), puis reprise aux mêmes délais
+    void suspend() { fEnabled = false; }
+    void resume() { enable(fMinDelay, fMaxDelay); }
+    bool isEnabled() const { return fEnabled; }
+
     virtual void animate() override
     {
         if (!fEnabled)
@@ -216,6 +221,8 @@ public:
             setColor(holos[i], 0, fWhite[i]);
         }
     }
+
+    bool isEnabled() const { return fEnabled; }
 
     virtual void animate() override
     {
@@ -391,7 +398,17 @@ private:
     
 public:
     ServoSequencerWithAutoStop(ServoDispatch& dispatch) : ServoSequencer(dispatch) {}
-    
+
+    // Arrête la séquence en cours sans fermeture automatique ni relâchement global différé :
+    // une chorégraphie musicale prend la main sur les panneaux.
+    void abortQuietly()
+    {
+        stop();
+        fLastIsFinished = true;
+        fStopDelayMS = 0;
+        dispatch().setSequenceActive(false);
+    }
+
     virtual void animate() override
     {
         bool wasFinished = fLastIsFinished;   // state from previous frame
@@ -548,6 +565,7 @@ bool numberparams(const char *cmd, uint8_t &argcount, int32_t *args, uint8_t max
 #include "MarcduinoSequence.h"
 #include "MarcduinoPanel.h"
 #include "MarcduinoPSI.h"
+#include "MarcduinoMusic.h"
 
 ////////////////////////////////
 // Diagnostic (#APSTAT)

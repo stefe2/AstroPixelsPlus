@@ -100,6 +100,15 @@ Dans l'ordre recommandé :
 
 ## 4. Fonctionnalités à venir
 
+Chorégraphies musicales (`:MU01`–`:MU99`), branche `feature/musique` :
+
+- [x] Étape 1 : lecteur de chorégraphie (`src/MarcduinoMusic.h`, `src/music/`), chanson de test `:MU99`
+- [ ] Étape 1 : tests sur le droïde — `:MU99` complet ; `*HA03` puis `:MU99` (holos suspendus puis repris) ;
+  `:MU99` interrompu par `:SE06` ; `:MU00` en cours de chanson
+- [ ] Étape 2 : script d'analyse des MP3 (tempo, battements, attaques, énergie par bande, sections) et génération
+- [ ] Étape 3 : test d'une chanson (MP3 joué sur le PC + `:MUnn` par USB)
+- [ ] Étape 4 : les 10 chansons, puis test avec le Kyber
+
 - [ ] Pass-through Maestro externe sur GPIO 18 (MaestroCommandRouter). Conception détaillée dans l'annexe « Étape 11 » de [l'historique](docs/maestro-migration-history.md)
 - [ ] Commenter `ServoDispatchMaestro.h` (Doxygen)
 - [x] Wi-Fi, page web, OTA, SPIFFS, préférences (`#APWIFI`, `#APZERO`), son (DFPlayer) et code mort de la
