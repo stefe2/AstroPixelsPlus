@@ -171,7 +171,7 @@ public:
 #include "ServoDispatchPCA9685.h"
 #endif
 #include "ServoSequencer.h"
-#include "servo-sequences-custom.h"
+#include "src/servo-sequences-custom.h"
 #include "core/Marcduino.h"
 
 #include <Preferences.h>
@@ -598,7 +598,7 @@ AnimationPlayer player(servoSequencer);
 /////////////////////////////////////////////////////////////////////////
 
 // Son désactivé - Serial1 réservé pour Pololu Maestro
-// #include "MarcduinoSound.h"
+// #include "src/MarcduinoSound.h"
 // MarcSound::Module sSoundPlayer;
 
 /////////////////////////////////////////////////////////////////////////
@@ -616,11 +616,11 @@ enum
     FADEANDSCROLL
 };
 
-#include "effects/BitmapEffect.h"
-#include "effects/FadeAndScrollEffect.h"
-#include "effects/FractalEffect.h"
-#include "effects/MeatBallsEffect.h"
-#include "effects/PlasmaEffect.h"
+#include "src/effects/BitmapEffect.h"
+#include "src/effects/FadeAndScrollEffect.h"
+#include "src/effects/FractalEffect.h"
+#include "src/effects/MeatBallsEffect.h"
+#include "src/effects/PlasmaEffect.h"
 
 ////////////////////////////////
 // Standard LogicEngine sequences are in the range 0-99. Custom sequences start at 100
@@ -732,11 +732,11 @@ bool numberparams(const char *cmd, uint8_t &argcount, int32_t *args, uint8_t max
 
 ////////////////////////////////
 
-#include "MarcduinoHolo.h"
-#include "MarcduinoLogics.h"
-#include "MarcduinoSequence.h"
-#include "MarcduinoPanel.h"
-#include "MarcduinoPSI.h"
+#include "src/MarcduinoHolo.h"
+#include "src/MarcduinoLogics.h"
+#include "src/MarcduinoSequence.h"
+#include "src/MarcduinoPanel.h"
+#include "src/MarcduinoPSI.h"
 
 ////////////////////////////////
 
@@ -798,7 +798,7 @@ CommandScreenHandlerSMQ sDisplay;
 ////////////////////////////////
 
 #ifdef USE_WIFI_WEB
-#include "WebPages.h"
+#include "src/WebPages.h"
 #endif
 
 // Télécommande désactivée
