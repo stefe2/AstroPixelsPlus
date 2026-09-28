@@ -3,19 +3,15 @@
 The project builds with [PlatformIO](https://platformio.org/) (VS Code extension or `pio` command line).
 Target: `esp32dev`, Arduino framework, platform espressif32 5.2.0 (arduino-esp32 2.0.5).
 
-## First build after cloning
-
-The firmware needs three modified Reeltwo files that PlatformIO does not download
-(see [patches/reeltwo](../patches/reeltwo/README.md)). Restore them once after cloning, and again whenever
-`.pio/` is deleted or the libraries are reinstalled.
+## Build
 
 ```bash
-pio pkg install                   # download the libraries into .pio/libdeps
-bash patches/reeltwo/restore.sh   # copy the modified Reeltwo files over them
-pio run                           # build
+pio run
 ```
 
-Without the restore step the build stops with `ServoDispatchMaestro.h: No such file or directory`.
+No manual step is needed after cloning. The modified Reeltwo 23.5.3 library lives in `lib/Reeltwo/` (changes
+listed in [LOCAL-CHANGES.md](../lib/Reeltwo/LOCAL-CHANGES.md)); the other libraries are pinned in
+`platformio.ini` and downloaded by PlatformIO.
 
 Expected result: RAM about 25.8 KB (7.9 %), flash about 386 KB (29.4 %), no warnings.
 

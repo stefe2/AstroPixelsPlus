@@ -4,6 +4,8 @@
 
 > Le sketch `AstroPixelsPlus.ino` est devenu `src/main.cpp` après la revue ; les numéros de ligne ci-dessous sont ceux de `src/main.cpp`.
 >
+> L'état des corrections est suivi dans [TODO.md](../../TODO.md). Cette revue décrit le code tel qu'il était au commit 41139a9.
+>
 > Copie locale du document [Revue firmware AstroPixelsPlus](https://claude.ai/artifact/Tv9Uyd2ehb38JZWfKz8SkY). La version en ligne fait foi si les deux divergent.
 
 Le firmware est simple et sans risque mémoire ou de concurrence, mais cinq défauts fonctionnels et matériels sont à corriger avant de le considérer robuste. Revue statique du commit 41139a9 (+ modifications locales), compilée sans warning avec -Wall -Wextra.
