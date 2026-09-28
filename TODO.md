@@ -36,6 +36,13 @@ Corrections déjà faites, validées :
   Le maximum vient du rafraîchissement des LED, pas du Maestro : problème 9 sans objet. Heap libre 328 Ko (min 322 Ko),
   pile loopTask 6,5 Ko libres sur 8 Ko
 
+Après les corrections 2, 3 et 4 (commit 94cbf35, flashé le même jour) :
+
+- [x] Au repos : `errors: 0x0000`, voyant rouge éteint, aucune trame envoyée au Maestro (avant : ~7 trames `0x60`/s)
+- [x] `:SM0,500,1500` : panneau tenu 0,7 s à l'arrivée puis relâché par Set Target 0 sur ce seul canal, aucune erreur
+- [x] `:OP00` : les panneaux restent ouverts, relâchés après 1,5 s, tiennent par friction (observé)
+- [x] `:CL00` : fermeture complète de tous les panneaux, porte 11 comprise, tenus 0,7 s puis relâchés, aucune erreur
+
 Encore à faire :
 
 - [ ] Contrôleur Serial2 (Kyber) : les commandes habituelles fonctionnent, une rafale n'en perd aucune (problème 7)
