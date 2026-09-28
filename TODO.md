@@ -3,31 +3,47 @@
 Tâches ouvertes. Les numéros de problèmes renvoient à la [revue du firmware](docs/review/revue-firmware.md).
 L'historique des étapes terminées est dans [docs/maestro-migration-history.md](docs/maestro-migration-history.md).
 
-## 1. Tests matériels en attente
+## 1. Tests matériels
 
-Ils confirment ou infirment les déductions de la revue. À faire avant de corriger le code.
+### Session du 2026-09-27 (firmware de la branche `nettoyage/revue-firmware`, commandes par USB)
 
-- [ ] `:OP00` : les panneaux restent-ils ouverts, ou se referment-ils ~200 ms après ? (problème 4)
-- [ ] `:SD5` : seul le servo 5 devient mou, ou tous les servos ? (problèmes 2 et 3)
-- [ ] Contrôleur sur Serial2 (Kyber, Marcduino…) et fin de ligne utilisée dans le moniteur série : CR, LF ou CR+LF ? (problème 5)
-- [ ] Maestro Control Center : enregistrer le fichier de réglages (*File → Save settings file*) et relever l'onglet *Errors* pendant que l'ESP32 tourne (problèmes 2 et 3)
-- [ ] Holo arrière : vérifier si les axes H/V des canaux 17 et 18 sont inversés
+Outils : commandes envoyées sur le port USB de l'ESP32 ; état du Maestro lu avec `UscCmd --status`
+(USB natif) ; trames ESP32 → Maestro capturées sur le port Command du Maestro, qui les recopie en mode UART.
 
-Après avoir flashé les corrections déjà faites (section 2) :
+Déductions de la revue, maintenant mesurées :
 
-- [ ] `~RTLE11050000` (effet 105) et `~RTLE1250000` (effet 25) : aucun redémarrage, les logics reviennent à l'effet normal (problème 6)
-- [ ] `@1P61` puis `@1P60` : la police des logics avant change, le PSI ne passe pas en Leia (problème 14)
-- [ ] `@1P6` et `@1P11` : toujours PSI Leia et PSI March (non-régression)
-- [ ] Moniteur USB en CR+LF, envoyer `:SE02` : une seule exécution (problème 5)
+- [x] Au repos, le Maestro est en erreur `0x0010 ERROR_SERIAL_PROTOCOL` en permanence (voyant rouge allumé) :
+  l'ESP32 envoie ~7 trames `AA 01 60 <canal> 00 00` par seconde, surtout pour les holos 13–18 (problèmes 2 et 3 confirmés)
+- [x] Chaque trame `0x60` met le Maestro en erreur et, avec « On startup or error = Off » sur les 24 canaux,
+  coupe **tous** les canaux : un panneau est coupé 0,2 à 0,3 s après son arrivée, et `:CL00` est coupé 70 ms après l'envoi
+  (problème 2 confirmé ; `:SD5` n'est plus nécessaire)
+- [x] `:OP00` : ouverture, puis fermeture commandée ~250 ms après ; les panneaux s'ouvrent à peine (problème 4 confirmé, observé)
+- [x] Réglages du Maestro relevés : [docs/maestro/maestro_settings.txt](docs/maestro/maestro_settings.txt)
+- [x] Holo arrière : dans le Maestro, 17 = `RHP-H` et 18 = `RHP-V`, comme `assignServos(17, 18)` ; c'est le commentaire
+  de `servoSettings[]` qui est inversé (à confirmer à l'œil)
+- [x] Fin de ligne : le parseur accepte maintenant CR, LF et CR+LF, la question n'est plus bloquante
+
+Corrections déjà faites, validées :
+
+- [x] `~RTLE11050000` (effet 105) et `~RTLE1250000` (effet 25) : aucun redémarrage (problème 6)
+- [x] `@1P61` : le PSI avant ne passe plus en Leia ; police Aurabesh visible sur les logics avant (problème 14)
+- [x] `@1P6` : PSI avant en Leia (non-régression)
+- [x] `#APSTAT` en CR+LF : une seule exécution ; rafale de 3 commandes : les 3 exécutées (problèmes 5 et 7)
+- [x] `:SM0,500,2400` : l'ESP32 n'envoie jamais plus de 1840 µs (problème 11)
+- [x] `:SE56` : un seul cycle ouverture-fermeture (problème 13)
+- [x] `#APRESTART` : redémarrage propre, `Reset reason: SOFTWARE`
+- [x] Durée de boucle : au repos moyenne 297–320 µs, max 8–10 ms ; pendant `:SE22` moyenne 363 µs, max 10,3 ms.
+  Le maximum vient du rafraîchissement des LED, pas du Maestro : problème 9 sans objet. Heap libre 328 Ko (min 322 Ko),
+  pile loopTask 6,5 Ko libres sur 8 Ko
+
+Encore à faire :
+
 - [ ] Contrôleur Serial2 (Kyber) : les commandes habituelles fonctionnent, une rafale n'en perd aucune (problème 7)
-- [ ] `:SM0,500,1500` bouge le panneau ; `:SM0,500,2400` s'arrête à 1840 µs (limite fermée du canal 0) (problème 11)
-- [ ] Séquences `:SE02`, `:SE22`, holos `*HA01` : mouvements identiques à avant (non-régression)
-- [x] Au démarrage, le moniteur USB affiche `Reset reason: POWERON` ; `#APSTAT` répond, noter la durée de boucle moyenne et maximale (base pour le problème 9)
-  - 2026-09-27, 5 s après le boot, au repos : boucle moyenne 297 µs, max 10 ms ; heap libre 328 Ko (min 322 Ko) ; pile loopTask 6,7 Ko libres sur 8 Ko
-- [ ] `#APSTAT` pendant et juste après une séquence avec tous les panneaux (`:SE22`) : durée de boucle maximale (problème 9)
-- [ ] `:SE56` et `:SE36` : les panneaux s'ouvrent et se ferment une seule fois (problème 13)
-- [ ] `:OW$3F` et `:OP$3F,300,300` : même comportement qu'avant (handlers dynamiques regroupés)
-- [ ] Lancer plusieurs séquences longues (`:SE07`, `$815`) : pas de redémarrage par le watchdog (`Reset reason: TASK_WDT`) (problème 8)
+- [ ] `@1P11` : PSI March (non-régression)
+- [ ] `:SE02`, `*HA01`, `:OW$3F`, `:OP$3F,300,300` : même comportement qu'avant
+- [ ] Séquences longues (`:SE07`, `$815`) : pas de redémarrage par le watchdog (`Reset reason: TASK_WDT`) (problème 8)
+- [ ] Porte 11 (canal 11) : vérifier qu'elle se ferme correctement (le Maestro plafonne à 1552 µs)
+- [ ] Holo arrière : confirmer à l'œil que le canal 17 est l'axe horizontal
 
 ## 2. Corrections du firmware (plan d'action de la revue)
 
@@ -41,8 +57,12 @@ Dans l'ordre recommandé :
 - [x] `@1P60`/`@1P61`/`@2P60`/`@2P61` : la correspondance la plus longue l'emporte désormais (problème 14)
 - [x] `enableLoopWDT()` et commande de diagnostic `#APSTAT` (problème 8)
 - [x] Bornage des impulsions `:SM`/`:SQ` aux limites du canal, comparaisons de temps sûres au rollover de `millis()` (problèmes 10 et 11)
-- [ ] Réduire le débit vers le Maestro, seulement si les mesures le justifient (problème 9)
+- [x] ~~Réduire le débit vers le Maestro~~ : sans objet, la boucle reste à 363 µs en moyenne pendant un mouvement (problème 9)
 - [x] Nettoyage : `:SE36`/`:SE56` lancés deux fois, `@4S3` mort dans `:CL00`, SPIFFS inutile, flag PSRAM, handlers `:OX$` dupliqués (problème 13)
+- [ ] Canal 11 (porte mini du PSI avant) : position fermée 2552 µs dans `servoSettings[]`, mais le Maestro plafonne à 1552 µs ; probablement une faute de frappe
+- [ ] `@1M` / `@2M` seul n'affiche rien sur les logics avant quand l'autre ligne est vide (code d'origine)
+- [ ] `@1P1`, `@2P1` et `resetSequence()` (`LE000000`) remettent les PSI en effet « Normal » (scintillement) au lieu de leur effet de démarrage (color wipe 23)
+- [ ] Commentaire de `servoSettings[]` : canaux 17/18 du holo arrière inversés (17 = horizontal)
 
 ## 3. Holos (ancienne étape 9)
 
