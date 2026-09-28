@@ -53,8 +53,8 @@ def c_string(s):
 
 def c_mask(mask):
     if mask == ch.ALL:
-        return 'ALL_DOME_PANELS_MASK'
-    return ' | '.join(name for m, name in ch.PANEL_NAMES.items() if mask & m)
+        return 'MUSIC_ALL_PANELS'
+    return ' | '.join('MP(%d)' % p for p in ch.MOVABLE if mask & ch.bit(p))
 
 
 def write_song_header(song, events, duration_ms):
@@ -126,7 +126,7 @@ def write_preview(songs, results):
         if not r:
             continue
         data.append({'mu': s['mu'], 'title': s['title'], 'file': s['file'], 'duration': r['duration_ms'],
-                     'titleMs': r['title_ms'], 'tempo': r['tempo'], 'events': r['events'],
+                     'titleMs': r['title_ms'], 'tempo': r['tempo'], 'events': r['events'], 'motifs': r['motifs'],
                      'beats': [round(b * 1000) for b in r['analysis']['beats']]})
     with open(PREVIEW_TEMPLATE, encoding='utf-8') as f:
         html = f.read()
@@ -152,7 +152,7 @@ def main():
             print(':MU%02d  %-34s absent ou désactivé' % (s['mu'], s['file']))
             continue
         a = analysis.analyze_cached(path, CACHE_DIR)
-        events, duration_ms, title_ms, tiers = ch.choreograph(a, s['title'], FONT_H)
+        events, duration_ms, title_ms, tiers, motifs = ch.choreograph(a, s['title'], FONT_H, LAYOUT_JSON)
         errors, stats = validate.validate(events, duration_ms, title_ms)
         if errors:
             print(':MU%02d  %s : %d erreur(s)' % (s['mu'], s['file'], len(errors)))
@@ -161,7 +161,7 @@ def main():
             failed = True
             continue
         results[s['mu']] = {'events': events, 'duration_ms': duration_ms, 'title_ms': title_ms,
-                            'tempo': a['tempo'], 'tiers': tiers, 'analysis': a}
+                            'tempo': a['tempo'], 'tiers': tiers, 'motifs': motifs, 'analysis': a}
         if not only or s['mu'] in only:
             write_song_header(s, events, duration_ms)
         print(':MU%02d  %-34s %5.1f s  %3d BPM  %4d événements (max %2d/s)  sections %s'

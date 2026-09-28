@@ -17,7 +17,8 @@ HOP = 512
 # Cercle des quintes : deux accords voisins donnent des couleurs voisines
 FIFTHS = [0, 7, 2, 9, 4, 11, 6, 1, 8, 3, 10, 5]   # C G D A E B F# C# G# D# A# F
 
-ANALYSIS_VERSION = 3
+ANALYSIS_VERSION = 4
+SECTION_SIMILARITY = 0.75   # cosinus minimal pour considérer deux sections comme la même partie
 
 
 def _norm(x, lo=5, hi=95):
@@ -137,6 +138,24 @@ def analyze(path):
             'level': float(np.mean(beat_level[b:e])),
             'low': float(np.mean(beat_low[b:e])),
         })
+
+    # Sections qui se ressemblent (refrains) : même étiquette. Chaque caractéristique est centrée
+    # et réduite sur la chanson, puis on compare la moyenne de chaque section (cosinus).
+    fz = (feat - feat.mean(axis=1, keepdims=True)) / (feat.std(axis=1, keepdims=True) + 1e-9)
+    vecs = []
+    for s in sections:
+        v = fz[:, s['start_beat']:min(fz.shape[1], s['end_beat'])].mean(axis=1)
+        vecs.append(v / (np.linalg.norm(v) + 1e-9))
+    labels = []
+    for i, v in enumerate(vecs):
+        best, best_sim = None, SECTION_SIMILARITY
+        for j in range(i):
+            sim = float(np.dot(v, vecs[j]))
+            if sim > best_sim:
+                best, best_sim = labels[j], sim
+        labels.append(best if best is not None else max(labels, default=-1) + 1)
+    for s, lab in zip(sections, labels):
+        s['label'] = lab
 
     return {
         'version': ANALYSIS_VERSION,

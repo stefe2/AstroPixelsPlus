@@ -88,7 +88,6 @@ const SONGS = /*SONGS*/[];
 const FILE_LAYOUT = /*LAYOUT*/null;
 
 const SMALL = 1, MEDIUM = 2, BIG = 4, PIE = 8, TOP = 16, MINI = 32;
-const PANEL_TYPES = [[SMALL, 'petits'], [MEDIUM, 'moyens'], [BIG, 'grand'], [PIE, 'pie'], [TOP, 'dessus'], [MINI, 'mini']];
 const LOGIC_RGB = ['#9fc7ff', '#ff2a2a', '#ff8a00', '#ffe000', '#2cff5a', '#00e5ff', '#2f6bff', '#9a45ff', '#ff36c8', '#ff8fbf'];
 const HOLO_RGB = ['#ffffff', '#ff2a2a', '#ffe000', '#2cff5a', '#00e5ff', '#2f6bff', '#ff36c8', '#ff8a00', '#9a45ff', '#ffffff'];
 const EFFECT_NAMES = {0: 'normal', 5: 'couleur', 6: 'flash', 7: 'flip-flop', 10: 'arc-en-ciel', 14: 'noir', 22: 'feu', 23: 'balayage'};
@@ -350,7 +349,7 @@ function freshState() {
   const logic = () => ({effect: 0, color: 0, speed: 0, since: 0});
   return {
     logic: {1: logic(), 3: logic(), 4: {effect: 23, color: 1, speed: 0, since: 0}, 5: {effect: 23, color: 3, speed: 0, since: 0}},
-    panels: Object.fromEntries(PANEL_TYPES.map(([m]) => [m, {from: 0, to: 0, t0: 0, ms: 1}])),
+    panels: Object.fromEntries(Object.keys(PANELS).map(id => [id, {from: 0, to: 0, t0: 0, ms: 1}])),
     holos: [0, 1, 2].map(() => ({from: 1, to: 1, t0: 0, ms: 1, led: 'off', color: 0})),
   };
 }
@@ -371,8 +370,9 @@ function panelAt(p, t) {
 }
 function applyEvent(e) {
   if (e.kind === 'panels') {
-    for (const [m] of PANEL_TYPES) if (e.mask & m) {
-      const p = state.panels[m];
+    // Un bit par panneau du plan : bit n-1 pour Pn (MP(n) dans le firmware)
+    for (const id in PANELS) if (e.mask & (1 << (+id.slice(1) - 1))) {
+      const p = state.panels[id];
       p.from = panelAt(p, e.t); p.to = e.pct / 100; p.t0 = e.t; p.ms = e.ms;
     }
   } else if (e.kind === 'holo') {
@@ -433,7 +433,7 @@ function draw(t) {
   for (const id in PANELS) {
     const e = els[id], L = layout[id];
     if (!e) continue;
-    const open = PANELS[id].noServo ? 0 : panelAt(state.panels[PANELS[id].type], t);
+    const open = PANELS[id].noServo ? 0 : panelAt(state.panels[id], t);
     if (PANELS[id].noServo) { e.shape.setAttribute('fill', 'var(--dome)'); e.shape.setAttribute('stroke-dasharray', '3 3'); continue; }
     e.shape.setAttribute('fill', open > 0.02 ? `color-mix(in srgb, ${openCol} ${Math.round(35 + open * 65)}%, ${closedCol})` : closedCol);
     if (L.kind === 'arc') {
@@ -489,15 +489,18 @@ function describeLogic(l) {
 }
 function stateText(t) {
   const L = state.logic;
-  const open = PANEL_TYPES.filter(([m]) => panelAt(state.panels[m], t) > 0.05)
-    .map(([m, n]) => n + ' ' + Math.round(panelAt(state.panels[m], t) * 100) + ' %').join(', ') || 'fermés';
+  const open = Object.keys(PANELS).filter(id => panelAt(state.panels[id], t) > 0.05)
+    .map(id => id + ' ' + Math.round(panelAt(state.panels[id], t) * 100) + ' %').join(', ') || 'fermés';
+  const cur = (song.motifs || []).filter(m => m.t <= t).pop();
+  const motif = cur ? cur.motif + (cur.label != null ? ' (partie ' + 'ABCDEFGHIJKL'[cur.label] + ')' : '') +
+    ' · niveau ' + cur.tier : '—';
   const holos = state.holos.map((h, i) => ['FHP', 'RHP', 'THP'][i] + ' ' + HOLO_POS_NAMES[h.to] + ', ' +
     (h.led === 'off' ? 'éteint' : h.led === 'rainbow' ? 'arc-en-ciel' :
      (h.led === 'pulse' ? 'pulsation ' : '') + (COLOR_NAMES[HOLO_COLOR_NAME[h.color]] || 'blanc')));
   return fmt(t) + ' / ' + fmt(song.duration) + (t < song.titleMs ? '   titre sur la logic arrière' : '') + '\n\n' +
     'FLD   ' + describeLogic(L[1]) + '\nRLD   ' + (t < song.titleMs ? 'titre' : describeLogic(L[3])) + '\n' +
     'FPSI  ' + describeLogic(L[4]) + '\nRPSI  ' + describeLogic(L[5]) + '\n\n' +
-    'Panneaux : ' + open + '\n\n' + holos.join('\n');
+    'Motif : ' + motif + '\nPanneaux : ' + open + '\n\n' + holos.join('\n');
 }
 
 // Adresse #mu=11&t=31 : ouvre :MU11 figé à 31 s (captures d'écran, partage d'un moment précis)

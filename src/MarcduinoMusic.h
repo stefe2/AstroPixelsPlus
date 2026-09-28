@@ -13,7 +13,7 @@
 
 enum MusicEventKind : uint8_t
 {
-    kMusicPanels,   // groupes de panneaux vers une position (0 = fermé, 100 = ouvert)
+    kMusicPanels,   // panneaux (P1–P13) vers une position (0 = fermé, 100 = ouvert)
     kMusicHolo,     // un holo (ou les trois) vers une position de moveHP() (0–8)
     kMusicCommand   // commandes Reeltwo (LE…, HP…) séparées par \n
 };
@@ -23,7 +23,7 @@ struct MusicEvent
 {
     uint32_t timeMs;        // depuis le début de la chanson
     const char* cmd;        // commandes
-    uint16_t mask;          // panneaux : types (SMALL_PANEL, PIE_PANEL, ALL_DOME_PANELS_MASK…)
+    uint16_t mask;          // panneaux : un bit par panneau du plan, MP(1)…MP(13)
     uint16_t moveMs;        // durée du mouvement
     MusicEventKind kind;
     uint8_t a;              // panneaux : position en % ; holo : MUSIC_HOLO_*
@@ -44,6 +44,12 @@ struct MusicSong
 #define MUSIC_HOLO_REAR  1
 #define MUSIC_HOLO_TOP   2
 #define MUSIC_HOLO_ALL   3
+
+// Panneau n du plan du dôme (P1–P13) ; décalé vers PANEL_GROUP_n de servoSettings[] à l'exécution.
+// P6 et P13 n'ont pas de servo : les chorégraphies ne les commandent pas.
+#define MP(n) (1u << ((n) - 1))
+#define MUSIC_ALL_PANELS (MP(1) | MP(2) | MP(3) | MP(4) | MP(5) | MP(7) | MP(8) | MP(9) | MP(10) | MP(11) | MP(12))
+static_assert(PANEL_GROUP_1 == (1L << 14), "MP(n) << 14 doit donner PANEL_GROUP_n");
 
 #define MUSIC_PANELS(t, mask, pct, ms) { (t), nullptr, (mask), (ms), kMusicPanels, (pct), 0 }
 #define MUSIC_HOLO(t, holo, pos, ms)   { (t), nullptr, 0, (ms), kMusicHolo, (holo), (pos) }
@@ -102,7 +108,7 @@ static void musicRunEvent(const MusicEvent& ev)
     switch (ev.kind)
     {
     case kMusicPanels:
-        servoDispatch.moveServosTo(ev.mask, ev.moveMs, ev.a / 100.0f);
+        servoDispatch.moveServosTo((uint32_t)ev.mask << 14, ev.moveMs, ev.a / 100.0f);
         break;
     case kMusicHolo:
     {

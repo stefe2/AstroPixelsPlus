@@ -17,40 +17,40 @@ Kyber plays; its command must send the matching `:MUnn`.
 <!-- table:debut -->
 | Command | Kyber file | Title shown | Length | Tempo | Sections (intensity 0–3) | Events |
 | --- | --- | --- | --- | --- | --- | --- |
-| `:MU01` | `0176-cantinaR2.mp3` | CANTINA R2 | 0:17 | 123 BPM | 3 0 | 55 |
-| `:MU02` | `0177-mainthemeR2.mp3` | MAIN THEME R2 | 0:12 | 108 BPM | 3 0 | 33 |
-| `:MU03` | `0178-VaderR2.mp3` | VADER R2 | 0:21 | 89 BPM | 2 3 | 37 |
-| `:MU04` | `0179-menoumR2.mp3` | MENOUM R2 | 2:10 | 185 BPM | 3 1 1 1 1 1 | 356 |
-| `:MU05` | `0180-mus-5.mp3` | MUS 5 | 0:17 | 123 BPM | 3 0 | 55 |
-| `:MU06` | `0181-stayingaliveR2.mp3` | STAYING ALIVE | 4:04 | 103 BPM | 1 2 2 2 1 2 3 1 1 0 | 1260 |
-| `:MU07` | `0182-ImperielMarch.mp3` | IMPERIAL MARCH | 3:02 | 103 BPM | 3 0 0 1 2 2 2 2 | 845 |
-| `:MU08` | `0183-ThromeRoom.mp3` | THRONE ROOM | 7:53 | 123 BPM | 2 2 2 0 1 3 2 3 0 2 1 3 | 1849 |
-| `:MU09` | `0184-MainTheme.mp3` | STAR WARS | 5:47 | 123 BPM | 2 2 0 0 2 0 2 2 0 0 3 3 | 1686 |
-| `:MU10` | `0185-304.mp3` | 304 | 3:03 | 129 BPM | 1 3 2 2 0 1 3 2 | 776 |
-| `:MU11` | `0186-Thunderstruck.mp3` | THUNDERSTRUCK | 3:14 | 129 BPM | 1 1 3 2 0 2 0 2 2 | 881 |
-| `:MU12` | `0187-BootScootinBoogie.mp3` | BOOT SCOOTIN BOOGIE | 2:17 | 129 BPM | 1 2 2 3 2 3 | 551 |
-| `:MU13` | `0188-Caramelle.mp3` | CARAMELLE | 1:57 | 129 BPM | 0 2 1 0 3 | 325 |
-| `:MU14` | `0189-UpsideDown.mp3` | UPSIDE DOWN | 5:51 | 123 BPM | 0 0 2 0 1 3 0 3 0 1 2 0 | 1075 |
-| `:MU15` | `0190-Emotion.mp3` | EMOTION | 3:02 | 123 BPM | 0 2 2 0 0 1 1 3 | 594 |
-| `:MU16` | `0191-FastCarsSuperstars.mp3` | FAST CARS SUPERSTARS | 1:55 | 129 BPM | 1 3 2 1 2 | 562 |
-| `:MU17` | `0192-DoubleDutchBus.mp3` | DOUBLE DUTCH BUS | 4:59 | 129 BPM | 1 2 1 2 1 1 1 2 1 1 1 1 | 729 |
-| `:MU18` | `0193-Insomnia.mp3` | INSOMNIA | 2:29 | 129 BPM | 0 1 2 1 3 1 | 437 |
-| `:MU19` | `0194-RingOfFire.mp3` | RING OF FIRE | 2:12 | 129 BPM | 2 0 2 3 2 2 | 689 |
-| `:MU20` | `0195-IsisBillieJean.mp3` | BILLIE JEAN | 3:56 | 117 BPM | 3 2 2 2 3 3 1 2 1 3 1 | 1189 |
-| `:MU21` | `0196-Sandstorm.mp3` | SANDSTORM | 2:14 | 152 BPM | 0 0 1 3 1 2 | 428 |
-| `:MU22` | `0197-PumpUpTheJam.mp3` | PUMP UP THE JAM | 5:17 | 123 BPM | 0 2 2 3 2 2 2 2 1 2 2 2 | 1419 |
-| `:MU23` | `0198-BlackBetty.mp3` | BLACK BETTY | 2:00 | 129 BPM | 0 1 1 1 3 | 271 |
-| `:MU24` | `0199-Satisfaction.mp3` | SATISFACTION | 2:42 | 129 BPM | 1 1 3 2 0 2 2 | 638 |
-| `:MU25` | `0200-SwingRave.mp3` | SWING RAVE | 2:49 | 123 BPM | 2 3 2 3 1 2 1 3 | 674 |
-| `:MU26` | `0201-TakeMeUp.mp3` | TAKE ME UP | 3:22 | 123 BPM | 0 2 2 3 1 2 3 1 1 | 545 |
-| `:MU27` | `0202-TheGitUp.mp3` | THE GIT UP | 3:06 | 99 BPM | 0 2 1 1 2 1 3 3 | 663 |
-| `:MU28` | `0203-Blade.mp3` | BLADE | 10:20 | 136 BPM | 2 2 2 2 2 3 1 1 3 3 3 0 | 2455 |
-| `:MU29` | `0204-BREATHE.mp3` | BREATHE | 2:04 | 123 BPM | 0 3 1 0 2 0 | 337 |
-| `:MU30` | `0205-UpToNoGood.mp3` | UP TO NO GOOD | 2:35 | 92 BPM | 0 3 2 1 3 2 | 479 |
-| `:MU31` | `0206-WeLikeToParty.mp3` | WE LIKE TO PARTY | 3:41 | 136 BPM | 1 1 2 2 2 3 1 3 | 903 |
-| `:MU32` | `0207-ZombieNation.mp3` | ZOMBIE NATION | 2:11 | 136 BPM | 1 1 2 1 1 3 | 395 |
-| `:MU33` | `0208-9to5.mp3` | 9 TO 5 | 2:45 | 112 BPM | 2 0 2 2 3 2 2 | 1002 |
-| `:MU34` | `0254-UniversalPicturesMinions.mp3` | MINIONS | 0:31 | 144 BPM | 3 2 | 141 |
+| `:MU01` | `0176-cantinaR2.mp3` | CANTINA R2 | 0:17 | 123 BPM | 3 0 | 81 |
+| `:MU02` | `0177-mainthemeR2.mp3` | MAIN THEME R2 | 0:12 | 108 BPM | 3 0 | 87 |
+| `:MU03` | `0178-VaderR2.mp3` | VADER R2 | 0:21 | 89 BPM | 2 3 | 91 |
+| `:MU04` | `0179-menoumR2.mp3` | MENOUM R2 | 2:10 | 185 BPM | 3 1 1 1 1 1 | 646 |
+| `:MU05` | `0180-mus-5.mp3` | MUS 5 | 0:17 | 123 BPM | 3 0 | 71 |
+| `:MU06` | `0181-stayingaliveR2.mp3` | STAYING ALIVE | 4:04 | 103 BPM | 1 2 2 2 1 2 3 1 1 0 | 1423 |
+| `:MU07` | `0182-ImperielMarch.mp3` | IMPERIAL MARCH | 3:02 | 103 BPM | 3 0 0 1 2 2 2 2 | 1098 |
+| `:MU08` | `0183-ThromeRoom.mp3` | THRONE ROOM | 7:53 | 123 BPM | 2 2 2 0 1 3 2 3 0 2 1 3 | 2700 |
+| `:MU09` | `0184-MainTheme.mp3` | STAR WARS | 5:47 | 123 BPM | 2 2 0 0 2 0 2 2 0 0 3 3 | 2328 |
+| `:MU10` | `0185-304.mp3` | 304 | 3:03 | 129 BPM | 1 3 2 2 0 1 3 2 | 1724 |
+| `:MU11` | `0186-Thunderstruck.mp3` | THUNDERSTRUCK | 3:14 | 129 BPM | 1 1 3 2 0 2 0 2 2 | 1435 |
+| `:MU12` | `0187-BootScootinBoogie.mp3` | BOOT SCOOTIN BOOGIE | 2:17 | 129 BPM | 1 2 2 3 2 3 | 1140 |
+| `:MU13` | `0188-Caramelle.mp3` | CARAMELLE | 1:57 | 129 BPM | 0 2 1 0 3 | 780 |
+| `:MU14` | `0189-UpsideDown.mp3` | UPSIDE DOWN | 5:51 | 123 BPM | 0 0 2 0 1 3 0 3 0 1 2 0 | 2133 |
+| `:MU15` | `0190-Emotion.mp3` | EMOTION | 3:02 | 123 BPM | 0 2 2 0 0 1 1 3 | 1134 |
+| `:MU16` | `0191-FastCarsSuperstars.mp3` | FAST CARS SUPERSTARS | 1:55 | 129 BPM | 1 3 2 1 2 | 936 |
+| `:MU17` | `0192-DoubleDutchBus.mp3` | DOUBLE DUTCH BUS | 4:59 | 129 BPM | 1 2 1 2 1 1 1 2 1 1 1 1 | 1774 |
+| `:MU18` | `0193-Insomnia.mp3` | INSOMNIA | 2:29 | 129 BPM | 0 1 2 1 3 1 | 1160 |
+| `:MU19` | `0194-RingOfFire.mp3` | RING OF FIRE | 2:12 | 129 BPM | 2 0 2 3 2 2 | 1041 |
+| `:MU20` | `0195-IsisBillieJean.mp3` | BILLIE JEAN | 3:56 | 117 BPM | 3 2 2 2 3 3 1 2 1 3 1 | 2218 |
+| `:MU21` | `0196-Sandstorm.mp3` | SANDSTORM | 2:14 | 152 BPM | 0 0 1 3 1 2 | 601 |
+| `:MU22` | `0197-PumpUpTheJam.mp3` | PUMP UP THE JAM | 5:17 | 123 BPM | 0 2 2 3 2 2 2 2 1 2 2 2 | 2248 |
+| `:MU23` | `0198-BlackBetty.mp3` | BLACK BETTY | 2:00 | 129 BPM | 0 1 1 1 3 | 464 |
+| `:MU24` | `0199-Satisfaction.mp3` | SATISFACTION | 2:42 | 129 BPM | 1 1 3 2 0 2 2 | 1021 |
+| `:MU25` | `0200-SwingRave.mp3` | SWING RAVE | 2:49 | 123 BPM | 2 3 2 3 1 2 1 3 | 1339 |
+| `:MU26` | `0201-TakeMeUp.mp3` | TAKE ME UP | 3:22 | 123 BPM | 0 2 2 3 1 2 3 1 1 | 1376 |
+| `:MU27` | `0202-TheGitUp.mp3` | THE GIT UP | 3:06 | 99 BPM | 0 2 1 1 2 1 3 3 | 914 |
+| `:MU28` | `0203-Blade.mp3` | BLADE | 10:20 | 136 BPM | 2 2 2 2 2 3 1 1 3 3 3 0 | 4724 |
+| `:MU29` | `0204-BREATHE.mp3` | BREATHE | 2:04 | 123 BPM | 0 3 1 0 2 0 | 676 |
+| `:MU30` | `0205-UpToNoGood.mp3` | UP TO NO GOOD | 2:35 | 92 BPM | 0 3 2 1 3 2 | 898 |
+| `:MU31` | `0206-WeLikeToParty.mp3` | WE LIKE TO PARTY | 3:41 | 136 BPM | 1 1 2 2 2 3 1 3 | 1306 |
+| `:MU32` | `0207-ZombieNation.mp3` | ZOMBIE NATION | 2:11 | 136 BPM | 1 1 2 1 1 3 | 799 |
+| `:MU33` | `0208-9to5.mp3` | 9 TO 5 | 2:45 | 112 BPM | 2 0 2 2 3 2 2 | 1205 |
+| `:MU34` | `0254-UniversalPicturesMinions.mp3` | MINIONS | 0:31 | 144 BPM | 3 2 | 249 |
 <!-- table:fin -->
 
 ## How a choreography is built
@@ -63,11 +63,11 @@ written by hand, and every song gets the same treatment.
 | Measure | Used for |
 | --- | --- |
 | Tempo, beats, bars (groups of 4 beats) | timing of every move |
-| Bass hits (kick) and treble hits (snare, cymbals) | panel pops |
+| Bass hits (kick) and treble hits (snare, cymbals) | panel pops, Morse taps, drum-roll trembles |
 | Bass, mid and treble energy, overall loudness | intensity of each moment |
 | Dominant note of each bar, placed on the circle of fifths | colors: related chords give related colors |
-| Left/right balance (stereo files) | where the holos look |
-| Sections (verse, chorus, break…) | changes of style |
+| Left/right balance (stereo files) | where the holos look, left/right panels |
+| Sections (verse, chorus, break…), and which ones sound alike | changes of style; a repeated chorus gets the same choreography every time |
 
 Every section gets an intensity from 0 to 3, relative to the rest of the song. The peak level (3) is
 kept for at most about a third of the song, so it stays special.
@@ -76,23 +76,59 @@ kept for at most about a third of the song, so it stays special.
 
 | Intensity | Logics and PSI | Holos | Panels |
 | --- | --- | --- | --- |
-| 0 — calm | color of the harmony, changing with the chords | one holo at a time turns slowly toward the side the sound comes from (stereo), else a slow scan; soft color pulse | closed |
-| 1 — groove | halves flip-flop at the tempo; PSI flash at the tempo | one holo at a time looks left or right on each bar; solid color of the bar | the dome "breathes": one panel type half-opens on strong bars, in turn |
-| 2 — energy | front and rear swap two colors on every beat | all holos nod every other beat; color swaps on the beat | pie panels pop on bass hits, small and medium panels on snare backbeats, mini panels (P11–P12) wink every other bar |
-| 3 — peak | fire or rainbow (alternating from one peak to the next); PSI rainbow | all holos nod on every beat; rainbow | **equalizer**: the number of panel types open follows the bass, in four steps: mini (P11–P12), small (P1–P3), medium (P4–P5), pie (P7–P10) |
+| 0 — calm | color of the harmony, changing with the chords | one holo at a time turns slowly toward the side the sound comes from (stereo), else a slow scan; soft color pulse | a calm motif (see below) |
+| 1 — groove | halves flip-flop at the tempo; PSI flash at the tempo | one holo at a time looks left or right on each bar; solid color of the bar | a groove motif |
+| 2 — energy | front and rear swap two colors on every beat | all holos nod every other beat; color swaps on the beat | an energy motif |
+| 3 — peak | fire or rainbow (alternating from one peak to the next); PSI rainbow | all holos nod on every beat; rainbow | a peak motif |
+
+### Panel motifs
+
+Panels are driven one by one (P1–P12; P6 and P13 have no servo and are never commanded). Each section
+gets one motif from the list for its intensity, never the same as the section before. Sections that
+sound alike (a chorus coming back) get the same motif with the same draw, so the audience recognizes
+them. The positions come from the dome drawing (`tools/music/layout.json`): "around the dome", "left",
+"front" follow the real layout. Left and right are seen from the audience, in front of the droid.
+
+| Motif | Intensity | What the panels do |
+| --- | --- | --- |
+| Breathing | 0 | all panels open to 15–35 % over two beats, close over the next two |
+| Sparkle | 0 | one random panel briefly opens a little on treble hits |
+| Morse | 0 | one panel taps the rhythm: short tap, or a long one when the next note is late |
+| Solo | 0, 1 | a single panel opens on each accent, never the same twice in a row |
+| Knight Rider | 1 | a single open panel travels along the outer ring and back |
+| Wave | 1, 3 | panels open one after the other around the dome; direction changes per section; every half beat at peak |
+| Left / right | 1, 2 | panels on the side the sound comes from open (stereo songs only) |
+| Heartbeat | 1 | two neighboring panels beat one after the other ("boom-boom") on the kick |
+| Call and response | 1 | one group plays a bar (outer ring, or left side), the other answers the next bar |
+| Pie wheel | 2, 3 | one pie panel open at a time, turning; twice as fast at peak; mini panels wink on strong kicks |
+| Mirror | 2, 3 | left/right symmetrical pairs open together, one pair after the other |
+| Dominos | 2, 3 | a row of panels opens in cascade over one beat, closes in the same order on the next; reversed every other bar |
+| Accordion | 2 | rows open from front to back over two beats, close from back to front over the next two |
+| Groups | 2 | pie panels on bass hits, small and medium on snare backbeats, mini panels every other bar |
+| Equalizer | 3 | the number of panel types open follows the bass (mini, small, medium, pie) and falls back between beats like a VU meter |
+
+On top of the motif:
+
+- **Look at the door**: when a single panel opens (solo, sparkle, Morse, Knight Rider), the nearest holo
+  turns toward it, and in calm parts the nearest logic or PSI takes the complementary color.
+- **Drum roll**: on a roll (three or more snare hits in one beat), a panel trembles between 20 and 45 %.
+- **Big moment**: on the loudest beat of the song, everything opens, holos turn white and look up, then
+  one beat of complete darkness before the music goes on.
 
 ### Transitions
 
-- **Build-up**: during the 4 bars before a big jump in intensity, all panels creep open (10 %, 20 %,
-  30 %, 40 %), the logics flash faster and faster, and the holos rise. On the last beat everything goes
-  dark, then the peak starts with all panels opening at once. The rules know the whole song in
+- **Build-up and suspense**: during the 4 bars before a big jump in intensity, the panels open one by
+  one to 50 %, then freeze for the last bar; the logics flash faster and faster, and the holos rise. On
+  the last beat everything goes dark, then the peak starts with all panels slamming open for one beat. The rules know the whole song in
   advance, so the droid anticipates the drop instead of reacting to it.
 - **Break** (quiet part right after a loud one): lights out, panels closed, holos centered.
-- **End**: panels close, holos center, then the pie panels half-open and close as a bow on the last notes. P6 and P13 have no servo and are never opened.
+- **End**: panels close, holos center, then a bow chosen per song: pie panels half-open, a wave that
+  closes panel by panel, a pie wheel that slows down and stops, or a double wink of the mini panels.
 
 ### Mechanical limits enforced
 
-- Panel moves last at least 150 ms, and the same panel type is not commanded twice within 250 ms.
+- Panel moves last at least 150 ms, and the same panel is not commanded twice within 250 ms (a close
+  that comes too early is delayed, never dropped, so no panel stays open).
 - A holo does not move twice within 300 ms.
 - A logic display is not changed twice within 110 ms.
 - The rear logic is left alone while the title scrolls.
@@ -119,7 +155,7 @@ song: a positive value delays the choreography, a negative value advances it. Th
 
 `mp3/preview.html` plays each MP3 with a top view of the dome drawn from the dome plan (panels P1–P13,
 FHP/RHP/THP, FLD/RLD, FPSI/RPSI): open panels, logic and PSI colors,
-holo direction and color, and a timeline of events (click it to seek). Open it in a browser from the
+holo direction and color, the current panel motif, and a timeline of events (click it to seek). Open it in a browser from the
 `mp3/` folder. It is generated with the choreographies and stays local, like the MP3 files. Adding
 `#mu=11&t=32` to the address opens `:MU11` frozen at 32 s.
 

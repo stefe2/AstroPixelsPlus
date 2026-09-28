@@ -12,7 +12,7 @@ def validate(events, duration_ms, title_ms):
     """Renvoie (erreurs, statistiques)."""
     errors = []
     last_t = -1
-    panel_last = {m: None for m in ch.PANEL_NAMES}
+    panel_last = {p: None for p in ch.MOVABLE}
     per_second = {}
     for e in events:
         t = e['t']
@@ -34,16 +34,15 @@ def validate(events, duration_ms, title_ms):
             if len(e['cmd']) > 200:
                 errors.append('chaîne de commandes trop longue à %d ms' % t)
         elif e['kind'] == 'panels':
-            if not 0 < e['mask'] <= ch.ALL:
-                errors.append('masque de panneaux invalide à %d ms' % t)
+            if not e['mask'] or e['mask'] & ~ch.ALL:
+                errors.append('masque de panneaux invalide (P6, P13 ou inconnu) à %d ms' % t)
             if not 0 <= e['pct'] <= 100 or not ch.PANEL_MIN_MOVE_MS <= e['ms'] <= 65535:
                 errors.append('mouvement de panneaux invalide à %d ms' % t)
-            for m in ch.PANEL_NAMES:
-                if e['mask'] & m:
-                    if panel_last[m] is not None and t - panel_last[m] < ch.PANEL_MIN_GAP_MS:
-                        errors.append('%s commandé deux fois en %d ms à %d ms'
-                                      % (ch.PANEL_NAMES[m], t - panel_last[m], t))
-                    panel_last[m] = t
+            for p in ch.MOVABLE:
+                if e['mask'] & ch.bit(p):
+                    if panel_last[p] is not None and t - panel_last[p] < ch.PANEL_MIN_GAP_MS:
+                        errors.append('P%d commandé deux fois en %d ms à %d ms' % (p, t - panel_last[p], t))
+                    panel_last[p] = t
         elif e['kind'] == 'holo':
             if not 0 <= e['pos'] <= 8 or not 0 <= e['holo'] <= 3 or not 0 < e['ms'] <= 65535:
                 errors.append('mouvement de holo invalide à %d ms' % t)
