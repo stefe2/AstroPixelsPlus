@@ -43,6 +43,15 @@ FRONT_POOL = {
 }
 WHITE = 0       # couleur 0 = blanc ; 1–9 = couleurs des logics (LOGIC_COLORS)
 
+# Nom de chaque effet dans R2-Bling (enum class MusicFx de include/MusicTrack.h)
+CPP_FX = {
+    'idle': 'Idle', 'breathe': 'Breathe', 'sparkle': 'Sparkle', 'morse': 'Morse', 'wave': 'Wave',
+    'bounce': 'Bounce', 'vu': 'Vu', 'strobe': 'Strobe', 'pingpong': 'PingPong', 'cross': 'Cross',
+    'fill': 'Fill', 'freeze': 'Freeze', 'black': 'Black', 'bolt': 'Bolt', 'fire': 'Fire',
+    'disco': 'Disco', 'white': 'White', 'bow': 'Bow', 'sweep': 'Sweep', 'balance': 'Balance',
+    'heart': 'Heart',
+}
+
 # Drapeaux d'un battement
 KICK, SNARE, DOWN, ROLL = 1, 2, 4, 8
 
@@ -266,3 +275,31 @@ def feet_track(analysis, plan):
     f = Feet(analysis, plan, plan['seed'], plan['color_at'], plan['companion'])
     t_end = analysis['sound_end'] * 1000
     return f.build(t_end)
+
+
+def test_track():
+    """Piste :MU99 pour le banc : chaque effet des jambes et de la face tour à tour, 2,5 s chacun,
+    sur un battement régulier à 120 BPM avec grosse caisse sur chaque temps."""
+    beat = 500
+    legs = [fx for fx in LEG_FX if fx != 'idle']
+    fronts = [fx for fx in FRONT_FX if fx != 'idle']
+    slot = 2500
+    dur = slot * max(len(legs), len(fronts)) + 1000
+    ev = []
+    for k, t in enumerate(range(0, dur, beat)):
+        ev.append({'t': t, 'kind': 'beat', 'bass': 60 + (k * 53) % 196, 'high': (k * 97) % 256,
+                   'bal': ((k % 8) - 4) * 30, 'flags': KICK | (DOWN if k % 4 == 0 else 0) | (SNARE if k % 2 else 0)})
+        ev.append({'t': t + 250, 'kind': 'hit', 'strength': 200})
+    for i in range(max(len(legs), len(fronts))):
+        col = 1 + i % 9
+        comp = 1 + (col + 3) % 9
+        if i < len(legs):
+            ev.append({'t': i * slot, 'kind': 'legs', 'fx': legs[i], 'col': col, 'col2': comp,
+                       'p': 400 if legs[i] in ('bolt', 'white') else slot})
+        if i < len(fronts):
+            ev.append({'t': i * slot, 'kind': 'front', 'fx': fronts[i], 'col': comp, 'col2': col,
+                       'p': 400 if fronts[i] == 'white' else slot})
+    ev.append({'t': dur - 800, 'kind': 'legs', 'fx': 'idle', 'col': 0, 'col2': 0, 'p': 0})
+    ev.append({'t': dur - 800, 'kind': 'front', 'fx': 'idle', 'col': 0, 'col2': 0, 'p': 0})
+    ev.sort(key=lambda e: (e['t'], e['kind'] != 'beat'))
+    return ev, dur

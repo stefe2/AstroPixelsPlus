@@ -12,6 +12,7 @@ Sorties :
     src/music/songs.h        table des chansons pour le firmware
     docs/music.md            table de concordance (section générée)
     mp3/preview.html         prévisualisation dans le navigateur (locale, avec la musique)
+    ../../R2_Bling/include/music/songs.h   pistes des pieds pour R2-Bling (si le dépôt est présent)
 """
 
 import json
@@ -37,6 +38,8 @@ DOC = os.path.join(ROOT, 'docs', 'music.md')
 PREVIEW = os.path.join(MP3_DIR, 'preview.html')
 PREVIEW_TEMPLATE = os.path.join(HERE, 'preview_template.html')
 LAYOUT_JSON = os.path.join(HERE, 'layout.json')   # disposition du dessin, enregistrée depuis la page
+# Dépôt R2-Bling (pieds), à côté de celui-ci : Arduino Projects/R2_Bling. R2_BLING_DIR le remplace.
+R2_BLING_DIR = os.environ.get('R2_BLING_DIR', os.path.normpath(os.path.join(ROOT, '..', '..', 'R2_Bling')))
 
 TITLE_CHARS = set(' !-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ')
 
@@ -98,6 +101,52 @@ def write_songs_table(songs, results):
     lines.append('};')
     with open(os.path.join(OUT_DIR, 'songs.h'), 'w', encoding='utf-8', newline='\n') as f:
         f.write('\n'.join(lines) + '\n')
+
+
+def feet_line(e):
+    if e['kind'] == 'beat':
+        return '    FEET_BEAT(%d, 0x%02X, %d, %d, %d),' % (e['t'], e['flags'], e['bass'], e['high'], e['bal'])
+    if e['kind'] == 'hit':
+        return '    FEET_HIT(%d, %d),' % (e['t'], e['strength'])
+    return '    FEET_%s(%d, %s, %d, %d, %d),' % (e['kind'].upper(), e['t'], feet.CPP_FX[e['fx']],
+                                              e['col'], e['col2'], e['p'])
+
+
+def write_feet_songs(songs, results):
+    """Pistes des pieds dans le dépôt R2-Bling (include/music/songs.h)."""
+    out_dir = os.path.join(R2_BLING_DIR, 'include', 'music')
+    if not os.path.isdir(os.path.join(R2_BLING_DIR, 'include')):
+        print('Dépôt R2-Bling absent (%s) : pistes des pieds non écrites' % R2_BLING_DIR)
+        return
+    os.makedirs(out_dir, exist_ok=True)
+    lines = [
+        '// Pistes des pieds (:MUnn) pour R2-Bling.',
+        '// Générées par AstroPixelsPlus/tools/music/build.py : ne pas modifier à la main.',
+        '#pragma once',
+        '#include "MusicTrack.h"',
+        '',
+    ]
+    table = []
+    for s in songs:
+        r = results.get(s['mu'])
+        if not r:
+            continue
+        lines.append('// :MU%02d — %s' % (s['mu'], s['title']))
+        lines.append('static const MusicFeetEvent kFeetMU%02d[] = {' % s['mu'])
+        lines += [feet_line(e) for e in r['feet']]
+        lines.append('};')
+        table.append('    FEET_SONG(%d, kFeetMU%02d, %d, %d),' % (s['mu'], s['mu'], r['duration_ms'], s.get('offset_ms', 0)))
+    test, test_ms = feet.test_track()
+    lines.append('// :MU99 — piste de test : chaque effet tour à tour')
+    lines.append('static const MusicFeetEvent kFeetMU99[] = {')
+    lines += [feet_line(e) for e in test]
+    lines.append('};')
+    table.append('    FEET_SONG(99, kFeetMU99, %d, 0),' % test_ms)
+    lines += ['', 'static const MusicFeetSong kFeetSongs[] = {'] + table + ['};']
+    with open(os.path.join(out_dir, 'songs.h'), 'w', encoding='utf-8', newline='\n') as f:
+        f.write('\n'.join(lines) + '\n')
+    n = sum(len(r['feet']) for r in results.values()) + len(test)
+    print('R2-Bling : %d pistes, %d événements (~%d Ko de flash)' % (len(table), n, n * 12 // 1024))
 
 
 def write_doc_table(songs, results):
@@ -175,6 +224,7 @@ def main():
         sys.exit('Génération interrompue : corriger les erreurs ci-dessus.')
     write_songs_table(songs, results)
     write_doc_table(songs, results)
+    write_feet_songs(songs, results)
     if os.path.exists(PREVIEW_TEMPLATE):
         write_preview(songs, results)
     total = sum(len(r['events']) for r in results.values())
