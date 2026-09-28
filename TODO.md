@@ -53,6 +53,8 @@ Après les corrections 2, 3 et 4 (commit 94cbf35, flashé le même jour) :
 - [x] `$815` (Harlem Shake) : aucun redémarrage ; mais les logics restaient en arc-en-ciel à la fin (`LE000000|0`
   de `resetSequence()` ignorée, voir section 2). Après correction : retour seul au scintillement, boucle moy. 448 µs,
   max 10,9 ms (17,1 ms avec le `printf` des holos), `errors: 0x0000`
+- [x] `:SE06` : alarme 2 s puis panne, retour seul à la normale. `$815` : clignotement rouge (effet 7, d'origine,
+  conservé) puis feu avec l'agitation des panneaux, retour seul à la normale
 
 Encore à faire :
 
