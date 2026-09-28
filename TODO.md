@@ -1102,6 +1102,20 @@ Disponibles pour extension future (autres servos, HPL, etc.)
 
 ---
 
+## 🔧 Matériel — Nouveau PCB (à concevoir plus tard)
+
+**🎯 Objectif:** Remplacer la carte AstroPixels actuelle, très basique et sans aucune protection, par un PCB dédié à la configuration Maestro.
+
+Pistes issues de la revue firmware du 2026-09-27 (à préciser au moment de la conception) :
+- [ ] Adaptateur de niveau 3,3 V → 5 V sur les sorties LED WS2812 (ex. 74AHCT125) — aucun scintillement aujourd'hui, mais marge nulle
+- [ ] Résistance série (~330 Ω) et protection sur chaque ligne de données LED
+- [ ] Connecteur dédié Maestro : TX (GPIO19), VIN et GND (actuellement via AUX5)
+- [ ] Connecteur Serial2 (contrôleur maître 3,3 V, signal + GND)
+- [ ] Protection de l'entrée d'alimentation (inversion de polarité, fusible)
+- [ ] Alimentation servos 6 V toujours séparée de la logique (config actuelle validée : pas de baisse de tension)
+
+---
+
 ## 🎯 Checklist finale avant merge
 - [ ] Code compile sans warnings
 - [ ] Tous les tests passent
@@ -1138,6 +1152,6 @@ Disponibles pour extension future (autres servos, HPL, etc.)
 ---
 
 *Date création: 2026-01-09*
-*Dernière modification: 2026-03-06*
+*Dernière modification: 2026-09-27*
 *Projet: AstroPixelsPlus - Migration Maestro*
 *Développeur: stefe2*
