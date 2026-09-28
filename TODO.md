@@ -22,7 +22,9 @@ Après avoir flashé les corrections déjà faites (section 2) :
 - [ ] Contrôleur Serial2 (Kyber) : les commandes habituelles fonctionnent, une rafale n'en perd aucune (problème 7)
 - [ ] `:SM0,500,1500` bouge le panneau ; `:SM0,500,2400` s'arrête à 1840 µs (limite fermée du canal 0) (problème 11)
 - [ ] Séquences `:SE02`, `:SE22`, holos `*HA01` : mouvements identiques à avant (non-régression)
-- [ ] Au démarrage, le moniteur USB affiche `Reset reason: POWERON` ; `#APSTAT` répond, noter la durée de boucle moyenne et maximale (base pour le problème 9)
+- [x] Au démarrage, le moniteur USB affiche `Reset reason: POWERON` ; `#APSTAT` répond, noter la durée de boucle moyenne et maximale (base pour le problème 9)
+  - 2026-09-27, 5 s après le boot, au repos : boucle moyenne 297 µs, max 10 ms ; heap libre 328 Ko (min 322 Ko) ; pile loopTask 6,7 Ko libres sur 8 Ko
+- [ ] `#APSTAT` pendant et juste après une séquence avec tous les panneaux (`:SE22`) : durée de boucle maximale (problème 9)
 - [ ] `:SE56` et `:SE36` : les panneaux s'ouvrent et se ferment une seule fois (problème 13)
 - [ ] `:OW$3F` et `:OP$3F,300,300` : même comportement qu'avant (handlers dynamiques regroupés)
 - [ ] Lancer plusieurs séquences longues (`:SE07`, `$815`) : pas de redémarrage par le watchdog (`Reset reason: TASK_WDT`) (problème 8)
