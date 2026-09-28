@@ -117,9 +117,11 @@ song: a positive value delays the choreography, a negative value advances it. Th
 
 ### Preview
 
-`mp3/preview.html` plays each MP3 with a top view of the dome: open panels, logic and PSI colors,
+`mp3/preview.html` plays each MP3 with a top view of the dome drawn from the dome plan (panels P1–P13,
+FHP/RHP/THP, FLD/RLD, FPSI/RPSI): open panels, logic and PSI colors,
 holo direction and color, and a timeline of events (click it to seek). Open it in a browser from the
-`mp3/` folder. It is generated with the choreographies and stays local, like the MP3 files.
+`mp3/` folder. It is generated with the choreographies and stays local, like the MP3 files. Adding
+`#mu=11&t=32` to the address opens `:MU11` frozen at 32 s.
 
 ## Files
 

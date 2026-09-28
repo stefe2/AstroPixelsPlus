@@ -7,34 +7,37 @@
 <style>
 :root {
   --bg: #f4f5f7; --panel: #ffffff; --ink: #1b1f24; --muted: #5d6673; --line: #d5d9df;
-  --dome: #c9ced6; --dome-edge: #9aa2ad; --open: #3b82f6; --accent: #2563eb;
+  --dome: #e3e6ea; --edge: #8b939e; --closed: #c7ccd3; --open: #2563eb; --accent: #2563eb; --led-off: #1d2127;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --bg: #0e1116; --panel: #161b22; --ink: #e6e9ee; --muted: #8b949e; --line: #2a313b;
-    --dome: #3a414b; --dome-edge: #59616d; --open: #60a5fa; --accent: #60a5fa;
+    --dome: #1f252d; --edge: #5b6470; --closed: #343c47; --open: #60a5fa; --accent: #60a5fa; --led-off: #0b0d10;
   }
 }
 :root[data-theme="dark"] {
   --bg: #0e1116; --panel: #161b22; --ink: #e6e9ee; --muted: #8b949e; --line: #2a313b;
-  --dome: #3a414b; --dome-edge: #59616d; --open: #60a5fa; --accent: #60a5fa;
+  --dome: #1f252d; --edge: #5b6470; --closed: #343c47; --open: #60a5fa; --accent: #60a5fa; --led-off: #0b0d10;
 }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); color: var(--ink);
   font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
-main { max-width: 980px; margin: 0 auto; padding: 16px; }
+main { max-width: 1000px; margin: 0 auto; padding: 16px; }
 h1 { font-size: 20px; margin: 4px 0 12px; }
-.bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 12px; }
-select, button { font: inherit; color: var(--ink); background: var(--panel); border: 1px solid var(--line);
-  border-radius: 8px; padding: 6px 10px; }
+.bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 8px; }
+select { font: inherit; color: var(--ink); background: var(--panel); border: 1px solid var(--line);
+  border-radius: 8px; padding: 6px 10px; max-width: 100%; }
 audio { width: 100%; margin: 6px 0 10px; }
-.card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px; min-width: 0; }
 .grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
-@media (min-width: 760px) { .grid { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); } }
+@media (min-width: 780px) { .grid { grid-template-columns: minmax(0, 11fr) minmax(0, 9fr); } }
+svg { width: 100%; height: auto; display: block; }
 canvas { width: 100%; display: block; }
 .meta { color: var(--muted); font-size: 13px; }
-.state { font: 12px/1.6 ui-monospace, Consolas, monospace; color: var(--muted); white-space: pre-wrap; }
-.legend { font-size: 13px; color: var(--muted); margin-top: 8px; }
+.state { font: 12px/1.7 ui-monospace, Consolas, monospace; white-space: pre-wrap; }
+.legend { font-size: 13px; color: var(--muted); margin-top: 10px; }
+.lbl { font: 600 11px system-ui, sans-serif; fill: var(--muted); }
+.plbl { font: 600 11px system-ui, sans-serif; fill: var(--ink); pointer-events: none; }
 </style>
 </head>
 <body>
@@ -46,35 +49,123 @@ canvas { width: 100%; display: block; }
   </div>
   <audio id="audio" controls preload="auto"></audio>
   <div class="grid">
-    <div class="card"><canvas id="droid" width="600" height="520"></canvas></div>
+    <div class="card"><svg id="dome" viewBox="0 0 460 700" role="img" aria-label="Vue de dessus du dôme"></svg></div>
     <div class="card">
       <div class="state" id="state"></div>
-      <div class="legend">Vue de dessus du dôme. Panneaux ouverts en couleur (plus c'est clair, plus ils sont ouverts).
-        Logics avant (FLD) et arrière (RLD), PSI, et les trois holos avec leur direction et leur couleur.</div>
+      <div class="legend">Vue de dessus du dôme, l'avant en bas (FLD, FPSI, FHP). Un panneau ouvert se colore et
+        s'écarte ; plus il est clair, plus il est ouvert. Les flèches des holos montrent où ils regardent.
+        Les effets lumineux sont une approximation de ceux du droïde.</div>
     </div>
   </div>
-  <div class="card" style="margin-top:12px"><canvas id="timeline" width="940" height="110"></canvas></div>
+  <div class="card" style="margin-top:12px"><canvas id="timeline" width="960" height="110"></canvas></div>
   <p class="meta">Page générée par <code>tools/music/build.py</code>. Elle joue les MP3 du dossier <code>mp3/</code> :
-    ouvrez-la depuis ce dossier.</p>
+    ouvrez-la depuis ce dossier. Cliquez sur la ligne de temps pour vous déplacer dans la chanson.</p>
 </main>
 <script>
 const SONGS = /*SONGS*/[];
 
+const SMALL = 1, MEDIUM = 2, BIG = 4, PIE = 8, TOP = 16, MINI = 32;
+const PANEL_TYPES = [[SMALL, 'petits'], [MEDIUM, 'moyens'], [BIG, 'grand'], [PIE, 'pie'], [TOP, 'dessus'], [MINI, 'mini']];
 const LOGIC_RGB = ['#9fc7ff', '#ff2a2a', '#ff8a00', '#ffe000', '#2cff5a', '#00e5ff', '#2f6bff', '#9a45ff', '#ff36c8', '#ff8fbf'];
 const HOLO_RGB = ['#ffffff', '#ff2a2a', '#ffe000', '#2cff5a', '#00e5ff', '#2f6bff', '#ff36c8', '#ff8a00', '#9a45ff', '#ffffff'];
-const EFFECT_NAMES = {0: 'normal', 5: 'couleur', 6: 'flash', 7: 'flip-flop', 10: 'arc-en-ciel', 14: 'noir', 22: 'feu'};
-const PANEL_TYPES = [[1, 'petits'], [2, 'moyens'], [4, 'grand'], [8, 'pie'], [16, 'dessus'], [32, 'mini']];
-// Panneaux du dôme (vue de dessus) : type, angle, rayon
-const PANELS = [
-  [1, -60, 0.78], [1, -20, 0.78], [1, 20, 0.78], [2, 60, 0.78], [2, 100, 0.78], [4, 180, 0.78],
-  [32, -100, 0.78], [32, 140, 0.78],
-  [8, 0, 0.45], [8, 90, 0.45], [8, 180, 0.45], [8, 270, 0.45], [16, 0, 0]];
+const EFFECT_NAMES = {0: 'normal', 5: 'couleur', 6: 'flash', 7: 'flip-flop', 10: 'arc-en-ciel', 14: 'noir', 22: 'feu', 23: 'balayage'};
+const COLOR_NAMES = ['', 'rouge', 'orange', 'jaune', 'vert', 'cyan', 'bleu', 'violet', 'magenta', 'rose'];
 const HOLO_POS = [[0, 1], [0, 0], [0, -1], [-1, 0], [-1, -1], [-1, 1], [1, 0], [1, -1], [1, 1]];
+const HOLO_POS_NAMES = ['bas', 'centre', 'haut', 'gauche', 'haut-gauche', 'bas-gauche', 'droite', 'haut-droite', 'bas-droite'];
 
+// Géométrie du dôme d'après le plan (angles en degrés, 0 = droite, sens horaire, avant en bas)
+const C = [230, 350], R = 170, PIE_IN = 42, PIE_OUT = 112;
+const OUTER = [  // [nom, type, angle, largeur angulaire]
+  ['P1', MEDIUM, 54, 12], ['P2', SMALL, 40, 9], ['P3', SMALL, 26, 9], ['P4', SMALL, 6, 12],
+  ['P5', MEDIUM, -45, 12], ['P6', BIG, 160, 24], ['P11', MINI, 133, 6], ['P12', MINI, 110, 7]];
+const PIES = [['P10', -18], ['P9', 54], ['P8', 126], ['P7', 198]];
+const HOLOS = [  // avant, arrière, dessus : position du projecteur et orientation de son corps
+  {name: 'FHP', a: 68, r: R + 42}, {name: 'RHP', a: -97, r: R + 78}, {name: 'THP', a: -62, r: R * 0.74}];
+
+const NS = 'http://www.w3.org/2000/svg';
+const svg = document.getElementById('dome');
+function el(tag, attrs, parent = svg) {
+  const e = document.createElementNS(NS, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  parent.appendChild(e);
+  return e;
+}
+function pt(a, r) { const t = a * Math.PI / 180; return [C[0] + Math.cos(t) * r, C[1] + Math.sin(t) * r]; }
+function arcPath(a0, a1, r0, r1) {
+  const [x0, y0] = pt(a0, r1), [x1, y1] = pt(a1, r1), [x2, y2] = pt(a1, r0), [x3, y3] = pt(a0, r0);
+  const big = (a1 - a0) > 180 ? 1 : 0;
+  return `M${x0},${y0} A${r1},${r1} 0 ${big} 1 ${x1},${y1} L${x2},${y2} A${r0},${r0} 0 ${big} 0 ${x3},${y3} Z`;
+}
+
+// ---- construction du dessin ---------------------------------------------------------
+const panelEls = [];   // {type, g, shape, angle}
+el('circle', {cx: C[0], cy: C[1], r: R + 6, fill: 'var(--dome)', stroke: 'var(--edge)', 'stroke-width': 2});
+el('circle', {cx: C[0], cy: C[1], r: R - 14, fill: 'none', stroke: 'var(--edge)', 'stroke-width': 1});
+for (const [name, type, a, w] of OUTER) {
+  const g = el('g', {});
+  const shape = el('path', {d: arcPath(a - w / 2, a + w / 2, R - 12, R + 4), stroke: 'var(--edge)', 'stroke-width': 1}, g);
+  const [lx, ly] = pt(a, R + 22);
+  el('text', {x: lx, y: ly + 4, 'text-anchor': 'middle', class: 'lbl'}, svg).textContent = name;
+  panelEls.push({type, g, shape, angle: a});
+}
+el('circle', {cx: C[0], cy: C[1], r: PIE_OUT + 4, fill: 'none', stroke: 'var(--edge)', 'stroke-width': 1});
+// segment fixe du haut (support du holo du dessus)
+el('path', {d: arcPath(-126, -54, PIE_IN, PIE_OUT), fill: 'var(--dome)', stroke: 'var(--edge)', 'stroke-width': 1});
+for (const [name, a] of PIES) {
+  const g = el('g', {});
+  const shape = el('path', {d: arcPath(a - 34, a + 34, PIE_IN, PIE_OUT), stroke: 'var(--edge)', 'stroke-width': 1}, g);
+  const [lx, ly] = pt(a, (PIE_IN + PIE_OUT) / 2);
+  el('text', {x: lx, y: ly + 4, 'text-anchor': 'middle', class: 'plbl'}, g).textContent = name;
+  panelEls.push({type: PIE, g, shape, angle: a});
+}
+{
+  const g = el('g', {});
+  const shape = el('circle', {cx: C[0], cy: C[1], r: PIE_IN - 6, stroke: 'var(--edge)', 'stroke-width': 1}, g);
+  el('text', {x: C[0], y: C[1] + 4, 'text-anchor': 'middle', class: 'plbl'}, g).textContent = 'P13';
+  panelEls.push({type: TOP, g, shape, angle: null});
+}
+
+// Holos
+const holoEls = HOLOS.map(h => {
+  const [x, y] = pt(h.a, h.r);
+  const g = el('g', {});
+  el('circle', {cx: x, cy: y, r: 20, fill: 'var(--panel)', stroke: 'var(--edge)', 'stroke-width': 1.5}, g);
+  const led = el('circle', {cx: x, cy: y, r: 12, fill: 'var(--led-off)'}, g);
+  const arrow = el('line', {x1: x, y1: y, x2: x, y2: y, stroke: 'var(--ink)', 'stroke-width': 3, 'stroke-linecap': 'round'}, g);
+  const tx = h.name === 'THP' ? x + 28 : x + 30;
+  el('text', {x: tx, y: y + 4, class: 'lbl'}, g).textContent = h.name;
+  return {x, y, led, arrow};
+});
+
+// PSI
+function psi(x, y, name) {
+  el('circle', {cx: x, cy: y, r: 20, fill: 'var(--panel)', stroke: 'var(--edge)', 'stroke-width': 1.5});
+  const c = el('circle', {cx: x, cy: y, r: 14, fill: 'var(--led-off)'});
+  el('text', {x: x + 26, y: y + 4, class: 'lbl'}).textContent = name;
+  return c;
+}
+const psiEls = {4: psi(236, 585, 'FPSI'), 5: psi(330, 150, 'RPSI')};
+
+// Logics : FLD = 2 cartes de 9 × 5, RLD = 27 × 4
+function ledGrid(x, y, cols, rows, px, name, lx, ly) {
+  const cells = [];
+  el('rect', {x: x - 4, y: y - 4, width: cols * px + 8, height: rows * px + 8, rx: 3, fill: '#0f3d2a'});
+  for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++)
+    cells.push({c, r, e: el('rect', {x: x + c * px + 1, y: y + r * px + 1, width: px - 2, height: px - 2, rx: 1.2, fill: 'var(--led-off)'})});
+  el('text', {x: lx, y: ly, class: 'lbl'}).textContent = name;
+  return {cells, cols, rows};
+}
+const fld1 = ledGrid(92, 598, 9, 5, 7, 'FLD', 60, 630);
+const fld2 = ledGrid(92, 642, 9, 5, 7, '', 0, 0);
+const rld = ledGrid(10, 168, 27, 4, 6, 'RLD', 10, 158);
+const rldText = el('text', {x: 14, y: 186, fill: '#fff', 'font-size': 16, 'font-weight': 700, 'font-family': 'system-ui'});
+const clip = el('clipPath', {id: 'rldclip'});
+el('rect', {x: 10, y: 168, width: 27 * 6, height: 24}, clip);
+rldText.setAttribute('clip-path', 'url(#rldclip)');
+
+// ---- lecture ------------------------------------------------------------------------
 const audio = document.getElementById('audio');
 const sel = document.getElementById('song');
-const cv = document.getElementById('droid');
-const ctx = cv.getContext('2d');
 const tl = document.getElementById('timeline');
 const tctx = tl.getContext('2d');
 let song = null, state = null, idx = 0, lastT = -1;
@@ -85,7 +176,6 @@ SONGS.forEach((s, i) => {
   sel.appendChild(o);
 });
 sel.onchange = () => load(+sel.value);
-
 function css(v) { return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
 
 function freshState() {
@@ -96,17 +186,21 @@ function freshState() {
     holos: [0, 1, 2].map(() => ({from: 1, to: 1, t0: 0, ms: 1, led: 'off', color: 0})),
   };
 }
-
 function load(i) {
   song = SONGS[i];
   audio.src = encodeURI(song.file);
   document.getElementById('info').textContent =
     Math.round(song.tempo) + ' BPM · ' + song.events.length + ' événements · ' + fmt(song.duration);
+  rldText.textContent = song.title;
   reset();
 }
 function reset() { state = freshState(); idx = 0; lastT = -1; }
-function fmt(ms) { const s = Math.round(ms / 1000); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
+function fmt(ms) { const s = Math.max(0, Math.round(ms / 1000)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
 
+function panelAt(p, t) {
+  const k = Math.min(1, Math.max(0, (t - p.t0) / p.ms));
+  return p.from + (p.to - p.from) * k;
+}
 function applyEvent(e) {
   if (e.kind === 'panels') {
     for (const [m] of PANEL_TYPES) if (e.mask & m) {
@@ -121,12 +215,10 @@ function applyEvent(e) {
   } else {
     for (const c of e.cmd.split('\n')) {
       if (c.startsWith('LE')) {
-        const id = +c[2], eff = +c.substr(3, 2), col = +c[5], spd = +c[6];
-        state.logic[id] = {effect: eff, color: col, speed: spd, since: e.t};
+        state.logic[+c[2]] = {effect: +c.substr(3, 2), color: +c[5], speed: +c[6], since: e.t};
       } else if (c.startsWith('HP')) {
         const who = c[2], fn = +c.substr(4, 2), opt = +(c[6] || 0);
-        const hs = who === 'A' ? [0, 1, 2] : [{F: 0, R: 1, T: 2}[who]];
-        for (const h of hs) {
+        for (const h of (who === 'A' ? [0, 1, 2] : [{F: 0, R: 1, T: 2}[who]])) {
           const s = state.holos[h];
           if (fn === 5) { s.led = 'solid'; s.color = opt; }
           else if (fn === 3) { s.led = 'pulse'; s.color = opt; }
@@ -137,124 +229,119 @@ function applyEvent(e) {
     }
   }
 }
-
-function panelAt(p, t) {
-  const k = Math.min(1, Math.max(0, (t - p.t0) / p.ms));
-  return p.from + (p.to - p.from) * k;
-}
-
 function advance(t) {
   if (t < lastT) reset();
   while (idx < song.events.length && song.events[idx].t <= t) applyEvent(song.events[idx++]);
   lastT = t;
 }
 
-function logicColor(l, t, x) {
+// Couleur d'une LED de logic (approximation des effets du LogicEngine)
+function logicColor(l, t, x, y, seed) {
   const age = t - l.since;
   const base = LOGIC_RGB[l.color] || LOGIC_RGB[0];
+  const twinkle = ((seed * 7919 + Math.floor(t / 180) * 104729) % 97) / 97;
   switch (l.effect) {
     case 14: return null;
-    case 6: return (Math.floor(age / (250 * (l.speed + 1))) % 2) ? base : dim(base);
-    case 7: return ((Math.floor(age / (200 * (l.speed + 1))) + (x < 0.5 ? 0 : 1)) % 2) ? base : dim(base);
-    case 10: return 'hsl(' + ((age / (200 * (l.speed + 1)) * 28 + x * 60) % 360) + ',100%,55%)';
-    case 22: return 'hsl(' + (10 + 30 * Math.random()) + ',100%,' + (35 + 25 * Math.random()) + '%)';
+    case 5: return twinkle > 0.25 ? base : null;
+    case 6: return (Math.floor(age / (250 * (l.speed + 1))) % 2) ? base : (twinkle > 0.6 ? base : null);
+    case 7: return ((Math.floor(age / (200 * (l.speed + 1))) + (x < 0.5 ? 0 : 1)) % 2) ? base : null;
+    case 10: return 'hsl(' + ((age / (200 * (l.speed + 1)) * 28 + x * 90) % 360) + ',100%,55%)';
+    case 22: return 'hsl(' + (5 + 40 * twinkle * (1 - y)) + ',100%,' + (30 + 30 * twinkle) + '%)';
     case 23: return base;
-    case 0: return Math.random() < 0.5 ? '#9fc7ff' : '#2f6bff';
+    case 0: return twinkle > 0.66 ? '#ffffff' : twinkle > 0.2 ? '#2f6bff' : null;
     default: return base;
   }
 }
-function dim(hex) { return hex + '55'; }
-
-function drawLogic(x, y, cols, rows, px, l, t, label, text) {
-  ctx.fillStyle = css('--muted'); ctx.font = '12px system-ui'; ctx.fillText(label, x, y - 6);
-  for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
-    const col = logicColor(l, t, c / cols);
-    ctx.fillStyle = col && (Math.random() > 0.15 || l.effect === 5 || l.effect === 10) ? col : '#111';
-    ctx.fillRect(x + c * px, y + r * px, px - 1, px - 1);
-  }
-  if (text) {
-    ctx.fillStyle = '#000c'; ctx.fillRect(x, y, cols * px, rows * px);
-    ctx.fillStyle = '#fff'; ctx.font = 'bold ' + (rows * px - 6) + 'px system-ui';
-    ctx.fillText(text, x + 4, y + rows * px - 5);
+function paintGrid(g, l, t, text) {
+  const off = css('--led-off');
+  for (const cell of g.cells) {
+    const col = text ? null : logicColor(l, t, cell.c / g.cols, cell.r / g.rows, cell.c * 31 + cell.r * 17 + g.cols);
+    cell.e.setAttribute('fill', col || off);
   }
 }
 
 function draw(t) {
-  const W = cv.width, H = cv.height;
-  ctx.clearRect(0, 0, W, H);
-  const cx = W / 2, cy = 230, R = 190;
-  // Dôme
-  ctx.fillStyle = css('--dome'); ctx.strokeStyle = css('--dome-edge'); ctx.lineWidth = 2;
-  ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-  ctx.fillStyle = css('--muted'); ctx.font = '12px system-ui';
-  ctx.fillText('avant', cx - 16, cy - R - 8);
-  // Panneaux
-  for (const [type, ang, rad] of PANELS) {
-    const open = panelAt(state.panels[type], t);
-    const a = (ang - 90) * Math.PI / 180;
-    const px = cx + Math.cos(a) * rad * R, py = cy + Math.sin(a) * rad * R;
-    const size = type === 16 ? 34 : type === 4 ? 30 : type === 32 ? 16 : 24;
-    ctx.save(); ctx.translate(px + Math.cos(a) * open * 10, py + Math.sin(a) * open * 10); ctx.rotate(a + Math.PI / 2);
-    ctx.fillStyle = open > 0.02 ? `color-mix(in srgb, ${css('--open')} ${Math.round(40 + open * 60)}%, transparent)` : css('--dome-edge');
-    ctx.fillRect(-size / 2, -size / 3, size, size / 1.5);
-    ctx.restore();
+  const openCol = css('--open'), closedCol = css('--closed');
+  for (const p of panelEls) {
+    const open = panelAt(state.panels[p.type], t);
+    p.shape.setAttribute('fill', open > 0.02 ? `color-mix(in srgb, ${openCol} ${Math.round(35 + open * 65)}%, ${closedCol})` : closedCol);
+    if (p.angle !== null) {
+      const d = open * 9, a = p.angle * Math.PI / 180;
+      p.g.setAttribute('transform', `translate(${Math.cos(a) * d},${Math.sin(a) * d})`);
+    } else {
+      p.g.setAttribute('transform', `translate(${C[0]},${C[1]}) scale(${1 + open * 0.18}) translate(${-C[0]},${-C[1]})`);
+    }
   }
-  // Holos : avant, arrière, dessus
-  const holoXY = [[cx, cy - R * 0.62], [cx, cy + R * 0.62], [cx + R * 0.22, cy - R * 0.1]];
   state.holos.forEach((h, i) => {
+    const e = holoEls[i];
     const k = Math.min(1, Math.max(0, (t - h.t0) / h.ms));
     const a = HOLO_POS[h.from], b = HOLO_POS[h.to];
     const dx = a[0] + (b[0] - a[0]) * k, dy = a[1] + (b[1] - a[1]) * k;
-    const [x, y] = holoXY[i];
-    let col = '#222';
+    e.arrow.setAttribute('x2', e.x + dx * 18); e.arrow.setAttribute('y2', e.y + dy * 18);
+    let col = css('--led-off');
     if (h.led === 'solid') col = HOLO_RGB[h.color];
-    else if (h.led === 'pulse') col = HOLO_RGB[h.color] + (Math.sin(t / 300) > 0 ? '' : '66');
+    else if (h.led === 'pulse') col = `color-mix(in srgb, ${HOLO_RGB[h.color]} ${Math.round(40 + 60 * (0.5 + 0.5 * Math.sin(t / 350)))}%, black)`;
     else if (h.led === 'rainbow') col = 'hsl(' + (t / 8 % 360) + ',100%,55%)';
-    ctx.fillStyle = col; ctx.beginPath(); ctx.arc(x, y, 11, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = css('--ink'); ctx.lineWidth = 3; ctx.beginPath();
-    ctx.moveTo(x, y); ctx.lineTo(x + dx * 22, y + dy * 22); ctx.stroke();
+    e.led.setAttribute('fill', col);
   });
-  // PSI
-  [[4, cx - 70, cy - R * 0.3], [5, cx + 70, cy + R * 0.3]].forEach(([id, x, y]) => {
-    const l = state.logic[id];
-    ctx.fillStyle = logicColor(l, t, 0.5) || '#111';
-    ctx.beginPath(); ctx.arc(x, y, 12, 0, Math.PI * 2); ctx.fill();
-  });
-  // Logics
+  for (const id of [4, 5]) psiEls[id].setAttribute('fill', logicColor(state.logic[id], t, 0.5, 0.5, id * 13) || css('--led-off'));
+  paintGrid(fld1, state.logic[1], t, false);
+  paintGrid(fld2, state.logic[1], t, false);
+  // Titre : 2 s d'écran noir puis défilement de droite à gauche, 1 pixel toutes les 50 ms
   const titleOn = t < song.titleMs;
-  drawLogic(20, 450, 18, 5, 9, state.logic[1], t, 'Logics avant', null);
-  drawLogic(W - 20 - 27 * 9, 450, 27, 4, 9, state.logic[3], t, 'Logic arrière', titleOn && t > 2000 ? song.title : null);
+  paintGrid(rld, state.logic[3], t, titleOn);
+  if (titleOn && t > 2000) {
+    const shift = (t - 2000) / 50 * 6;
+    rldText.setAttribute('x', 10 + 27 * 6 - shift);
+    rldText.setAttribute('visibility', 'visible');
+  } else {
+    rldText.setAttribute('visibility', 'hidden');
+  }
 }
 
 function drawTimeline(t) {
   const W = tl.width, H = tl.height, D = song.duration;
   tctx.clearRect(0, 0, W, H);
-  const y0 = 10;
-  const rows = {cmd: 30, panels: 55, holo: 80};
+  const rows = {cmd: 30, panels: 58, holo: 86};
   tctx.fillStyle = css('--muted'); tctx.font = '11px system-ui';
-  tctx.fillText('lumières', 2, rows.cmd - 8); tctx.fillText('panneaux', 2, rows.panels - 8); tctx.fillText('holos', 2, rows.holo - 8);
+  tctx.fillText('lumières', 2, rows.cmd + 4); tctx.fillText('panneaux', 2, rows.panels + 4); tctx.fillText('holos', 2, rows.holo + 4);
+  const x0 = 62, w = W - 72;
   for (const e of song.events) {
-    const x = 60 + (W - 70) * e.t / D;
     tctx.fillStyle = e.kind === 'cmd' ? '#f59e0b' : e.kind === 'panels' ? '#3b82f6' : '#10b981';
-    tctx.fillRect(x, rows[e.kind] - 4, 1.5, 8);
+    tctx.fillRect(x0 + w * e.t / D, rows[e.kind] - 6, 1.5, 12);
   }
   tctx.fillStyle = css('--accent');
-  tctx.fillRect(60 + (W - 70) * t / D, y0, 2, H - 20);
+  tctx.fillRect(x0 + w * Math.min(t, D) / D, 8, 2, H - 16);
 }
 
-function stateText(t) {
-  const L = state.logic, name = l => (EFFECT_NAMES[l.effect] || ('effet ' + l.effect)) + (l.color ? ' c' + l.color : '');
-  const open = PANEL_TYPES.filter(([m]) => panelAt(state.panels[m], t) > 0.05).map(([, n]) => n).join(', ') || 'fermés';
-  return fmt(t) + (t < song.titleMs ? '   (titre sur la logic arrière)' : '') + '\n' +
-    'logics avant : ' + name(L[1]) + '\nlogic arrière : ' + name(L[3]) + '\n' +
-    'PSI : ' + name(L[4]) + ' / ' + name(L[5]) + '\n' +
-    'panneaux ouverts : ' + open + '\n' +
-    'holos : ' + state.holos.map(h => h.led + (h.color ? ' c' + h.color : '')).join(', ');
+function describeLogic(l) {
+  return (EFFECT_NAMES[l.effect] || ('effet ' + l.effect)) + (l.color ? ' ' + COLOR_NAMES[l.color] : '');
 }
+function stateText(t) {
+  const L = state.logic;
+  const open = PANEL_TYPES.filter(([m]) => panelAt(state.panels[m], t) > 0.05)
+    .map(([m, n]) => n + ' ' + Math.round(panelAt(state.panels[m], t) * 100) + ' %').join(', ') || 'fermés';
+  const holos = state.holos.map((h, i) => HOLOS[i].name + ' ' + HOLO_POS_NAMES[h.to] + ', ' +
+    (h.led === 'off' ? 'éteint' : h.led === 'rainbow' ? 'arc-en-ciel' : (h.led === 'pulse' ? 'pulsation ' : '') + (COLOR_NAMES[[0,1,3,4,5,6,8,2,7,0][h.color]] || 'blanc')));
+  return fmt(t) + ' / ' + fmt(song.duration) + (t < song.titleMs ? '   titre sur la logic arrière' : '') + '\n\n' +
+    'FLD   ' + describeLogic(L[1]) + '\nRLD   ' + (t < song.titleMs ? 'titre' : describeLogic(L[3])) + '\n' +
+    'FPSI  ' + describeLogic(L[4]) + '\nRPSI  ' + describeLogic(L[5]) + '\n\n' +
+    'Panneaux : ' + open + '\n\n' + holos.join('\n');
+}
+
+// Adresse #mu=11&t=31 : ouvre :MU11 figé à 31 s (captures d'écran, partage d'un moment précis)
+const hash = new URLSearchParams(location.hash.slice(1));
+let frozenT = null;
+if (hash.has('mu')) {
+  const i = SONGS.findIndex(s => s.mu === +hash.get('mu'));
+  if (i >= 0) { sel.value = i; load(i); }
+  if (hash.has('t')) frozenT = +hash.get('t') * 1000;
+}
+audio.onplay = () => { frozenT = null; };
 
 function frame() {
   if (song) {
-    const t = audio.currentTime * 1000;
+    const t = frozenT !== null ? frozenT : audio.currentTime * 1000;
     advance(t); draw(t); drawTimeline(t);
     document.getElementById('state').textContent = stateText(t);
   }
@@ -262,10 +349,10 @@ function frame() {
 }
 tl.onclick = e => {
   const r = tl.getBoundingClientRect();
-  const k = ((e.clientX - r.left) * tl.width / r.width - 60) / (tl.width - 70);
+  const k = ((e.clientX - r.left) * tl.width / r.width - 62) / (tl.width - 72);
   audio.currentTime = Math.max(0, k * song.duration / 1000);
 };
-if (SONGS.length) load(0);
+if (SONGS.length && !song) load(0);
 frame();
 </script>
 </body>
