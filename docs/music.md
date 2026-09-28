@@ -123,6 +123,11 @@ holo direction and color, and a timeline of events (click it to seek). Open it i
 `mp3/` folder. It is generated with the choreographies and stays local, like the MP3 files. Adding
 `#mu=11&t=32` to the address opens `:MU11` frozen at 32 s.
 
+The **Edit mode** button lets you adjust the drawing with the mouse: drag an element (panels slide along
+their ring), mouse wheel to change the width of a panel or the size of a device, Shift + wheel to change
+the thickness of a panel. **Save layout** downloads `layout.json`: put it in `tools/music/` and every
+later build uses it. Edits are also kept in the browser meanwhile.
+
 ## Files
 
 | Path | Content |
@@ -133,6 +138,7 @@ holo direction and color, and a timeline of events (click it to seek). Open it i
 | `tools/music/validate.py` | Format and mechanical checks |
 | `tools/music/build.py` | Runs everything and writes the outputs |
 | `tools/music/preview_template.html` | Preview page template |
+| `tools/music/layout.json` | Layout of the dome drawing, saved from the preview (optional) |
 | `src/MarcduinoMusic.h` | Player in the firmware (`:MU` command) |
 | `src/music/muNN.h`, `src/music/songs.h` | Generated choreographies (do not edit) |
 | `src/music/mu99-test.h` | Hand-written test choreography |

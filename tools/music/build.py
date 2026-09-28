@@ -35,6 +35,7 @@ FONT_H = os.path.join(ROOT, 'lib', 'Reeltwo', 'src', 'core', 'Font.h')
 DOC = os.path.join(ROOT, 'docs', 'music.md')
 PREVIEW = os.path.join(MP3_DIR, 'preview.html')
 PREVIEW_TEMPLATE = os.path.join(HERE, 'preview_template.html')
+LAYOUT_JSON = os.path.join(HERE, 'layout.json')   # disposition du dessin, enregistrée depuis la page
 
 TITLE_CHARS = set(' !-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ')
 
@@ -130,6 +131,9 @@ def write_preview(songs, results):
     with open(PREVIEW_TEMPLATE, encoding='utf-8') as f:
         html = f.read()
     html = html.replace('/*SONGS*/[]', json.dumps(data, separators=(',', ':')))
+    if os.path.exists(LAYOUT_JSON):
+        with open(LAYOUT_JSON, encoding='utf-8') as f:
+            html = html.replace('/*LAYOUT*/null', json.dumps(json.load(f), separators=(',', ':')))
     with open(PREVIEW, 'w', encoding='utf-8', newline='\n') as f:
         f.write(html)
 
