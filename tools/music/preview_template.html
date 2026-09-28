@@ -97,12 +97,13 @@ const HOLO_COLOR_NAME = [null, 1, 3, 4, 5, 6, 8, 2, 7, 0];
 const HOLO_POS = [[0, 1], [0, 0], [0, -1], [-1, 0], [-1, -1], [-1, 1], [1, 0], [1, -1], [1, 1]];
 const HOLO_POS_NAMES = ['bas', 'centre', 'haut', 'gauche', 'haut-gauche', 'bas-gauche', 'droite', 'haut-droite', 'bas-droite'];
 
-// Panneaux du plan : type et canal du Maestro (à confirmer par le test des panneaux)
+// Panneaux du plan : type et canal du Maestro (vérifiés un par un sur le droïde : canal N = P(N+1)).
+// P6 et P13 n'ont pas de servo : dessinés en gris, jamais ouverts.
 const PANELS = {
-  P1: {type: MEDIUM, ch: 3}, P2: {type: SMALL, ch: 2}, P3: {type: SMALL, ch: 1}, P4: {type: SMALL, ch: 0},
-  P5: {type: MEDIUM, ch: 4}, P6: {type: BIG, ch: 5}, P7: {type: PIE, ch: 6}, P8: {type: PIE, ch: 7},
+  P1: {type: SMALL, ch: 0}, P2: {type: SMALL, ch: 1}, P3: {type: SMALL, ch: 2}, P4: {type: MEDIUM, ch: 3},
+  P5: {type: MEDIUM, ch: 4}, P6: {type: BIG, ch: 5, noServo: true}, P7: {type: PIE, ch: 6}, P8: {type: PIE, ch: 7},
   P9: {type: PIE, ch: 8}, P10: {type: PIE, ch: 9}, P11: {type: MINI, ch: 10}, P12: {type: MINI, ch: 11},
-  P13: {type: TOP, ch: 12}};
+  P13: {type: TOP, ch: 12, noServo: true}};
 
 // Disposition par défaut (angles en degrés, 0 = droite, sens horaire, avant en bas).
 // arc : panneau sur un anneau ; disc : panneau rond ; dev : appareil (x, y, échelle)
@@ -269,7 +270,7 @@ function markSelection() {
   const info = document.getElementById('selInfo');
   if (!L) { info.textContent = 'Cliquez sur un élément.'; return; }
   const p = PANELS[selected];
-  info.textContent = selected + (p ? ' (canal ' + p.ch + ')' : '') + ' — ' +
+  info.textContent = selected + (p ? ' (canal ' + p.ch + (p.noServo ? ', pas de servo' : '') + ')' : '') + ' — ' +
     (L.kind === 'arc' ? `angle ${Math.round(L.a)}°, largeur ${L.w.toFixed(1)}°, rayons ${Math.round(L.r0)}–${Math.round(L.r1)}` :
      L.kind === 'disc' ? `rayon ${Math.round(L.r)}` : `x ${Math.round(L.x)}, y ${Math.round(L.y)}, taille ${L.s.toFixed(2)}`);
 }
@@ -432,7 +433,8 @@ function draw(t) {
   for (const id in PANELS) {
     const e = els[id], L = layout[id];
     if (!e) continue;
-    const open = panelAt(state.panels[PANELS[id].type], t);
+    const open = PANELS[id].noServo ? 0 : panelAt(state.panels[PANELS[id].type], t);
+    if (PANELS[id].noServo) { e.shape.setAttribute('fill', 'var(--dome)'); e.shape.setAttribute('stroke-dasharray', '3 3'); continue; }
     e.shape.setAttribute('fill', open > 0.02 ? `color-mix(in srgb, ${openCol} ${Math.round(35 + open * 65)}%, ${closedCol})` : closedCol);
     if (L.kind === 'arc') {
       const d = open * 9, a = L.a * Math.PI / 180;
