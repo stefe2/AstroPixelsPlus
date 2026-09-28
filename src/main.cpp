@@ -429,7 +429,10 @@ public:
             // (:OP00, :OP01–:OP20, :OP$…, $720) : ils restent ouverts jusqu'à :CL00. Avant, ils se
             // refermaient ~250 ms après l'ouverture (revue, problème 4). Une séquence interrompue
             // par une autre commande est toujours refermée.
-            bool leftPanelsOpen = completed() && (lastServoSetMask() & ALL_DOME_PANELS_MASK) != 0;
+            // lastServoSetMask() est déjà filtré par le groupe de la séquence : qu'il vise des types
+            // de panneaux ($…) ou des panneaux précis (PANEL_GROUP_n de :OP01–:OP20), il suffit
+            // qu'un servo y ait été ouvert.
+            bool leftPanelsOpen = completed() && lastServoSetMask() != 0;
             if (!leftPanelsOpen)
                 dispatch().moveServosTo(ALL_DOME_PANELS_MASK, 125, 0.0);
             dispatch().setSequenceActive(false);

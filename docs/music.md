@@ -17,40 +17,40 @@ Kyber plays; its command must send the matching `:MUnn`.
 <!-- table:debut -->
 | Command | Kyber file | Title shown | Length | Tempo | Sections (intensity 0–3) | Events |
 | --- | --- | --- | --- | --- | --- | --- |
-| `:MU01` | `0176-cantinaR2.mp3` | CANTINA R2 | 0:17 | 123 BPM | 3 0 | 57 |
+| `:MU01` | `0176-cantinaR2.mp3` | CANTINA R2 | 0:17 | 123 BPM | 3 0 | 55 |
 | `:MU02` | `0177-mainthemeR2.mp3` | MAIN THEME R2 | 0:12 | 108 BPM | 3 0 | 33 |
-| `:MU03` | `0178-VaderR2.mp3` | VADER R2 | 0:21 | 89 BPM | 2 3 | 40 |
-| `:MU04` | `0179-menoumR2.mp3` | MENOUM R2 | 2:10 | 185 BPM | 3 1 1 1 1 1 | 357 |
-| `:MU05` | `0180-mus-5.mp3` | MUS 5 | 0:17 | 123 BPM | 3 0 | 57 |
-| `:MU06` | `0181-stayingaliveR2.mp3` | STAYING ALIVE | 4:04 | 103 BPM | 1 2 2 2 1 2 3 1 1 0 | 1259 |
-| `:MU07` | `0182-ImperielMarch.mp3` | IMPERIAL MARCH | 3:02 | 103 BPM | 3 0 0 1 2 2 2 2 | 849 |
-| `:MU08` | `0183-ThromeRoom.mp3` | THRONE ROOM | 7:53 | 123 BPM | 2 2 2 0 1 3 2 3 0 2 1 3 | 1878 |
-| `:MU09` | `0184-MainTheme.mp3` | STAR WARS | 5:47 | 123 BPM | 2 2 0 0 2 0 2 2 0 0 3 3 | 1691 |
-| `:MU10` | `0185-304.mp3` | 304 | 3:03 | 129 BPM | 1 3 2 2 0 1 3 2 | 783 |
-| `:MU11` | `0186-Thunderstruck.mp3` | THUNDERSTRUCK | 3:14 | 129 BPM | 1 1 3 2 0 2 0 2 2 | 882 |
-| `:MU12` | `0187-BootScootinBoogie.mp3` | BOOT SCOOTIN BOOGIE | 2:17 | 129 BPM | 1 2 2 3 2 3 | 566 |
-| `:MU13` | `0188-Caramelle.mp3` | CARAMELLE | 1:57 | 129 BPM | 0 2 1 0 3 | 327 |
-| `:MU14` | `0189-UpsideDown.mp3` | UPSIDE DOWN | 5:51 | 123 BPM | 0 0 2 0 1 3 0 3 0 1 2 0 | 1079 |
-| `:MU15` | `0190-Emotion.mp3` | EMOTION | 3:02 | 123 BPM | 0 2 2 0 0 1 1 3 | 606 |
-| `:MU16` | `0191-FastCarsSuperstars.mp3` | FAST CARS SUPERSTARS | 1:55 | 129 BPM | 1 3 2 1 2 | 564 |
+| `:MU03` | `0178-VaderR2.mp3` | VADER R2 | 0:21 | 89 BPM | 2 3 | 37 |
+| `:MU04` | `0179-menoumR2.mp3` | MENOUM R2 | 2:10 | 185 BPM | 3 1 1 1 1 1 | 356 |
+| `:MU05` | `0180-mus-5.mp3` | MUS 5 | 0:17 | 123 BPM | 3 0 | 55 |
+| `:MU06` | `0181-stayingaliveR2.mp3` | STAYING ALIVE | 4:04 | 103 BPM | 1 2 2 2 1 2 3 1 1 0 | 1260 |
+| `:MU07` | `0182-ImperielMarch.mp3` | IMPERIAL MARCH | 3:02 | 103 BPM | 3 0 0 1 2 2 2 2 | 845 |
+| `:MU08` | `0183-ThromeRoom.mp3` | THRONE ROOM | 7:53 | 123 BPM | 2 2 2 0 1 3 2 3 0 2 1 3 | 1849 |
+| `:MU09` | `0184-MainTheme.mp3` | STAR WARS | 5:47 | 123 BPM | 2 2 0 0 2 0 2 2 0 0 3 3 | 1686 |
+| `:MU10` | `0185-304.mp3` | 304 | 3:03 | 129 BPM | 1 3 2 2 0 1 3 2 | 776 |
+| `:MU11` | `0186-Thunderstruck.mp3` | THUNDERSTRUCK | 3:14 | 129 BPM | 1 1 3 2 0 2 0 2 2 | 881 |
+| `:MU12` | `0187-BootScootinBoogie.mp3` | BOOT SCOOTIN BOOGIE | 2:17 | 129 BPM | 1 2 2 3 2 3 | 551 |
+| `:MU13` | `0188-Caramelle.mp3` | CARAMELLE | 1:57 | 129 BPM | 0 2 1 0 3 | 325 |
+| `:MU14` | `0189-UpsideDown.mp3` | UPSIDE DOWN | 5:51 | 123 BPM | 0 0 2 0 1 3 0 3 0 1 2 0 | 1075 |
+| `:MU15` | `0190-Emotion.mp3` | EMOTION | 3:02 | 123 BPM | 0 2 2 0 0 1 1 3 | 594 |
+| `:MU16` | `0191-FastCarsSuperstars.mp3` | FAST CARS SUPERSTARS | 1:55 | 129 BPM | 1 3 2 1 2 | 562 |
 | `:MU17` | `0192-DoubleDutchBus.mp3` | DOUBLE DUTCH BUS | 4:59 | 129 BPM | 1 2 1 2 1 1 1 2 1 1 1 1 | 729 |
-| `:MU18` | `0193-Insomnia.mp3` | INSOMNIA | 2:29 | 129 BPM | 0 1 2 1 3 1 | 438 |
+| `:MU18` | `0193-Insomnia.mp3` | INSOMNIA | 2:29 | 129 BPM | 0 1 2 1 3 1 | 437 |
 | `:MU19` | `0194-RingOfFire.mp3` | RING OF FIRE | 2:12 | 129 BPM | 2 0 2 3 2 2 | 689 |
-| `:MU20` | `0195-IsisBillieJean.mp3` | BILLIE JEAN | 3:56 | 117 BPM | 3 2 2 2 3 3 1 2 1 3 1 | 1199 |
-| `:MU21` | `0196-Sandstorm.mp3` | SANDSTORM | 2:14 | 152 BPM | 0 0 1 3 1 2 | 433 |
-| `:MU22` | `0197-PumpUpTheJam.mp3` | PUMP UP THE JAM | 5:17 | 123 BPM | 0 2 2 3 2 2 2 2 1 2 2 2 | 1428 |
-| `:MU23` | `0198-BlackBetty.mp3` | BLACK BETTY | 2:00 | 129 BPM | 0 1 1 1 3 | 292 |
-| `:MU24` | `0199-Satisfaction.mp3` | SATISFACTION | 2:42 | 129 BPM | 1 1 3 2 0 2 2 | 647 |
-| `:MU25` | `0200-SwingRave.mp3` | SWING RAVE | 2:49 | 123 BPM | 2 3 2 3 1 2 1 3 | 675 |
-| `:MU26` | `0201-TakeMeUp.mp3` | TAKE ME UP | 3:22 | 123 BPM | 0 2 2 3 1 2 3 1 1 | 544 |
-| `:MU27` | `0202-TheGitUp.mp3` | THE GIT UP | 3:06 | 99 BPM | 0 2 1 1 2 1 3 3 | 667 |
-| `:MU28` | `0203-Blade.mp3` | BLADE | 10:20 | 136 BPM | 2 2 2 2 2 3 1 1 3 3 3 0 | 2480 |
-| `:MU29` | `0204-BREATHE.mp3` | BREATHE | 2:04 | 123 BPM | 0 3 1 0 2 0 | 339 |
-| `:MU30` | `0205-UpToNoGood.mp3` | UP TO NO GOOD | 2:35 | 92 BPM | 0 3 2 1 3 2 | 481 |
-| `:MU31` | `0206-WeLikeToParty.mp3` | WE LIKE TO PARTY | 3:41 | 136 BPM | 1 1 2 2 2 3 1 3 | 913 |
-| `:MU32` | `0207-ZombieNation.mp3` | ZOMBIE NATION | 2:11 | 136 BPM | 1 1 2 1 1 3 | 401 |
-| `:MU33` | `0208-9to5.mp3` | 9 TO 5 | 2:45 | 112 BPM | 2 0 2 2 3 2 2 | 1008 |
-| `:MU34` | `0254-UniversalPicturesMinions.mp3` | MINIONS | 0:31 | 144 BPM | 3 2 | 142 |
+| `:MU20` | `0195-IsisBillieJean.mp3` | BILLIE JEAN | 3:56 | 117 BPM | 3 2 2 2 3 3 1 2 1 3 1 | 1189 |
+| `:MU21` | `0196-Sandstorm.mp3` | SANDSTORM | 2:14 | 152 BPM | 0 0 1 3 1 2 | 428 |
+| `:MU22` | `0197-PumpUpTheJam.mp3` | PUMP UP THE JAM | 5:17 | 123 BPM | 0 2 2 3 2 2 2 2 1 2 2 2 | 1419 |
+| `:MU23` | `0198-BlackBetty.mp3` | BLACK BETTY | 2:00 | 129 BPM | 0 1 1 1 3 | 271 |
+| `:MU24` | `0199-Satisfaction.mp3` | SATISFACTION | 2:42 | 129 BPM | 1 1 3 2 0 2 2 | 638 |
+| `:MU25` | `0200-SwingRave.mp3` | SWING RAVE | 2:49 | 123 BPM | 2 3 2 3 1 2 1 3 | 674 |
+| `:MU26` | `0201-TakeMeUp.mp3` | TAKE ME UP | 3:22 | 123 BPM | 0 2 2 3 1 2 3 1 1 | 545 |
+| `:MU27` | `0202-TheGitUp.mp3` | THE GIT UP | 3:06 | 99 BPM | 0 2 1 1 2 1 3 3 | 663 |
+| `:MU28` | `0203-Blade.mp3` | BLADE | 10:20 | 136 BPM | 2 2 2 2 2 3 1 1 3 3 3 0 | 2455 |
+| `:MU29` | `0204-BREATHE.mp3` | BREATHE | 2:04 | 123 BPM | 0 3 1 0 2 0 | 337 |
+| `:MU30` | `0205-UpToNoGood.mp3` | UP TO NO GOOD | 2:35 | 92 BPM | 0 3 2 1 3 2 | 479 |
+| `:MU31` | `0206-WeLikeToParty.mp3` | WE LIKE TO PARTY | 3:41 | 136 BPM | 1 1 2 2 2 3 1 3 | 903 |
+| `:MU32` | `0207-ZombieNation.mp3` | ZOMBIE NATION | 2:11 | 136 BPM | 1 1 2 1 1 3 | 395 |
+| `:MU33` | `0208-9to5.mp3` | 9 TO 5 | 2:45 | 112 BPM | 2 0 2 2 3 2 2 | 1002 |
+| `:MU34` | `0254-UniversalPicturesMinions.mp3` | MINIONS | 0:31 | 144 BPM | 3 2 | 141 |
 <!-- table:fin -->
 
 ## How a choreography is built
@@ -78,8 +78,8 @@ kept for at most about a third of the song, so it stays special.
 | --- | --- | --- | --- |
 | 0 — calm | color of the harmony, changing with the chords | one holo at a time turns slowly toward the side the sound comes from (stereo), else a slow scan; soft color pulse | closed |
 | 1 — groove | halves flip-flop at the tempo; PSI flash at the tempo | one holo at a time looks left or right on each bar; solid color of the bar | the dome "breathes": one panel type half-opens on strong bars, in turn |
-| 2 — energy | front and rear swap two colors on every beat | all holos nod every other beat; color swaps on the beat | pie panels pop on bass hits, small and medium panels on snare backbeats, top panel every other bar |
-| 3 — peak | fire or rainbow (alternating from one peak to the next); PSI rainbow | all holos nod on every beat; rainbow | **equalizer**: the number of panel types open follows the bass, from the mini panels up to the top panel |
+| 2 — energy | front and rear swap two colors on every beat | all holos nod every other beat; color swaps on the beat | pie panels pop on bass hits, small and medium panels on snare backbeats, mini panels (P11–P12) wink every other bar |
+| 3 — peak | fire or rainbow (alternating from one peak to the next); PSI rainbow | all holos nod on every beat; rainbow | **equalizer**: the number of panel types open follows the bass, in four steps: mini (P11–P12), small (P1–P3), medium (P4–P5), pie (P7–P10) |
 
 ### Transitions
 
@@ -88,7 +88,7 @@ kept for at most about a third of the song, so it stays special.
   dark, then the peak starts with all panels opening at once. The rules know the whole song in
   advance, so the droid anticipates the drop instead of reacting to it.
 - **Break** (quiet part right after a loud one): lights out, panels closed, holos centered.
-- **End**: panels close, holos center, then the top panel tips like a hat on the last notes.
+- **End**: panels close, holos center, then the pie panels half-open and close as a bow on the last notes. P6 and P13 have no servo and are never opened.
 
 ### Mechanical limits enforced
 

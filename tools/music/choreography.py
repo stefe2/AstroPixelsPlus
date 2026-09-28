@@ -14,7 +14,8 @@ ALL = SMALL | MEDIUM | BIG | PIE | TOP | MINI
 PANEL_NAMES = {SMALL: 'SMALL_PANEL', MEDIUM: 'MEDIUM_PANEL', BIG: 'BIG_PANEL',
                PIE: 'PIE_PANEL', TOP: 'TOP_PIE_PANEL', MINI: 'MINI_PANEL'}
 # Ordre de l'« égaliseur » : du plus discret au plus spectaculaire
-EQ_ORDER = [MINI, SMALL, MEDIUM, PIE, BIG, TOP]
+# P6 (BIG) et P13 (TOP) n'ont pas de servo sur le droïde : jamais utilisés seuls
+EQ_ORDER = [MINI, SMALL, MEDIUM, PIE]
 
 # Appareils LogicEngine (LE<id>…)
 FLD, RLD, PSIF, PSIR = 1, 3, 4, 5
@@ -358,7 +359,7 @@ class Choreographer:
 
                 if tier == 3:
                     # Égaliseur : le nombre de types de panneaux ouverts suit les graves
-                    lvl = max(1, min(6, int(round(max(low, kick) * 6))))
+                    lvl = max(1, min(len(EQ_ORDER), int(round(max(low, kick) * len(EQ_ORDER)))))
                     if lvl != last_eq:
                         opened = 0
                         for m in EQ_ORDER[:lvl]:
@@ -375,10 +376,11 @@ class Choreographer:
                         self.panels(t, SMALL | MEDIUM, 80, min(300, bm * 0.4))
                         self.panels(half, SMALL | MEDIUM, 0, min(300, bm * 0.4))
                     if down and ((i - phase) // 4) % 2 == 0:
-                        self.panels(t, TOP, 100, 200)
-                        self.panels(t + bm, TOP, 0, 200)
+                        # Clin d'œil des mini-panneaux P11 et P12
+                        self.panels(t, MINI, 100, 200)
+                        self.panels(t + bm, MINI, 0, 200)
 
-        # Fin : tout se ferme, salut du panneau du dessus
+        # Fin : tout se ferme, salut des pie panels entrouverts
         te = max(t_start, t_end - 2200)
         self.panels(te, ALL, 0, 350)
         self.holo(te, HOLO_ALL, CENTER, 500)
@@ -386,8 +388,8 @@ class Choreographer:
         self.logic(te, RLD, SOLID, self.color_at(n - 1), force=True)
         self.holo_led_cmd(te, HOLO_ALL, 3, '%d3' % HOLO_COLOR[self.color_at(n - 1)])
         self.panel_time = {m: -10**9 for m in PANEL_NAMES}
-        self.panels(t_end - 1300, TOP, 100, 300)
-        self.panels(t_end - 400, TOP, 0, 300)
+        self.panels(t_end - 1300, PIE, 50, 300)
+        self.panels(t_end - 400, PIE, 0, 300)
 
         self.events.sort(key=lambda e: e['t'])
         return self.merge()

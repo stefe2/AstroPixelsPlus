@@ -19,8 +19,8 @@ static const MusicEvent sMusicMU99[] = {
     MUSIC_HOLO(8000,    MUSIC_HOLO_ALL, 0, 400),
     // Holos rouges, dessus et mini
     MUSIC_CMD(9000,  "HPA0051"),
-    MUSIC_PANELS(10000, TOP_PIE_PANEL | MINI_PANEL, 100, 250),
-    MUSIC_PANELS(10500, TOP_PIE_PANEL | MINI_PANEL, 0, 250),
+    MUSIC_PANELS(10000, MINI_PANEL, 100, 250),
+    MUSIC_PANELS(10500, MINI_PANEL, 0, 250),
     // Alternance pie / petits panneaux
     MUSIC_PANELS(11000, PIE_PANEL, 100, 250),
     MUSIC_PANELS(11500, PIE_PANEL, 0, 250),
