@@ -1,392 +1,295 @@
-# AstroPixelsPlus Commands
+# AstroPixelsPlus Command Reference
 
-## Wiring
+Every command listed here is declared in the firmware source (`AstroPixelsPlus.ino` and `src/Marcduino*.h`).
+Wiring, power and Maestro settings are in [hardware.md](hardware.md).
 
-### ESP32 GPIO Pin Assignment
+## Sending commands
 
-**Serial Communication**
-- **Serial2 (Marcduino)**: GPIO 16 (RX) / GPIO 17 (TX) @ 9600 baud
-- **Serial1 (Pololu Maestro)**: GPIO 18 (RX) / GPIO 19 (TX) @ 115200 baud
+| Port | Pins | Speed | Notes |
+| --- | --- | --- | --- |
+| USB (Serial) | USB connector | 115200 baud | Serial monitor |
+| Serial2 | GPIO 16 (RX), GPIO 17 (TX) | 9600 baud | Kyber / Marcduino controller, 3.3 V logic |
 
-**I2C Bus**
-- **SDA**: GPIO 21
-- **SCL**: GPIO 22
+- End each command with CR (`\r`) or LF (`\n`).
+- ⚠️ Known issue: a command ending with **CR+LF** currently runs **twice**. Use CR only, or LF only.
+- Commands are matched by prefix. Anything after the prefix is the command argument.
+- Only one command/animation runs at a time: a new command stops the running one.
 
-**LEDs / NeoPixels**
-- **Front Logic**: GPIO 15
-- **Rear Logic**: GPIO 33
-- **Front PSI**: GPIO 32
-- **Rear PSI**: GPIO 23
-- **Front Holo**: GPIO 25
-- **Rear Holo**: GPIO 26
-- **Top Holo**: GPIO 27
-- **Builtin LED** (heartbeat): GPIO 2
+## Prefixes
 
-**Auxiliary Pins**
-- **AUX1**: GPIO 2
-- **AUX2**: GPIO 4
-- **AUX3**: GPIO 5
-- **AUX4**: GPIO 18 (used by Maestro RX)
-- **AUX5**: GPIO 19 (used by Maestro TX)
-
-> **Note**: Serial1 was previously used for a sound module but has been reassigned to the Pololu Maestro controller for servo control.
+| Prefix | Target |
+| --- | --- |
+| `:` | Panels, servos, sequences |
+| `*` | Holo projectors |
+| `@` | Logic displays, PSI, alternative holo commands |
+| `$` | Music-synchronised sequences |
+| `~RT`, `@AP` | Raw Reeltwo command (for example `LE…`, `HP…`) |
+| `#AP` | System commands |
 
 ---
 
-## Panels (Serial2 / USB, prefix `:`)
+## Panels and servos (`:`)
 
-### Global Commands
------------------------------------------------------------------------
-| Command  | Description                                              |
-|----------|----------------------------------------------------------|
-| `:CL00`  | Close all panels (brownout risk if common power supply)  |
-| `:OP00`  | Open all panels                                          |
-| `:OF00`  | Flutter (shake) all panels                               |
-| `:ST00`  | Stop & disable ALL servos (limp, no torque)              |
-| `:SD<n>` | Disable ONE servo (ex: `:SD0`, `:SD4`, `:SD12`)          |
------------------------------------------------------------------------
+### All panels
 
-### Direct Movement
--------------------------------------------------------------------------------------------
-| Command               | Description                                                   |
-|-----------------------|---------------------------------------------------------------|
-| `:SM<ch>,<dur>,<pos>` | Direct movement (ex: `:SM0,500,1500` = channel 0, 500ms, 1500µs) |
-| `:SF<ch>$<easing>`    | Set servo easing method                                       |
-| `:SQ<ch>,<pos>`       | Immediate position without animation                          |
-| `:SL<ch>,<min>,<max>` | Set servo min/max limits                                      |
--------------------------------------------------------------------------------------------
+| Command | Description |
+| --- | --- |
+| `:OP00` | Open all dome panels |
+| `:CL00` | Close all dome panels (125 ms interpolated move) |
+| `:OF00` | Flutter all dome panels |
+| `:ST00` | Stop and disable all servos |
+| `:SD<n>` | Disable servo `<n>` (for example `:SD4`) |
 
-### Individual Groups (01 to 18 + 19/20)
----------------------------------------------------------------------------------------
-| Open            | Close           | Flutter         | Description                |
-|-----------------|-----------------|-----------------|----------------------------|
-| `:OP01`…`:OP18` | `:CL01`…`:CL18` | `:OF01`…`:OF10` | Groups 1 to 18             |
-| `:OP19`         | `:CL19`         | —               | Top panels (pie panels)    |
-| `:OP20`         | `:CL20`         | —               | Bottom panels (dome panels)|
----------------------------------------------------------------------------------------
+> ⚠️ Under investigation: `:OP…` open commands may close again about 200 ms later (see
+> [review, issue 4](review/revue-firmware.md)). `:ST00` / `:SD<n>` send a Maestro command (`0x60`)
+> that is not in the Pololu protocol (issue 2).
 
-### Dynamic Group Animations
-> Replace `$` with the group number in hexadecimal (ex: `1`, `2`, `FF`…)
+### Panel groups
 
---------------------------------------
-| Command  | Description         |
-|----------|---------------------|
-| `:OC$`   | Open/Close group    |
-| `:OCL$`  | Open/Close long     |
-| `:OCR$`  | Open/Close repeated |
-| `:OF$`   | Flutter group       |
-| `:OW$`   | Wave group          |
-| `:OWF$`  | Fast wave group     |
-| `:OWC$`  | Open/Close wave     |
-| `:OMA$`  | Marching ants       |
-| `:OAP$`  | Alternating         |
-| `:OD$`   | Dance               |
-| `:OS$`   | Shake               |
-| `:OP$`   | Open dynamic group  |
-| `:CL$`   | Close dynamic group |
---------------------------------------
+| Open | Close | Flutter | Panels |
+| --- | --- | --- | --- |
+| `:OP01` … `:OP18` | `:CL01` … `:CL18` | `:OF01` … `:OF10` | Groups 1–13 = Maestro channels 0–12; groups 14–18 = unused channels 19–23 |
+| `:OP19` | `:CL19` | — | The 4 pie panels |
+| `:OP20` | `:CL20` | — | Small, medium and big lower dome panels |
 
-**Optional parameters** (added after comma): `<speedMin>,<speedMax>,<easingOn>,<easingOff>`
-Example: `:OC1,10,50,1,2`
+### Direct servo control
 
----
+`<ch>` is the Maestro channel (0–23). Pulses are in microseconds, times in milliseconds.
 
-## Sequences (prefix `:SE`)
+| Command | Description |
+| --- | --- |
+| `:SQ<ch>,<pulse>` | Move immediately to `<pulse>` |
+| `:SM<ch>,<pulse>` | Same as `:SQ` |
+| `:SM<ch>,<time>,<pulse>` | Move to `<pulse>` over `<time>` ms (for example `:SM0,500,1500`) |
+| `:SM<ch>,<delay>,<time>,<pulse>` | Same, after `<delay>` ms |
+| `:SM<ch>,<delay>,<time>,<start>,<pulse>` | Same, starting from `<start>` |
+| `:SL<ch>,<start>,<end>[,<neutral>[,<group>]]` | Change the closed (`start`) and open (`end`) pulses of a channel until the next reboot (`<group>` in decimal) |
+| `:SF<easing>$<mask>` | Set the easing method (number) for all servos in `<mask>` (hexadecimal) |
 
-### Control
-| Command  | Description          |
-|----------|----------------------|
-| `:SE00`  | Stop current sequence|
+Pulses are not limited by the firmware: set per-channel limits in the Maestro as a safety net.
 
-### Interpolated Sequences — **recommended** (speed=125ms, reliable)
-> These sequences guide servos step-by-step from the ESP32 (125ms/step interpolation).
-> This is the minimum reliable physical timing for dome panels.
+### Dynamic group animations
 
----------------------------------------------------------------------------------
-| Command  | Equivalent | Description                                           |
-|----------|------------|-------------------------------------------------------|
-| `:SE22`  | SE02       | Wave                                                  |
-| `:SE23`  | SE03       | Smirk Wave (fast)                                     |
-| `:SE24`  | SE04       | Open/Close Wave                                       |
-| `:SE25`  | SE05       | Cantina beep (marching ants 15s)                      |
-| `:SE26`  | SE06       | Short Circuit (spark + failure 8s)                    |
-| `:SE27`  | SE07       | Full Cantina (dance 46s)                              |
-| `:SE28`  | SE08       | Leia Message (45s) — identical, no panel servos       |
-| `:SE29`  | SE09       | Disco                                                 |
-| `:SE30`  | SE50       | Scream logics only — identical, no panels             |
-| `:SE31`  | SE51       | Scream panels only                                    |
-| `:SE32`  | SE52       | Slow wave                                             |
-| `:SE33`  | SE53       | Smirk Wave                                            |
-| `:SE34`  | SE54       | Open Wave                                             |
-| `:SE35`  | SE55       | Marching Ants                                         |
-| `:SE36`  | SE56       | Faint (open/close long)                               |
-| `:SE37`  | SE57       | Rhythmic                                              |
-| `:SE38`  | SE58       | One By One (panel by panel)                           |
----------------------------------------------------------------------------------
+The `$` is part of the command. It is followed by a **servo mask in hexadecimal**, then optional
+parameters: `<speedMin>,<speedMax>,<easingOn>,<easingOff>` (defaults 10, 50, none, none).
 
-### Original Sequences — reference (speed=0, Maestro handles movement)
-> Kept for reference. The Maestro controls the speed of its own servos.
-> Less reliable with current configuration (Maestro speed and acceleration = 0).
+| Command | Animation |
+| --- | --- |
+| `:OP$<mask>` | Open |
+| `:CL$<mask>` | Close |
+| `:OC$<mask>` | Open then close |
+| `:OCL$<mask>` | Open then close, long |
+| `:OCR$<mask>` | Open/close repeated |
+| `:OF$<mask>` | Flutter |
+| `:OW$<mask>` | Wave |
+| `:OWF$<mask>` | Fast wave |
+| `:OWC$<mask>` | Open/close wave |
+| `:OMA$<mask>` | Marching ants |
+| `:OAP$<mask>` | Alternate |
+| `:OD$<mask>` | Dance |
+| `:OS$<mask>` | Shake |
 
--------------------------------------------------------
-| Command  | Description                           |
-|----------|---------------------------------------|
-| `:SE01`  | Scream (panels + logics)              |
-| `:SE02`  | Wave                                  |
-| `:SE03`  | Smirk Wave (fast)                     |
-| `:SE04`  | Open/Close Wave                       |
-| `:SE05`  | Cantina beep (marching ants 15s)      |
-| `:SE06`  | Short Circuit (spark + failure 8s)    |
-| `:SE07`  | Full Cantina (dance 46s)              |
-| `:SE08`  | Leia Message (45s)                    |
-| `:SE09`  | Disco                                 |
-| `:SE50`  | Scream logics only (no panels)        |
-| `:SE51`  | Scream panels only                    |
-| `:SE52`  | Slow wave                             |
-| `:SE53`  | Smirk Wave                            |
-| `:SE54`  | Open Wave                             |
-| `:SE55`  | Marching Ants                         |
-| `:SE56`  | Faint (open/close long)               |
-| `:SE57`  | Rhythmic                              |
-| `:SE58`  | One By One (panel by panel)           |
--------------------------------------------------------
+Masks (combine by adding):
 
-> **Note:** At the end of each sequence, all panels are automatically closed via `moveServosTo(ALL_DOME_PANELS_MASK, 125, 0.0)`, then servos are disabled after 1.5s (no brownout risk).
+| Mask | Servos |
+| --- | --- |
+| `1` | Small panels (channels 0–2) |
+| `2` | Medium panels (3–4) |
+| `4` | Big panel (5) |
+| `8` | Pie panels (6–9) |
+| `10` | Top pie panel (12) |
+| `20` | Mini panels (10–11) |
+| `1000` | Holo horizontal servos |
+| `2000` | Holo vertical servos |
+| `4000` × 2ⁿ⁻¹ | Panel group n (group 1 = `4000`, group 2 = `8000`, group 3 = `10000`, …) |
+
+Examples: `:OC$8` opens and closes the pie panels; `:OW$3F,20,80` waves all dome panels, slower than the default.
 
 ---
 
-## Holos (prefix `*`)
+## Sequences (`:SE`, `$`)
 
-### ON / OFF
-----------------------------------
-| Command  | Description      |
-|----------|------------------|
-| `*ON01`  | Front Holo ON    |
-| `*OF01`  | Front Holo OFF   |
-| `*ON02`  | Rear Holo ON     |
-| `*OF02`  | Rear Holo OFF    |
-| `*ON03`  | Top Holo ON      |
-| `*OF03`  | Top Holo OFF     |
-| `*ST00`  | Reset all holos  |
-----------------------------------
+At the end of every servo sequence the firmware moves all dome panels to closed, then disables all
+servos 1.5 s later.
 
-### Movements
---------------------------------------------------
-| Command  | Description                      |
-|----------|----------------------------------|
-| `*RD01`  | Random movement Front (one-shot) |
-| `*RD02`  | Random movement Rear (one-shot)  |
-| `*RD03`  | Random movement Top (one-shot)   |
-| `*HW01`  | Wag (left/right) Front           |
-| `*HW02`  | Wag Rear                         |
-| `*HW03`  | Wag Top                          |
-| `*HN01`  | Nod (up/down) Front              |
-| `*HN02`  | Nod Rear                         |
-| `*HN03`  | Nod Top                          |
---------------------------------------------------
+### Interpolated sequences (recommended)
 
-### R2 Alive — All-in-one
-> Simultaneously activates continuous random movements AND blue↔white LEDs with smooth fade (1.5s fade in/out, 5–10s on, 3–9s off). Each holo is independent and offset.
+The ESP32 drives each step at 125 ms, the reliable minimum measured for the dome panels.
 
-------------------------------------------------------------
-| Command  | Description                                 |
-|----------|---------------------------------------------|
-| `*HV01`  | **Start Slow** — movements 8–15s + LEDs     |
-| `*HV02`  | **Start Medium** — movements 3–8s + LEDs    |
-| `*HV03`  | **Start Fast** — movements 1–4s + LEDs      |
-| `*HV00`  | **Stop** — return to center + LEDs off      |
-------------------------------------------------------------
+| Command | Same as | Description |
+| --- | --- | --- |
+| `:SE22` | `:SE02` | Wave |
+| `:SE23` | `:SE03` | Smirk wave (fast) |
+| `:SE24` | `:SE04` | Open/close wave |
+| `:SE25` | `:SE05` | Beep cantina: marching ants, logics, holo short circuit (15 s) |
+| `:SE26` | `:SE06` | Short circuit: logics failure, then panels (≈ 14 s) |
+| `:SE27` | `:SE07` | Cantina: dance, disco logics (46 s) |
+| `:SE28` | `:SE08` | Leia message (45 s), no panels |
+| `:SE29` | `:SE09` | Disco: long disco panels, rainbow logics (45 s) |
+| `:SE30` | `:SE50` | Scream, logics only |
+| `:SE31` | `:SE51` | Scream, panels only |
+| `:SE32` | `:SE52` | Slow wave |
+| `:SE33` | `:SE53` | Smirk wave |
+| `:SE34` | `:SE54` | Open wave |
+| `:SE35` | `:SE55` | Marching ants |
+| `:SE36` | `:SE56` | Faint (long open/close) |
+| `:SE37` | `:SE57` | Rhythmic (long open/close) |
+| `:SE38` | `:SE58` | One by one |
 
-### HoloAlive — Continuous Movement (fine control)
-> Animates the 3 holos independently to random positions in a loop. Each holo has its own offset timer (organic effect). LEDs not affected.
+### Original sequences (reference)
 
-----------------------------------------------------------------
-| Command  | Description                                    |
-|----------|------------------------------------------------|
-| `*HA01`  | Start **Slow** mode (8–15s between movements)  |
-| `*HA02`  | Start **Medium** mode (3–8s between movements) |
-| `*HA03`  | Start **Fast** mode (1–4s between movements)   |
-| `*HZ00`  | **Stop** — all holos return to center          |
-----------------------------------------------------------------
+Same animations with `speed=0`: the Maestro moves the servos at its own speed. Less reliable with the
+current configuration.
 
-### Light Effects
------------------------------
-| Command   | Description   |
-|-----------|---------------|
-| `*HPS301` | Pulse Front   |
-| `*HPS302` | Pulse Rear    |
-| `*HPS303` | Pulse Top     |
-| `*HPS601` | Rainbow Front |
-| `*HPS602` | Rainbow Rear  |
-| `*HPS603` | Rainbow Top   |
------------------------------
+| Command | Description |
+| --- | --- |
+| `:SE00` | Stop the current sequence |
+| `:SE01` | Scream: panels and logics |
+| `:SE02` … `:SE09` | See the interpolated table above |
+| `:SE50` … `:SE58` | See the interpolated table above |
 
-### Fixed Positions (xx = 01 Front / 02 Rear / 03 Top)
---------------------------
-| Command  | Description  |
-|----------|-------------|
-| `*HP0xx` | Down         |
-| `*HP1xx` | Center       |
-| `*HP2xx` | Up           |
-| `*HP3xx` | Left         |
-| `*HP4xx` | Up-left      |
-| `*HP5xx` | Down-left    |
-| `*HP6xx` | Right        |
-| `*HP7xx` | Up-right     |
-| `*HP8xx` | Down-right   |
---------------------------
+### Music sequences
 
-Examples: `*HP001` = Front down, `*HP102` = Rear center, `*HP203` = Top up
-
-### Radar Eye
-------------------------------
-| Command  | Description    |
-|----------|----------------|
-| `*HRS3`  | Pulse (color)  |
-| `*HRSR`  | Pulse red      |
-| `*HRS6`  | Rainbow        |
-| `*HRS4`  | Color cycle    |
-| `*OF04`  | Radar Eye OFF  |
-------------------------------
+| Command | Description |
+| --- | --- |
+| `$720` | Yoda "clear your mind": opens panel group 6, holo effect (15 s) |
+| `$815` | Harlem Shake (≈ 30 s) |
+| `$821` | Girl on Fire (≈ 55 s) |
 
 ---
 
-## Logics & PSI (prefix `@`)
+## Holo projectors (`*`)
 
-### Sequences (T = Logic Display, P = PSI)
-> `0` = all | `1` = Front | `2` = Rear
+Holo numbers: `01` front, `02` rear, `03` top.
 
------------------
-| N° | Sequence |
-|----|----------|
-| 1  | Normal   |
-| 2  | Flash    |
-| 3  | Alarm    |
-| 4  | Failure  |
-| 5  | Scream   |
-| 6  | Leia     |
-| 11 | March    |
------------------
+| Command | Description |
+| --- | --- |
+| `*ON01` / `*ON02` / `*ON03` | Holo on (dim cycle, random color) |
+| `*OF01` / `*OF02` / `*OF03` | Holo off |
+| `*ST00` | Reset all holos |
+| `*RD01` / `*RD02` / `*RD03` | One random move |
+| `*HW01` / `*HW02` / `*HW03` | Wag (left/right) |
+| `*HN01` / `*HN02` / `*HN03` | Nod (up/down) |
+| `*HPS301` / `*HPS302` / `*HPS303` | Pulse |
+| `*HPS601` / `*HPS602` / `*HPS603` | Rainbow |
+| `*HP<p><nn>` | Fixed position `<p>` for holo `<nn>` (table below) |
 
------------------------------------------------
-| Command  | Description                      |
-|----------|----------------------------------|
-| `@0T<n>` | All logics: sequence n           |
-| `@1T<n>` | Front Logic Display: sequence n  |
-| `@2T<n>` | Rear Logic Display: sequence n   |
-| `@0P<n>` | All PSI: sequence n              |
-| `@1P<n>` | Front PSI: sequence n            |
-| `@2P<n>` | Rear PSI: sequence n             |
------------------------------------------------
+| `<p>` | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Position | Down | Center | Up | Left | Up-left | Down-left | Right | Up-right | Down-right |
 
-Examples: `@0T1` = all logics normal, `@1T5` = Front scream, `@2P6` = Rear PSI Leia
+Example: `*HP102` = rear holo to center.
 
-### Holos via Marcduino
---------------------------------------
-| Command    | Description        |
-|------------|--------------------|
-| `@6T1`     | Front Holo ON      |
-| `@6D`      | Front Holo OFF     |
-| `@7T1`     | Top Holo ON        |
-| `@7D`      | Top Holo OFF       |
-| `@8T1`     | Rear Holo ON       |
-| `@8D`      | Rear Holo OFF      |
-| `@HP<cmd>` | Direct holo command|
---------------------------------------
+### Continuous animation
+
+| Command | Description |
+| --- | --- |
+| `*HV01` / `*HV02` / `*HV03` | "R2 alive": random moves (slow 8–15 s, medium 3–8 s, fast 1–4 s) **and** blue↔white LED fades |
+| `*HV00` | Stop: holos to center, LEDs off |
+| `*HA01` / `*HA02` / `*HA03` | Random moves only (slow, medium, fast) |
+| `*HZ00` | Stop moves, holos to center |
+
+### Radar eye
+
+| Command | Description |
+| --- | --- |
+| `*HRS3` | Pulse, random color |
+| `*HRSR` | Pulse, red |
+| `*HRS4` | Color cycle |
+| `*HRS6` | Rainbow |
+| `*OF04` | Off |
 
 ---
 
-## System Commands
+## Logic displays and PSI (`@`)
 
----------------------------------------------------------------------
-| Command      | Description                                        |
-|--------------|----------------------------------------------------|  
-| `~RT<cmd>`   | Direct Reeltwo command                             |
-| `@AP<cmd>`   | Direct MD command to AstroPixels                   |
-| `#APWIFI`    | Toggle WiFi ON/OFF *(WiFi currently disabled)*     |
-| `#APZERO`    | Clear all NVS preferences (factory reset)          |
-| `#APRESTART` | Restart ESP32                                      |
+### Sequences
+
+`T` = logic displays, `P` = PSI. Target: `0` all, `1` front, `2` rear.
+
+| `<n>` | 1 | 2 | 3 | 4 | 5 | 6 | 11 |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Sequence | Normal | Flash | Alarm | Failure | Scream (red alert) | Leia | March |
+
+| Command | Description |
+| --- | --- |
+| `@0T<n>` / `@1T<n>` / `@2T<n>` | Logic displays: all / front / rear |
+| `@0P<n>` / `@1P<n>` / `@2P<n>` | PSI: all / front / rear |
+
+Example: `@0T5` = all logics in scream.
+
+### Text and font
+
+| Command | Description |
+| --- | --- |
+| `@1M<text>` | Front logic, top line: scroll `<text>` left |
+| `@2M<text>` | Front logic, bottom line: scroll `<text>` left |
+| `@3M<text>` | Rear logic: scroll `<text>` left |
+| `@3P60` / `@3P61` | Rear logic font: Latin / Aurabesh |
+| `@1P60` / `@1P61`, `@2P60` / `@2P61` | Front logic font: Latin / Aurabesh — ⚠️ currently broken: `@1P6` / `@2P6` (PSI Leia) also match and win |
+
+### Alternative holo commands
+
+| Command | Description |
+| --- | --- |
+| `@6T1` / `@6D` | Front holo on / off |
+| `@7T1` / `@7D` | Top holo on / off |
+| `@8T1` / `@8D` | Rear holo on / off |
+| `@HP<cmd>` | Raw holo command (Reeltwo `HP…` syntax) |
+
+### Logic engine effects (`LE`)
+
+Send with `@APLE…` or `~RTLE…`. Format: `LE[L]EECSNN`.
+
+- **L — target** (optional). Without it the effect goes to every logic and PSI. With it: `1` front logic,
+  `3` rear logic, `4` front PSI, `5` rear PSI. The target is only read when the full command has 9 characters or more.
+- **EE — effect**
+
+  | EE | Effect | EE | Effect |
+  | --- | --- | --- | --- |
+  | 00 | Normal | 12 | Mic bright |
+  | 01 | Alarm | 13 | Mic rainbow |
+  | 02 | Failure | 14 | Lights out |
+  | 03 | Leia | 15 | Display text |
+  | 04 | March | 16 | Text scroll left |
+  | 05 | Single color | 17 | Text scroll right |
+  | 06 | Flashing color | 18 | Text scroll up |
+  | 07 | Flip flop | 19 | Roaming pixel |
+  | 08 | Flip flop alt | 21 | Vertical scan line |
+  | 09 | Color swap | 22 | Fire |
+  | 10 | Rainbow | 23 | PSI color wipe |
+  | 11 | Red alert | 99 | Random |
+
+  Custom effects of this firmware (three-digit effect, target required): 101 Plasma, 102 Metaballs,
+  103 Fractal, 104 Fade and scroll. ⚠️ Do not use 105: it crashes the firmware (review issue 6).
+- **C — color**: 1 red, 2 orange, 3 yellow, 4 green, 5 cyan, 6 blue, 7 purple, 8 magenta, 9 pink,
+  0 effect default.
+- **S — speed** (1–9, 5 = default) or microphone sensitivity for red alert and mic effects.
+- **NN — duration** in seconds, `00` = continuous or effect default.
+
+Leading zeros disappear because the value is read as a number.
+
+| Example | Result |
+| --- | --- |
+| `@APLE51000` | Solid red |
+| `@APLE54008` | Solid green for 8 s |
+| `@APLE10500` | Alarm |
+| `@APLE20000` | Failure |
+| `@APLE30008` | Leia for 8 s |
+| `@APLE40500` | March |
+| `@APLE63315` | Flashing yellow, faster, 15 s |
+| `@APLE100500` | Rainbow |
+| `@APLE111300` | Red alert |
+| `@APLE225000` | Fire |
+| `@APLE3010003` | Rear logic: alarm, 3 s |
+| `@APLE11015000` | Front logic: plasma |
+
 ---
 
-## Prefix Summary
+## System commands (`#AP`)
 
------------------------------------------------------------
-| Prefix  | Destination                                   |
-|---------|-----------------------------------------------|
-| `:`     | Panels / Sequences / Servo                    |
-| `*`     | Holos (Marcduino standard)                    |
-| `@`     | Logics / PSI / Alternative holos              |
-| `~RT`   | Reeltwo direct                                |
-| `@AP`   | AstroPixels direct                            |
-| `#AP`   | AstroPixelsPlus system commands               |
-| `$`     | Music sequences (ex: `$815` Harlem Shake)     |
------------------------------------------------------------
-
----
-
-*Project: AstroPixelsPlus - ESP32 + Pololu Maestro 24 channels*
-*Serial2: GPIO 16/17, 9600 baud (Marcduino)*
-*Serial1: GPIO 18/19, 115200 baud (Maestro servos)*
-
----
-
-## Pololu Maestro 24-channel Configuration
-
-### Global Settings (Serial Settings)
-----------------------------------------
-| Parameter    | Value                 |
-|--------------|-----------------------|
-| Serial mode  | UART, fixed baud rate |
-| Baud rate    | 115200                |
-| Device ID    | 1                     |
-| CRC disabled | X                     |
-----------------------------------------
-
-### Servo Speed and Acceleration
-
-Maestro units are: **Speed** in 0.25 µs / 10 ms, **Acceleration** in 0.25 µs / 10 ms².
-
-Typical panel movement is ~850 µs (ex: 1350 → 2200 µs).
- ---------------------------------------------------
-| Speed | Actual speed       | Time for 850 µs      |
-|-------|--------------------|----------------------|
-| 0     | unlimited (current)| ~100–200 ms physical  |
-| 40    | 1 µs/ms            | ~850 ms              |
-| 80    | 2.5 µs/ms          | ~420 ms              |
-| 120   | 3 µs/ms            | ~280 ms              |
- ---------------------------------------------------
-**Recommended values to test — channels 0–12 (panels):**
-- **Speed: 80** → ~420 ms, natural and reliable
-- **Acceleration: 5** → smooth ramp, avoids mechanical shocks and current spikes
-
-**Channels 13–18 (holo servos):** leave Speed=0 (unlimited) for brisk movement.
-
-### Channel Mapping
-----------------------------------------
-| Channel | Servo        | Type          |
-|---------|--------------|---------------|
-| 0       | Door 4       | SMALL_PANEL   |
-| 1       | Door 3       | SMALL_PANEL   |
-| 2       | Door 2       | SMALL_PANEL   |
-| 3       | Door 1       | MEDIUM_PANEL  |
-| 4       | Door 5       | MEDIUM_PANEL  |
-| 5       | Door 9       | BIG_PANEL     |
-| 6       | Pie 1        | PIE_PANEL     |
-| 7       | Pie 2        | PIE_PANEL     |
-| 8       | Pie 3        | PIE_PANEL     |
-| 9       | Pie 4        | PIE_PANEL     |
-| 10      | Mini 2       | MINI_PANEL    |
-| 11      | Mini PSI     | MINI_PANEL    |
-| 12      | Top Center   | TOP_PIE_PANEL |
-| 13      | Front Holo H | HOLO_HSERVO   |
-| 14      | Front Holo V | HOLO_VSERVO   |
-| 15      | Top Holo H   | HOLO_HSERVO   |
-| 16      | Top Holo V   | HOLO_VSERVO   |
-| 17      | Rear Holo H  | HOLO_HSERVO   |
-| 18      | Rear Holo V  | HOLO_VSERVO   |
-| 19–23   | — unused —  | —             |
-----------------------------------------
-
-**Channels 0–12 (panels):** Speed=80, Acceleration=5 recommended  
-**Channels 13–18 (holo servos):** Speed=0 (unlimited) for brisk movement  
-**Channels 19–23:** free / unused
+| Command | Description |
+| --- | --- |
+| `#APRESTART` | Restart the ESP32 |
+| `#APZERO` | Erase all saved preferences, then restart |
+| `#APWIFI`, `#APWIFI0`, `#APWIFI1` | Toggle / disable / enable Wi-Fi. No effect in this build: Wi-Fi is compiled out (`USE_WIFI` not defined) |

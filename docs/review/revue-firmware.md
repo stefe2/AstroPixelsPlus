@@ -64,9 +64,9 @@ Cible : ESP32 classique (`board = esp32dev`, module ESP32-WROOM-32 sur DevKit 30
 
 ### Schéma de câblage actuel
 
-Le fichier `Wiring-Diagram.png` du dépôt montre encore les deux PCA9685 en I2C. Ce schéma-ci décrit la configuration Maestro. Il combine le code, `wiring.txt`, le schéma `AstropixelsPlus.png` et les précisions sur l'alimentation.
+L'ancien schéma `docs/wiring/wiring-original-pca9685.png` montre encore les deux PCA9685 en I2C. Ce schéma-ci décrit la configuration Maestro. Il combine le code, le brochage du câble du dôme, la photo `docs/wiring/wiring-maestro.png` et les précisions sur l'alimentation. Détails dans [hardware.md](../hardware.md).
 
-![Câblage actuel : ESP32, Maestro 24 canaux, LED](revue-firmware-cablage.svg)
+![Câblage actuel : ESP32, Maestro 24 canaux, LED](../wiring/wiring-maestro.svg)
 
 Le fil 2 relie AUX5 (GPIO19) au RX du Maestro ; AUX5 fournit aussi VIN et GND à la logique du Maestro. Le TX du Maestro n'est pas branché. Les servos ont leur propre alimentation 6 V sur VSRV, sans cavalier VSRV=VIN.
 
@@ -90,7 +90,7 @@ D'après la [documentation AstroPixels](https://r2djp.gitbook.io/astropixels/get
 
 ## E. Problèmes identifiés
 
-Deux problèmes critiques, six importants, cinq de moindre portée. Les numéros sont repris dans le plan d'action.
+Deux problèmes critiques, six importants, six de moindre portée. Les numéros sont repris dans le plan d'action.
 
 | N° | Sévérité | Problème | Où |
 | --- | --- | --- | --- |
@@ -107,10 +107,11 @@ Deux problèmes critiques, six importants, cinq de moindre portée. Les numéros
 | 11 | AMÉLIORATION | Impulsions non bornées | `MarcduinoPanel.h:58-106` |
 | 12 | AMÉLIORATION | Heap et RMT à chaque `show()` | Adafruit NeoPixel `esp.c` |
 | 13 | COSMÉTIQUE | Code mort, doublons, macros mal utilisées | plusieurs fichiers |
+| 14 | AMÉLIORATION | `@1P60`/`@1P61`/`@2P60`/`@2P61` déclenchent le PSI Leia | `src/MarcduinoLogics.h`, `src/MarcduinoPSI.h` |
 
 ### 1. CRITIQUE — Code servo hors contrôle de version
 
-`git status` dans `.pio/libdeps/astropixelsplus/Reeltwo` montre `ServoDispatchMaestro.h` non suivi, et `ServoDispatch.h` (ajout de `setSequenceActive`) et `HoloLights.h` (`fCounter = millis()`) modifiés. Or `.gitignore` contient `.pio`. Un nouveau clone, un nettoyage ou une vérification d'intégrité PlatformIO efface le driver Maestro et le build casse. On ne peut pas non plus prouver que `Firmware/*.bin` correspond au dépôt. Autre point : `Adafruit_NeoPixel` et `DFRobotDFPlayerMini` ne sont pas épinglés.
+`git status` dans `.pio/libdeps/astropixelsplus/Reeltwo` montre `ServoDispatchMaestro.h` non suivi, et `ServoDispatch.h` (ajout de `setSequenceActive`) et `HoloLights.h` (`fCounter = millis()`) modifiés. Or `.gitignore` contient `.pio`. Un nouveau clone, un nettoyage ou une vérification d'intégrité PlatformIO efface le driver Maestro et le build casse. On ne peut pas non plus prouver que `firmware/*.bin` correspond au dépôt. Autre point : `Adafruit_NeoPixel` et `DFRobotDFPlayerMini` ne sont pas épinglés.
 
 **Correction :** déplacer les trois fichiers dans le projet (`lib/ReeltwoLocal/` ou un fork de Reeltwo référencé par tag) et épingler toutes les lib_deps. En attendant, une sauvegarde versionnée est dans `patches/reeltwo/`.
 
@@ -184,6 +185,12 @@ Chaque tour, chaque servo en mouvement envoie 6 octets : 13 panneaux = 78 octets
 - `SPIFFS.begin(true)` monté sans usage (formate au premier boot) ; `-mfix-esp32-psram-cache-issue` inutile sans PSRAM.
 - Environ 350 lignes copiées-collées pour les handlers `:OX$` ; gros blocs commentés ; `MarcduinoSound.h`, `WebPages.h` et `BitmapEffect` inactifs.
 
+### 14. AMÉLIORATION — Commandes de police des logics avant inopérantes
+
+`Marcduino::processCommand()` teste toutes les commandes par préfixe et garde la dernière qui correspond. `@1P6` (PSI avant en Leia) est un préfixe de `@1P60` et `@1P61`, et il est déclaré après eux (`MarcduinoPSI.h` est inclus après `MarcduinoLogics.h`). `@1P60` lance donc le PSI Leia au lieu de changer la police. Même chose pour `@2P60`/`@2P61` avec `@2P6`. `@3P60`/`@3P61` fonctionnent.
+
+**Correction :** donner aux commandes de police un préfixe qui n'en contient pas d'autre, ou faire gagner la correspondance la plus longue dans le parseur.
+
 ## F. Risques matériels
 
 - **Mode « On startup or error » des 24 canaux** dans Maestro Control Center : c'est la clé des problèmes 2 et 3. *À vérifier.*
@@ -251,7 +258,7 @@ Commencer par versionner le code servo : sans cela, aucune autre correction n'es
 | 2 | Target 0 pour `disable`/`stop`, transition dans `HoloLightsWithAutoStop` | 2, 3 | `ServoDispatchMaestro.h`, `.ino` | Faible | Moyen (le comportement « mou » change) | Tests Erreurs Maestro et `:SD5`, puis retester speed=0 et 100 |
 | 3 | Filet de sécurité seulement pour les séquences fermantes | 4 | `.ino` | Faible à moyenne | Faible | `:OP00`, `$720`, `:SE22` |
 | 4 | Parseur série : garde du buffer vide, `while` borné | 5, 7 | `.ino` (`mainLoop`) | Faible | Faible | Tests CRLF et rafale |
-| 5 | `<=` → `<` dans `CustomLogicEffectSelector` | 6 | `.ino` | Triviale | Nul | Test effet 105 |
+| 5 | `<=` → `<` dans `CustomLogicEffectSelector` ; commandes de police | 6, 14 | `.ino`, `src/` | Triviale à faible | Nul à faible | Test effet 105, `@1P61` |
 | 6 | `enableLoopWDT()` et commande `#APSTAT` | 8 | `.ino` | Faible | Faible | Endurance 72 h |
 | 7 | Bornage des impulsions, comparaisons sûres au rollover | 10, 11 | `.ino`, `ServoDispatchMaestro.h` | Faible | Faible | `:SM` hors plage |
 | 8 | Réduire le débit Maestro, si les mesures le justifient | 9 | `ServoDispatchMaestro.h` | Moyenne | Moyen | Période de boucle avant et après |

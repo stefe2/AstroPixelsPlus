@@ -26,4 +26,4 @@ Ce dossier en garde une copie versionnée, basée sur Reeltwo `23.5.3` (commit `
 3. Recompiler : `pio run`.
 
 À terme, ces fichiers devraient vivre dans le projet (`lib/` ou un fork de Reeltwo référencé par tag) pour que le
-build n'ait plus besoin de cette étape manuelle (voir `docs/revue-firmware.md`, problème 1).
+build n'ait plus besoin de cette étape manuelle (voir [la revue](../../docs/review/revue-firmware.md), problème 1, et [build-and-flash](../../docs/build-and-flash.md)).
