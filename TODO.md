@@ -56,6 +56,10 @@ Après les corrections 2, 3 et 4 (commit 94cbf35, flashé le même jour) :
 - [x] `:SE06` : alarme 2 s puis panne, retour seul à la normale. `$815` : clignotement rouge (effet 7, d'origine,
   conservé) puis feu avec l'agitation des panneaux, retour seul à la normale
 
+- [x] `*HA03` pendant `:SE07` : les holos bougent pendant la danse des panneaux, 758 lectures `errors: 0x0000`,
+  boucle moy. 2,0 ms, max 11,9 ms ; panneaux refermés, `*HZ00` recentre et arrête les holos
+- [x] Texte de démarrage « R2-BLING » en blanc sur les logics avant et arrière
+
 Encore à faire :
 - [ ] Fermeture des panneaux au démarrage : validée au flash et avec `#APRESTART` (aucun à-coup, `errors: 0x0000`) ;
   reste une vraie coupure d'alimentation (Maestro et ESP32 démarrent ensemble), panneaux ouverts avant
