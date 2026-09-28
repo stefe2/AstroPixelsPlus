@@ -23,7 +23,7 @@
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); color: var(--ink);
   font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
-main { max-width: 1000px; margin: 0 auto; padding: 16px; }
+main { max-width: 1200px; margin: 0 auto; padding: 16px; }
 h1 { font-size: 20px; margin: 4px 0 12px; }
 .bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 8px; }
 select, button { font: inherit; color: var(--ink); background: var(--panel); border: 1px solid var(--line);
@@ -32,11 +32,13 @@ button[aria-pressed="true"] { background: var(--accent); color: #fff; border-col
 audio { width: 100%; margin: 6px 0 10px; }
 .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px; min-width: 0; }
 .grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
-@media (min-width: 780px) { .grid { grid-template-columns: minmax(0, 11fr) minmax(0, 9fr); } }
+@media (min-width: 700px) { .grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+@media (min-width: 900px) { .state { columns: 3; column-gap: 28px; } }
 svg { width: 100%; height: auto; display: block; touch-action: none; }
 canvas { width: 100%; display: block; }
 .meta { color: var(--muted); font-size: 13px; }
 .state { font: 12px/1.7 ui-monospace, Consolas, monospace; white-space: pre-wrap; }
+.state > span { break-inside: avoid; display: block; }
 .legend { font-size: 13px; color: var(--muted); margin-top: 10px; }
 .help { font-size: 13px; margin-top: 10px; padding: 10px; border-radius: 8px; border: 1px dashed var(--select); display: none; }
 body.editing .help { display: block; }
@@ -62,27 +64,24 @@ body.editing svg [data-id] { cursor: grab; }
   </div>
   <div class="grid">
     <div class="card"><svg id="dome" viewBox="0 0 460 700" role="img" aria-label="Vue de dessus du dôme"></svg></div>
-    <div class="card">
-      <div class="state" id="state"></div>
-      <div class="help" id="help">
-        <b>Mode édition</b><br>
-        Glisser : déplacer (les panneaux glissent le long de leur anneau).<br>
-        Molette : largeur d'un panneau, taille d'un holo, d'un PSI ou d'une logic.<br>
-        Maj + molette : épaisseur d'un panneau.<br>
-        « Enregistrer la disposition » télécharge <code>layout.json</code> : déposez-le dans
-        <code>tools/music/</code> pour les prochaines générations. Les modifications restent aussi dans ce navigateur.
-        <div id="selInfo" class="meta" style="margin-top:6px"></div>
-      </div>
-      <div class="legend">Vue de dessus du dôme, l'avant en bas (FLD, FPSI, FHP). Un panneau ouvert se colore et
-        s'écarte ; plus il est clair, plus il est ouvert. Les flèches des holos montrent où ils regardent.
-        Les effets lumineux sont une approximation de ceux du droïde.</div>
-    </div>
+    <div class="card"><canvas id="feet" width="460" height="700" role="img" aria-label="Jambes et face de R2, vues de face"></canvas></div>
   </div>
   <div class="card" style="margin-top:12px">
-    <canvas id="feet" width="960" height="330" role="img" aria-label="Jambes et face de R2, vues de face"></canvas>
-    <div class="legend">Pieds (R2-Bling), vus de face : chaque jambe a deux hoses de 25 LEDs, de la battery box
-      (en haut) au pied (en bas) ; au centre, les 33 LEDs de la face. La jambe droite de R2 est donc à gauche de
-      l'image. Luminosité limitée comme sur la carte (2,7 A).</div>
+    <div class="state" id="state"></div>
+    <div class="help" id="help">
+      <b>Mode édition</b><br>
+      Glisser : déplacer (les panneaux glissent le long de leur anneau).<br>
+      Molette : largeur d'un panneau, taille d'un holo, d'un PSI ou d'une logic.<br>
+      Maj + molette : épaisseur d'un panneau.<br>
+      « Enregistrer la disposition » télécharge <code>layout.json</code> : déposez-le dans
+      <code>tools/music/</code> pour les prochaines générations. Les modifications restent aussi dans ce navigateur.
+      <div id="selInfo" class="meta" style="margin-top:6px"></div>
+    </div>
+    <div class="legend">À gauche, le dôme vu de dessus, l'avant en bas (FLD, FPSI, FHP) : un panneau ouvert se
+      colore et s'écarte ; plus il est clair, plus il est ouvert ; les flèches des holos montrent où ils regardent.
+      À droite, les pieds (R2-Bling) vus de face : chaque jambe a deux hoses de 25 LEDs, de la battery box (en haut)
+      au pied (en bas), et la face a 33 LEDs ; la jambe droite de R2 est donc à gauche. Luminosité des pieds
+      limitée comme sur la carte (2,7 A). Les effets lumineux sont une approximation de ceux du droïde.</div>
   </div>
   <div class="card" style="margin-top:12px"><canvas id="timeline" width="960" height="140"></canvas></div>
   <p class="meta">Page générée par <code>tools/music/build.py</code>. Elle joue les MP3 du dossier <code>mp3/</code> :
@@ -719,19 +718,21 @@ function drawFeet(t) {
     fctx.fillStyle = lit ? rgb(c) : off;
     fctx.beginPath(); fctx.arc(x, y, r, 0, 2 * Math.PI); fctx.fill();
   };
-  fctx.font = '12px system-ui'; fctx.fillStyle = ink; fctx.textAlign = 'center';
+  fctx.font = '13px system-ui'; fctx.fillStyle = ink; fctx.textAlign = 'center';
   // Vue de face : la jambe droite de R2 (1) à gauche de l'image
-  [[1, 150, 'Jambe droite (RIGHT)'], [0, 810, 'Jambe gauche (LEFT)']].forEach(([leg, cx, name]) => {
-    fctx.fillStyle = ink; fctx.fillText(name, cx, 16);
-    fctx.fillText('battery box', cx, 34);
-    fctx.fillText('pied', cx, H - 6);
+  const top = 92, step = 21.5;
+  [[1, 80, 'Jambe droite'], [0, 380, 'Jambe gauche']].forEach(([leg, cx, name]) => {
+    fctx.fillStyle = ink; fctx.fillText(name, cx, 40);
+    fctx.fillText('battery box', cx, 62);
+    fctx.fillText('pied', cx, top + 24 * step + 30);
     for (let hose = 0; hose < 2; hose++) for (let lvl = 0; lvl < 25; lvl++)
-      dot(cx - 14 + hose * 28, 48 + lvl * 10.5, 4.2, F.legs[leg][hose][lvl]);
+      dot(cx - 13 + hose * 26, top + lvl * step, 7, F.legs[leg][hose][lvl]);
   });
-  fctx.fillStyle = ink; fctx.fillText('Face (33 LEDs)', W / 2, 140);
-  for (let x = 0; x < 33; x++) dot(W / 2 - 16 * 13 + x * 13, 162, 5, F.front[x]);
-  fctx.fillStyle = ink; fctx.textAlign = 'left';
-  fctx.fillText('Consommation estimée : ' + (F.ma / 1000).toFixed(1) + ' A' + (F.k < 1 ? ' (limitée)' : ''), W / 2 - 200, 210);
+  fctx.fillStyle = ink; fctx.fillText('Face', W / 2, 150);
+  // 33 LEDs de la face sur trois rangées de 11 (gauche → droite, rangée par rangée)
+  for (let x = 0; x < 33; x++) dot(W / 2 - 5 * 17 + (x % 11) * 17, 172 + Math.floor(x / 11) * 17, 6.5, F.front[x]);
+  fctx.fillStyle = ink;
+  fctx.fillText((F.ma / 1000).toFixed(1) + ' A' + (F.k < 1 ? ' (limité)' : ''), W / 2, 250);
 }
 function feetText(t) {
   const eL = fxAt(feetData.legs, t), eF = fxAt(feetData.front, t);
@@ -755,7 +756,9 @@ function frame() {
   if (song) {
     const t = frozenT !== null ? frozenT : audio.currentTime * 1000;
     advance(t); draw(t); drawTimeline(t); drawFeet(t);
-    document.getElementById('state').textContent = stateText(t);
+    // Texte par blocs (temps, logics, panneaux, holos, pieds), répartis en colonnes sur grand écran
+    document.getElementById('state').innerHTML = stateText(t).split('\n\n')
+      .map(b => '<span>' + b.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '\n\n</span>').join('');
   }
   requestAnimationFrame(frame);
 }
