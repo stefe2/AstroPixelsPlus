@@ -20,7 +20,7 @@ Déductions de la revue, maintenant mesurées :
 - [x] `:OP00` : ouverture, puis fermeture commandée ~250 ms après ; les panneaux s'ouvrent à peine (problème 4 confirmé, observé)
 - [x] Réglages du Maestro relevés : [docs/maestro/maestro_settings.txt](docs/maestro/maestro_settings.txt)
 - [x] Holo arrière : dans le Maestro, 17 = `RHP-H` et 18 = `RHP-V`, comme `assignServos(17, 18)` ; c'est le commentaire
-  de `servoSettings[]` qui est inversé (à confirmer à l'œil)
+  de `servoSettings[]` qui était inversé ; confirmé à l'œil : le canal 17 bouge à l'horizontale
 - [x] Fin de ligne : le parseur accepte maintenant CR, LF et CR+LF, la question n'est plus bloquante
 
 Corrections déjà faites, validées :
@@ -48,14 +48,16 @@ Après les corrections 2, 3 et 4 (commit 94cbf35, flashé le même jour) :
 - [x] `@1P11` : PSI avant en March (non-régression)
 - [x] `:OW$3F` (vague) et `:OP$3F,300,300` (ouverture, panneaux restés ouverts) : tous les panneaux du dôme, car
   `$3F` est un masque de types de panneaux, pas de numéros ; `:OC$8` n'actionne que les 4 pie panels ; aucune erreur
+- [x] `:SE07` (Cantina, 46 s) : aucun redémarrage (uptime continu, `Reset reason: POWERON` inchangé), boucle moy. 1,4 ms,
+  max 17 ms, pile loopTask 6,1 Ko libres, `errors: 0x0000` (problème 8)
 
 Encore à faire :
 
 - [ ] Contrôleur Serial2 (Kyber) : les commandes habituelles fonctionnent, une rafale n'en perd aucune (problème 7)
-- [ ] Séquences longues (`:SE07`, `$815`) : pas de redémarrage par le watchdog (`Reset reason: TASK_WDT`) (problème 8)
+- [ ] Séquence longue `$815` : pas de redémarrage par le watchdog (`Reset reason: TASK_WDT`) (problème 8)
 - [x] Porte 11 (canal 11) : se ferme complètement à 1552 µs, sans forcer
 - [x] `@1M` seul : le texte défile une fois après ~2 s d'écran noir (pas un défaut, il avait été manqué)
-- [ ] Holo arrière : confirmer à l'œil que le canal 17 est l'axe horizontal
+- [x] Holo arrière : le canal 17 est l'axe horizontal
 
 ## 2. Corrections du firmware (plan d'action de la revue)
 
