@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include "driver/gpio.h"
 
 /**
  *
@@ -843,6 +844,9 @@ void setup()
     PrintReelTwoInfo(Serial, "AstroPixelsPlus");
 
     COMMAND_SERIAL.begin(MARC_SERIAL2_BAUD_RATE, SERIAL_8N1, SERIAL2_RX_PIN, SERIAL2_TX_PIN);
+    // Rappel au niveau haut (repos UART) : sans contrôleur branché, l'entrée RX flotterait et
+    // des parasites seraient lus comme des caractères. gpio_pullup_en ne touche pas au routage UART.
+    gpio_pullup_en((gpio_num_t)SERIAL2_RX_PIN);
 
     // LED heartbeat setup
     pinMode(LED_BUILTIN, OUTPUT);

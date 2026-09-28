@@ -123,7 +123,7 @@ The ESP32 drives each step at 125 ms, the reliable minimum measured for the dome
 | `:SE23` | `:SE03` | Smirk wave (fast) |
 | `:SE24` | `:SE04` | Open/close wave |
 | `:SE25` | `:SE05` | Beep cantina: marching ants, logics, holo short circuit (15 s) |
-| `:SE26` | `:SE06` | Short circuit: logics failure, then panels (≈ 14 s) |
+| `:SE26` | `:SE06` | Short circuit: logics alarm (2 s), then failure, then panels (≈ 16 s) |
 | `:SE27` | `:SE07` | Cantina: dance, disco logics (46 s) |
 | `:SE28` | `:SE08` | Leia message (45 s), no panels |
 | `:SE29` | `:SE09` | Disco: long disco panels, rainbow logics (45 s) |
@@ -154,7 +154,7 @@ current configuration.
 | Command | Description |
 | --- | --- |
 | `$720` | Yoda "clear your mind": opens panel group 6, holo effect (15 s) |
-| `$815` | Harlem Shake (≈ 30 s) |
+| `$815` | Harlem Shake: fire on all logics, panels shake (≈ 30 s) |
 | `$821` | Girl on Fire (≈ 55 s) |
 
 ---

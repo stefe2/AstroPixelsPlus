@@ -80,6 +80,8 @@ Dans l'ordre recommandé :
 - [x] `resetSequence()` : `LE000000|0` → `LE000000`. Une commande LE de 9 caractères ou plus vise l'appareil dont
   l'ID est le premier chiffre (0 : aucun), les logics n'étaient jamais remises à zéro (code d'origine)
 - [x] `printf("COMMAND: …")` de débogage retiré de `HoloLights::handleCommand` (3 lignes par commande)
+- [x] RX de Serial2 (GPIO 16) : rappel au niveau haut, l'entrée ne flotte plus sans contrôleur branché
+- [x] `:SE06`/`:SE26` : vraie alarme 2 s (`LE010003`) avant la panne ; `$815` : feu (`LE220000`) au lieu de l'arc-en-ciel
 - [x] Commentaire de `servoSettings[]` : canaux 17/18 du holo arrière inversés (17 = horizontal)
 
 ## 3. Holos (ancienne étape 9)
@@ -92,7 +94,8 @@ Dans l'ordre recommandé :
 
 - [ ] Pass-through Maestro externe sur GPIO 18 (MaestroCommandRouter). Conception détaillée dans l'annexe « Étape 11 » de [l'historique](docs/maestro-migration-history.md)
 - [ ] Commenter `ServoDispatchMaestro.h` (Doxygen)
-- [ ] Réparer la compilation avec Wi-Fi (`#define USE_WIFI`) : `src/WebPages.h` utilise encore `PREFERENCE_MARCSERIAL*` et `MARC_SERIAL_*`, supprimés au commit 41139a9
+- [x] Compilation avec Wi-Fi (`-DUSE_WIFI`) réparée : réglages Serial2 obsolètes retirés de la page web `/serial`
+  (compilation seulement, Wi-Fi non testé sur le droïde)
 - [ ] Tag de version une fois les corrections validées (ex. `v1.0.0-maestro`)
 
 ## 5. Matériel — nouveau PCB (plus tard)

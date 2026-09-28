@@ -200,7 +200,7 @@ Chaque tour, chaque servo en mouvement envoie 6 octets : 13 panneaux = 78 octets
 - **Mode « On startup or error » des 24 canaux** dans Maestro Control Center : c'est la clé des problèmes 2 et 3. *À vérifier.*
 - **Limites min/max par canal dans le Maestro** : seule protection contre `:SM` et `:SQ` hors plage. *À vérifier.*
 - **Niveau logique sur GPIO16 (RX Serial2) (confirmé) :** le contrôleur maître sort du 3,3 V, compatible avec l'ESP32. Risque écarté.
-- **RX16 flottant quand rien n'est branché** : un octet `0x0D` parasite exécuterait une commande.
+- **RX16 flottant quand rien n'est branché** : un octet `0x0D` parasite exécuterait une commande. *Corrigé : rappel au niveau haut sur GPIO 16.*
 - **Données WS2812 en 3,3 V (confirmé) :** la carte n'a ni adaptateur de niveau ni protection ; les GPIO attaquent directement les LED alimentées en 5 V. Aucun scintillement observé, donc aucune action nécessaire. Précaution : ne pas brancher ou débrancher les câbles LED sous tension, car un GPIO non protégé peut être détruit par un court-circuit ou un contact avec le 5 V.
 - **GPIO 15 et 2 (strapping)** : état des LED au boot, et flashage possible avec les câbles branchés.
 - **Alimentations (confirmé et mesuré) :** servos sur une alimentation externe 6 V branchée sur la borne VSRV du Maestro, sans cavalier VSRV=VIN ; logique du Maestro alimentée par le connecteur AUX5. Le courant des servos ne passe pas par le rail de l'ESP32. Mesures faites le 27 septembre 2026 : aucune baisse de tension sur le rail V d'AUX5 ni sur l'alimentation 6 V, y compris quand les 13 panneaux démarrent ensemble. Risque écarté.
