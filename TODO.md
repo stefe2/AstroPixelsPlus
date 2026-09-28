@@ -18,6 +18,8 @@ Après avoir flashé les corrections déjà faites (section 2) :
 - [ ] `~RTLE11050000` (effet 105) et `~RTLE1250000` (effet 25) : aucun redémarrage, les logics reviennent à l'effet normal (problème 6)
 - [ ] `@1P61` puis `@1P60` : la police des logics avant change, le PSI ne passe pas en Leia (problème 14)
 - [ ] `@1P6` et `@1P11` : toujours PSI Leia et PSI March (non-régression)
+- [ ] Moniteur USB en CR+LF, envoyer `:SE02` : une seule exécution (problème 5)
+- [ ] Contrôleur Serial2 (Kyber) : les commandes habituelles fonctionnent, une rafale n'en perd aucune (problème 7)
 
 ## 2. Corrections du firmware (plan d'action de la revue)
 
@@ -26,7 +28,7 @@ Dans l'ordre recommandé :
 - [x] Intégrer les modifications de Reeltwo au build (`lib/Reeltwo/`) et épingler toutes les lib_deps (problème 1)
 - [ ] Désactivation des servos Maestro avec `Set Target` = 0 au lieu de `0x60` ; arrêt des holos seulement sur la transition actif → inactif (problèmes 2 et 3)
 - [ ] Fermeture automatique de fin de séquence seulement pour les séquences qui doivent finir fermées (problème 4)
-- [ ] Parseur série : ignorer une ligne vide, lire tous les caractères disponibles (bornés) à chaque tour (problèmes 5 et 7)
+- [x] Parseur série : ignorer une ligne vide, lire tous les caractères disponibles (bornés) à chaque tour (problèmes 5 et 7)
 - [x] `CustomLogicEffectSelector` : `<=` → `<` (problème 6, plantage sur l'effet 105) ; même erreur corrigée dans `LogicEffectDefaultSelector` (effet 25)
 - [x] `@1P60`/`@1P61`/`@2P60`/`@2P61` : la correspondance la plus longue l'emporte désormais (problème 14)
 - [ ] `enableLoopWDT()` et commande de diagnostic `#APSTAT` (problème 8)

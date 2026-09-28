@@ -1309,6 +1309,40 @@ static char sBuffer[CONSOLE_BUFFER_SIZE];
 static unsigned sPos2;
 static char sBuffer2[CONSOLE_BUFFER_SIZE];
 
+// Nombre maximum de caractères lus par port et par tour de boucle
+#define MAX_SERIAL_CHARS_PER_LOOP 64
+
+// Lit les caractères disponibles et exécute la commande à la fin de ligne (CR ou LF).
+// Une ligne vide est ignorée : avec CR+LF, le LF ne relance pas la commande précédente.
+// La lecture s'arrête après une commande : processCommand() programme l'animation pour le
+// tour suivant, une deuxième commande lue dans le même tour l'écraserait.
+static void readCommandSerial(Stream &port, char *buffer, unsigned &pos, const char *logPrefix)
+{
+    for (int i = 0; i < MAX_SERIAL_CHARS_PER_LOOP && port.available(); i++)
+    {
+        int ch = port.read();
+        if (ch == 0x0A || ch == 0x0D)
+        {
+            if (pos == 0)
+                continue;
+            buffer[pos] = '\0';
+            pos = 0;
+            if (logPrefix != nullptr)
+            {
+                Serial.print(logPrefix);
+                Serial.println(buffer);
+            }
+            Marcduino::processCommand(player, buffer);
+            return;
+        }
+        else if (pos < CONSOLE_BUFFER_SIZE - 1)
+        {
+            buffer[pos++] = ch;
+            buffer[pos] = '\0';
+        }
+    }
+}
+
 ////////////////
 // LED heartbeat - clignotement 1Hz
 static uint32_t sLastHeartbeat = 0;
@@ -1345,40 +1379,8 @@ void mainLoop()
     // sDisplay.process();
     // #endif
 
-    if (Serial.available())
-    {
-        int ch = Serial.read();
-        if (ch == 0x0A || ch == 0x0D)
-        {
-            Marcduino::processCommand(player, sBuffer);
-            sPos = 0;
-        }
-        else if (sPos < SizeOfArray(sBuffer) - 1)
-        {
-            sBuffer[sPos++] = ch;
-            sBuffer[sPos] = '\0';
-        }
-    }
-
-    if (COMMAND_SERIAL.available())
-    {
-        int ch = COMMAND_SERIAL.read();
-        if (ch == 0x0A || ch == 0x0D)
-        {
-            if (sPos2 > 0)
-            {
-                Serial.print("[Serial2] ");
-                Serial.println(sBuffer2);
-            }
-            Marcduino::processCommand(player, sBuffer2);
-            sPos2 = 0;
-        }
-        else if (sPos2 < SizeOfArray(sBuffer2) - 1)
-        {
-            sBuffer2[sPos2++] = ch;
-            sBuffer2[sPos2] = '\0';
-        }
-    }
+    readCommandSerial(Serial, sBuffer, sPos, nullptr);
+    readCommandSerial(COMMAND_SERIAL, sBuffer2, sPos2, "[Serial2] ");
 }
 
 ////////////////

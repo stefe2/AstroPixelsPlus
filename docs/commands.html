@@ -188,8 +188,7 @@ Wiring, power and Maestro settings are in <a href="hardware.md">hardware.md</a>.
 </tbody>
 </table>
 <ul>
-<li>End each command with CR (<code>\r</code>) or LF (<code>\n</code>).</li>
-<li>⚠️ Known issue: a command ending with <strong>CR+LF</strong> currently runs <strong>twice</strong>. Use CR only, or LF only.</li>
+<li>End each command with CR (<code>\r</code>), LF (<code>\n</code>) or CR+LF. Empty lines are ignored.</li>
 <li>Commands are matched by prefix; the longest matching command wins. Anything after it is the command argument.</li>
 <li>Only one command/animation runs at a time: a new command stops the running one.</li>
 </ul>

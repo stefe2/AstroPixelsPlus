@@ -10,8 +10,7 @@ Wiring, power and Maestro settings are in [hardware.md](hardware.md).
 | USB (Serial) | USB connector | 115200 baud | Serial monitor |
 | Serial2 | GPIO 16 (RX), GPIO 17 (TX) | 9600 baud | Kyber / Marcduino controller, 3.3 V logic |
 
-- End each command with CR (`\r`) or LF (`\n`).
-- ⚠️ Known issue: a command ending with **CR+LF** currently runs **twice**. Use CR only, or LF only.
+- End each command with CR (`\r`), LF (`\n`) or CR+LF. Empty lines are ignored.
 - Commands are matched by prefix; the longest matching command wins. Anything after it is the command argument.
 - Only one command/animation runs at a time: a new command stops the running one.
 
