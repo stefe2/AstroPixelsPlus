@@ -102,64 +102,9 @@ static inline bool timeReached(uint32_t now, uint32_t deadline)
     return (int32_t)(now - deadline) >= 0;
 }
 
-// Custom HoloLights that automatically disables servos after movements
-class HoloLightsWithAutoStop : public HoloLights
-{
-private:
-    unsigned long fStopDelayMS = 0;
-    byte fHServoNum = 0;
-    byte fVServoNum = 0;
-    ServoDispatch* fServoDispatchPtr = nullptr;
-    
-public:
-    HoloLightsWithAutoStop(uint8_t pixelPin, PixelType type, byte holoID) 
-        : HoloLights(pixelPin, type, holoID) {}
-    
-    void assignServos(ServoDispatch* servoDispatch, int hservo, int vservo)
-    {
-        HoloLights::assignServos(servoDispatch, hservo, vservo);
-        fServoDispatchPtr = servoDispatch;
-        fHServoNum = hservo;
-        fVServoNum = vservo;
-    }
-    
-    virtual void animate() override
-    {
-        HoloLights::animate();
-        
-        // Check if holo servos are currently moving
-        bool holoServosActive = false;
-        if (fServoDispatchPtr != nullptr)
-        {
-            holoServosActive = fServoDispatchPtr->isActive(fHServoNum) || 
-                              fServoDispatchPtr->isActive(fVServoNum);
-        }
-        
-        // If servos just stopped moving, schedule auto-stop
-        if (!holoServosActive && fStopDelayMS == 0)
-        {
-            // Give servos 1000ms to reach their final position before disabling
-            fStopDelayMS = millis() + 1000;
-        }
-        
-        // Reset delay if servos start moving again
-        if (holoServosActive)
-        {
-            fStopDelayMS = 0;
-        }
-        
-        // Check if it's time to stop servos
-        if (fStopDelayMS != 0 && timeReached(millis(), fStopDelayMS))
-        {
-            if (fServoDispatchPtr != nullptr)
-            {
-                fServoDispatchPtr->disable(fHServoNum);
-                fServoDispatchPtr->disable(fVServoNum);
-            }
-            fStopDelayMS = 0;
-        }
-    }
-};
+// Les servos des holos sont relâchés par ServoDispatchMaestro 700 ms après chaque mouvement,
+// comme les autres servos. L'ancienne classe HoloLightsWithAutoStop renvoyait disable() toutes les
+// secondes quand les holos étaient au repos, ce qui mettait le Maestro en erreur (revue, problème 3).
 
 #include "dome/NeoPSI.h"
 #include "dome/FireStrip.h"
@@ -302,9 +247,9 @@ HoloLights<PIN_FRONT_HOLO, NEO_GRB> frontHolo(1);
 HoloLights<PIN_REAR_HOLO, NEO_GRB> rearHolo(2);
 HoloLights<PIN_TOP_HOLO, NEO_GRB> topHolo(3);
 #else
-HoloLightsWithAutoStop frontHolo(PIN_FRONT_HOLO, HoloLights::kRGB, 1);
-HoloLightsWithAutoStop rearHolo(PIN_REAR_HOLO, HoloLights::kRGB, 2);
-HoloLightsWithAutoStop topHolo(PIN_TOP_HOLO, HoloLights::kRGB, 3);
+HoloLights frontHolo(PIN_FRONT_HOLO, HoloLights::kRGB, 1);
+HoloLights rearHolo(PIN_REAR_HOLO, HoloLights::kRGB, 2);
+HoloLights topHolo(PIN_TOP_HOLO, HoloLights::kRGB, 3);
 #endif
 
 // Animateur de mouvement aléatoire continu des 3 holos
@@ -528,14 +473,14 @@ const ServoSettings servoSettings[] PROGMEM = {
     {8, 2000, 992,   PANEL_GROUP_9  | PIE_PANEL},       // Maestro PIN 8: pie panel 3
     {9, 1920, 992,   PANEL_GROUP_10 | PIE_PANEL},       // Maestro PIN 9: pie panel 4
     {10, 1872, 992,  PANEL_GROUP_11 | MINI_PANEL},      // Maestro PIN 10: mini door 2
-    {11, 2552, 992,  PANEL_GROUP_12 | MINI_PANEL},      // Maestro PIN 11: mini front psi door
+    {11, 1552, 992,  PANEL_GROUP_12 | MINI_PANEL},      // Maestro PIN 11: mini front psi door (1552 = limite du Maestro, vérifié)
     {12, 2000, 992,  PANEL_GROUP_13 | TOP_PIE_PANEL},   // Maestro PIN 12: dome top panel
     {13, 1248, 1744, HOLO_HSERVO},                      // Maestro PIN 13: horizontal front holo
     {14, 1248, 1744, HOLO_VSERVO},                      // Maestro PIN 14: vertical front holo
     {15, 1248, 1744, HOLO_HSERVO},                      // Maestro PIN 15: horizontal top holo
     {16, 1248, 1744, HOLO_VSERVO},                      // Maestro PIN 16: vertical top holo
-    {17, 1248, 1744, HOLO_VSERVO},                      // Maestro PIN 17: vertical rear holo
-    {18, 1248, 1744, HOLO_HSERVO},                      // Maestro PIN 18: horizontal rear holo
+    {17, 1248, 1744, HOLO_HSERVO},                      // Maestro PIN 17: horizontal rear holo (RHP-H dans le Maestro)
+    {18, 1248, 1744, HOLO_VSERVO},                      // Maestro PIN 18: vertical rear holo (RHP-V dans le Maestro)
     {19, 2000, 992,  PANEL_GROUP_14 | EMPTY_AUX},       // Maestro PIN 19: Empty
     {20, 2000, 992,  PANEL_GROUP_15 | EMPTY_AUX},       // Maestro PIN 20: Empty
     {21, 2000, 992,  PANEL_GROUP_16 | EMPTY_AUX},       // Maestro PIN 21: Empty
@@ -583,10 +528,14 @@ public:
         }
         else if (!wasFinished && nowFinished)
         {
-            // Sequence just finished — send close-all as safety net, then schedule global stop
-            // moveServosTo(mask, 125ms, 0.0=closed): ensures all panels physically close
-            // regardless of where the sequence left them
-            dispatch().moveServosTo(ALL_DOME_PANELS_MASK, 125, 0.0);
+            // Sequence just finished — close-all safety net, then schedule global stop.
+            // Pas de fermeture si la séquence est allée au bout en laissant des panneaux ouverts
+            // (:OP00, :OP01–:OP20, :OP$…, $720) : ils restent ouverts jusqu'à :CL00. Avant, ils se
+            // refermaient ~250 ms après l'ouverture (revue, problème 4). Une séquence interrompue
+            // par une autre commande est toujours refermée.
+            bool leftPanelsOpen = completed() && (lastServoSetMask() & ALL_DOME_PANELS_MASK) != 0;
+            if (!leftPanelsOpen)
+                dispatch().moveServosTo(ALL_DOME_PANELS_MASK, 125, 0.0);
             dispatch().setSequenceActive(false);
             // 1500ms: 125ms movement + 1375ms margin before stop()
             fStopDelayMS = millis() + 1500;
@@ -696,6 +645,10 @@ void resetSequence()
         "HPA000|0\n"   // Holo Projectors to Normal
         "CB00000\n"    // Charge Bay to Normal
         "DP00000\n")); // Data Panel to Normal
+    // LE000000 met aussi les PSI sur l'effet NORMAL (scintillement) : les remettre sur leur
+    // effet de démarrage (color wipe)
+    frontPSI.selectEffect(LogicEngineFrontPSIDefault.fDefaultEffect);
+    rearPSI.selectEffect(LogicEngineRearPSIDefault.fDefaultEffect);
 }
 
 ////////////////////////////////

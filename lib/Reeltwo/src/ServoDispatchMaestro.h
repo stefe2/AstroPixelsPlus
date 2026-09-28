@@ -232,25 +232,13 @@ public:
         fServos[num].fActive = false;
         fServos[num].fMoving = false;
         
-        // Wait 250ms to ensure Maestro buffer is fully processed before sending disable
-        // delay(250);  // Commented out - may not be needed
-        
-        // Use Set PWM command to truly disable servo (no PWM signal)
-        if (fSerial != nullptr)
-        {
-            fSerial->write(0xAA);                   // Start byte
-            fSerial->write(MAESTRO_DEVICE_ID);      // Device ID
-            fSerial->write(0x60);                   // Command: Set PWM (0x60 = disable)
-            fSerial->write(num);                    // Channel
-            fSerial->write(0x00);                   // On time low = 0 (OFF)
-            fSerial->write(0x00);                   // On time high = 0 (OFF)
-            
-            #ifdef SERVO_DEBUG
-            DEBUG_PRINT("Maestro: Disable Chan ");
-            DEBUG_PRINT(num);
-            DEBUG_PRINTLN(" (Set PWM=0)");
-            #endif
-        }
+        sendTargetOff(num);
+
+        #ifdef SERVO_DEBUG
+        DEBUG_PRINT("Maestro: Disable Chan ");
+        DEBUG_PRINT(num);
+        DEBUG_PRINTLN(" (target=0)");
+        #endif
     }
 
     virtual void setServo(uint16_t num, uint8_t pin, uint16_t startPulse, uint16_t endPulse, 
@@ -306,6 +294,24 @@ public:
     #endif
     }
 
+    /**
+      * Coupe les impulsions d'un canal (servo relâché) : Set Target avec une cible de 0,
+      * la méthode documentée par Pololu. L'ancienne commande 0x60 n'existe pas dans le
+      * protocole : le Maestro levait une erreur de protocole (0x0010) et, avec
+      * « On startup or error = Off », coupait tous les canaux au lieu d'un seul.
+      */
+    void sendTargetOff(uint16_t num)
+    {
+        if (num >= numServos || fSerial == nullptr)
+            return;
+        fSerial->write(0xAA);                       // Start byte
+        fSerial->write(MAESTRO_DEVICE_ID);          // Device ID
+        fSerial->write(0x04);                       // Command: Set Target
+        fSerial->write(num);                        // Channel
+        fSerial->write(0x00);                       // Target 0 = pas d'impulsions
+        fSerial->write(0x00);
+    }
+
     virtual void stop() override
     {
         // IMPORTANT: Disable all first to prevent animate() from sending more positions
@@ -315,23 +321,9 @@ public:
             fServos[i].fActive = false;
         }
         
-        // Wait 250ms to ensure Maestro buffer is fully processed before sending disable
-        // delay(250);  // Commented out - may not be needed
-        
-        // Use Set PWM command to truly disable all servos
-        if (fSerial != nullptr)
-        {
-            for (uint16_t i = 0; i < numServos; i++)
-            {
-                fSerial->write(0xAA);               // Start byte
-                fSerial->write(MAESTRO_DEVICE_ID);  // Device ID
-                fSerial->write(0x60);               // Command: Set PWM (0x60 = disable)
-                fSerial->write(i);                  // Channel
-                fSerial->write(0x00);               // On time low = 0 (OFF)
-                fSerial->write(0x00);               // On time high = 0 (OFF)
-            }
-        }
-        
+        for (uint16_t i = 0; i < numServos; i++)
+            sendTargetOff(i);
+
         #ifdef SERVO_DEBUG
         DEBUG_PRINTLN("Maestro: All servos disabled (Pololu target=0)");
         #endif
@@ -370,6 +362,9 @@ protected:
             fServos[num].fTargetPos = pos;
             fServos[num].fMoving = false;
             setPWM(num, pos);
+            // Relâcher aussi après un mouvement instantané (holos : moveHP() sans vitesse), comme
+            // après un mouvement interpolé ; le servo a 700 ms pour atteindre sa position
+            fServos[num].fStopTime = fSequenceActive ? 0 : millis() + 700;
             return;
         }
         

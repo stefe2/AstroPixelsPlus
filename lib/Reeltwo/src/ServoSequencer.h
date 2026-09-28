@@ -413,6 +413,8 @@ public:
         fIndex = 0;
         fOnEasingMethod = onEasingMethod;
         fOffEasingMethod = offEasingMethod;
+        fLastServoSetMask = 0;
+        fCompleted = false;
     }
 
     void play(const ServoStep* sequence, uint16_t length, uint32_t servoGroupMask,
@@ -440,6 +442,7 @@ public:
             return;
         if (fIndex >= fLength)
         {
+            fCompleted = true;
             stop();
             return;
         }
@@ -459,6 +462,7 @@ public:
             fIndex++;
             if (fIndex >= fLength)
             {
+                fCompleted = true;
                 stop();
                 return;
             }
@@ -470,6 +474,7 @@ public:
         servoSetMask |= (uint32_t)pgm_read_byte(&step->servo25_32) << 0;
         uint32_t ms = pgm_read_word(&fSequence[fIndex].cs) * 10L;
         fNextStepMS = currentTime + fSpeedMinMS + ms;
+        fLastServoSetMask = servoSetMask;
         fDispatch.moveServoSetTo(fServoGroupMask, servoSetMask, 0,
             fSpeedMinMS, fSpeedMaxMS, fEndPos-fOffsetFromEnd, fStartPos+fOffsetFromStart, fOnEasingMethod, fOffEasingMethod);
         fIndex++;
@@ -480,11 +485,26 @@ public:
         return fDispatch;
     }
 
+    // AstroPixelsPlus : groupes laissés en position « on » (panneaux ouverts) par la dernière étape
+    // jouée, limités aux groupes de la séquence
+    inline uint32_t lastServoSetMask() const
+    {
+        return fLastServoSetMask & fServoGroupMask;
+    }
+
+    // AstroPixelsPlus : vrai si la dernière séquence est allée jusqu'au bout (pas interrompue par stop())
+    inline bool completed() const
+    {
+        return fCompleted;
+    }
+
 private:
     ServoDispatch& fDispatch;
     ServoStep* fSequence;
     uint16_t fLength = 0;
     uint16_t fIndex = 0;
+    uint32_t fLastServoSetMask = 0;
+    bool fCompleted = false;
     float fOffsetFromStart;
     float fOffsetFromEnd;
     float fStartPos;

@@ -54,11 +54,8 @@ Wiring diagram and full pinout in [docs/hardware.md](docs/hardware.md).
 
 ## Known issues
 
-The [firmware review](docs/review/revue-firmware.md) lists open issues. The main ones:
-
-- The Maestro "disable servo" command (`0x60`, used by `:ST00`, `:SD<n>` and the auto-release) is not part
-  of the Pololu protocol. Under investigation.
-- `:OP…` open commands may close again about 200 ms later because of the end-of-sequence auto-close.
+The [firmware review](docs/review/revue-firmware.md) and [TODO.md](TODO.md) track the remaining issues and the
+hardware tests still to run.
 
 ## Project layout
 

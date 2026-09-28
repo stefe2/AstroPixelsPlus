@@ -42,7 +42,8 @@ Encore à faire :
 - [ ] `@1P11` : PSI March (non-régression)
 - [ ] `:SE02`, `*HA01`, `:OW$3F`, `:OP$3F,300,300` : même comportement qu'avant
 - [ ] Séquences longues (`:SE07`, `$815`) : pas de redémarrage par le watchdog (`Reset reason: TASK_WDT`) (problème 8)
-- [ ] Porte 11 (canal 11) : vérifier qu'elle se ferme correctement (le Maestro plafonne à 1552 µs)
+- [x] Porte 11 (canal 11) : se ferme complètement à 1552 µs, sans forcer
+- [x] `@1M` seul : le texte défile une fois après ~2 s d'écran noir (pas un défaut, il avait été manqué)
 - [ ] Holo arrière : confirmer à l'œil que le canal 17 est l'axe horizontal
 
 ## 2. Corrections du firmware (plan d'action de la revue)
@@ -50,8 +51,8 @@ Encore à faire :
 Dans l'ordre recommandé :
 
 - [x] Intégrer les modifications de Reeltwo au build (`lib/Reeltwo/`) et épingler toutes les lib_deps (problème 1)
-- [ ] Désactivation des servos Maestro avec `Set Target` = 0 au lieu de `0x60` ; arrêt des holos seulement sur la transition actif → inactif (problèmes 2 et 3)
-- [ ] Fermeture automatique de fin de séquence seulement pour les séquences qui doivent finir fermées (problème 4)
+- [x] Désactivation des servos Maestro avec `Set Target` = 0 au lieu de `0x60` ; holos relâchés par le pilote après chaque mouvement, `HoloLightsWithAutoStop` supprimée (problèmes 2 et 3)
+- [x] Fermeture automatique de fin de séquence seulement si la séquence finit fermée ou est interrompue ; panneaux ouverts relâchés, tenus par friction (problème 4)
 - [x] Parseur série : ignorer une ligne vide, lire tous les caractères disponibles (bornés) à chaque tour (problèmes 5 et 7)
 - [x] `CustomLogicEffectSelector` : `<=` → `<` (problème 6, plantage sur l'effet 105) ; même erreur corrigée dans `LogicEffectDefaultSelector` (effet 25)
 - [x] `@1P60`/`@1P61`/`@2P60`/`@2P61` : la correspondance la plus longue l'emporte désormais (problème 14)
@@ -59,10 +60,9 @@ Dans l'ordre recommandé :
 - [x] Bornage des impulsions `:SM`/`:SQ` aux limites du canal, comparaisons de temps sûres au rollover de `millis()` (problèmes 10 et 11)
 - [x] ~~Réduire le débit vers le Maestro~~ : sans objet, la boucle reste à 363 µs en moyenne pendant un mouvement (problème 9)
 - [x] Nettoyage : `:SE36`/`:SE56` lancés deux fois, `@4S3` mort dans `:CL00`, SPIFFS inutile, flag PSRAM, handlers `:OX$` dupliqués (problème 13)
-- [ ] Canal 11 (porte mini du PSI avant) : position fermée 2552 µs dans `servoSettings[]`, mais le Maestro plafonne à 1552 µs ; probablement une faute de frappe
-- [ ] `@1M` / `@2M` seul n'affiche rien sur les logics avant quand l'autre ligne est vide (code d'origine)
-- [ ] `@1P1`, `@2P1` et `resetSequence()` (`LE000000`) remettent les PSI en effet « Normal » (scintillement) au lieu de leur effet de démarrage (color wipe 23)
-- [ ] Commentaire de `servoSettings[]` : canaux 17/18 du holo arrière inversés (17 = horizontal)
+- [x] Canal 11 (porte mini du PSI avant) : position fermée 2552 → 1552 µs (limite du Maestro, fermeture vérifiée sur le droïde)
+- [x] `@1P1`, `@2P1` et `resetSequence()` (`LE000000`) remettent les PSI en effet « Normal » (scintillement) au lieu de leur effet de démarrage (color wipe 23)
+- [x] Commentaire de `servoSettings[]` : canaux 17/18 du holo arrière inversés (17 = horizontal)
 
 ## 3. Holos (ancienne étape 9)
 

@@ -260,11 +260,9 @@ Wiring, power and Maestro settings are in <a href="hardware.md">hardware.md</a>.
 </tr>
 </tbody>
 </table>
-<blockquote>
-<p>⚠️ Under investigation: <code>:OP…</code> open commands may close again about 200 ms later (see
-<a href="review/revue-firmware.md">review, issue 4</a>). <code>:ST00</code> / <code>:SD&lt;n&gt;</code> send a Maestro command (<code>0x60</code>)
-that is not in the Pololu protocol (issue 2).</p>
-</blockquote>
+<p>Open commands (<code>:OP00</code>, <code>:OP01</code>–<code>:OP20</code>, <code>:OP$…</code>) leave the panels open until <code>:CL00</code> or another
+sequence. Outside sequences, every servo is released (no pulses) 0.7 s after reaching its position, and
+all servos 1.5 s after a sequence ends: open panels then hold by servo friction.</p>
 <h3>Panel groups</h3>
 <table>
 <thead>

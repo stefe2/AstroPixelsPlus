@@ -39,9 +39,9 @@ Wiring, power and Maestro settings are in [hardware.md](hardware.md).
 | `:ST00` | Stop and disable all servos |
 | `:SD<n>` | Disable servo `<n>` (for example `:SD4`) |
 
-> ⚠️ Under investigation: `:OP…` open commands may close again about 200 ms later (see
-> [review, issue 4](review/revue-firmware.md)). `:ST00` / `:SD<n>` send a Maestro command (`0x60`)
-> that is not in the Pololu protocol (issue 2).
+Open commands (`:OP00`, `:OP01`–`:OP20`, `:OP$…`) leave the panels open until `:CL00` or another
+sequence. Outside sequences, every servo is released (no pulses) 0.7 s after reaching its position, and
+all servos 1.5 s after a sequence ends: open panels then hold by servo friction.
 
 ### Panel groups
 
