@@ -9,9 +9,10 @@
 #include "core/JawaEvent.h"
 #include "ServoDispatch.h"
 
-#ifdef USE_DEBUG
-#define HOLO_DEBUG
-#endif
+// HOLO_DEBUG n'est plus activé par USE_DEBUG : une ligne par mouvement de holo sur le port USB
+// #ifdef USE_DEBUG
+// #define HOLO_DEBUG
+// #endif
 
 #if USE_LEDLIB == 0
 template<uint8_t DATA_PIN, uint32_t RGB_ORDER, uint16_t NUM_LEDS>
