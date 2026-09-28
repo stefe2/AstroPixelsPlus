@@ -262,7 +262,8 @@ Wiring, power and Maestro settings are in <a href="hardware.md">hardware.md</a>.
 </table>
 <p>Open commands (<code>:OP00</code>, <code>:OP01</code>–<code>:OP20</code>, <code>:OP$…</code>) leave the panels open until <code>:CL00</code> or another
 sequence. Outside sequences, every servo is released (no pulses) 0.7 s after reaching its position, and
-all servos 1.5 s after a sequence ends: open panels then hold by servo friction.</p>
+all servos 1.5 s after a sequence ends: open panels then hold by servo friction.
+At power-up, the firmware closes all dome panels (like <code>:CL00</code>), then releases them 0.7 s later.</p>
 <h3>Panel groups</h3>
 <table>
 <thead>

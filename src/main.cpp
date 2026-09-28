@@ -887,8 +887,8 @@ void setup()
     // Son désactivé - Serial1 réservé pour Pololu Maestro
     DEBUG_PRINTLN("Sound module disabled - Serial1 reserved for Maestro");
 
-    RLD.selectScrollTextLeft("... AstroPixels ....", LogicEngineRenderer::kBlue, 0, 15);
-    FLD.selectScrollTextLeft("... R2D2 ...", LogicEngineRenderer::kRed, 0, 15);
+    RLD.selectScrollTextLeft("... R2-BLING ...", LogicEngineRenderer::kWhite, 0, 15);
+    FLD.selectScrollTextLeft("... R2-BLING ...", LogicEngineRenderer::kWhite, 0, 15);
 
     // Assign servos to holo projectors
     frontHolo.assignServos(&servoDispatch, 13, 14);
@@ -903,6 +903,11 @@ void setup()
     rearHolo.assignServos(&servoDispatch, 17, 18);
     // { 20, 800, 2200, HOLO_VSERVO },                /* 17: vertical rear holo */
     // { 21, 800, 2200, HOLO_HSERVO },                /* 18: horizontal rear holo */
+
+    // Fermer les panneaux du dôme au démarrage (le Maestro reste sur « Off » au démarrage) ;
+    // le pilote les relâche 0,7 s après. Mouvement instantané : le pilote ne connaît pas encore
+    // la position réelle (il suppose la mi-course), une interpolation partirait de là.
+    servoDispatch.moveServosTo(ALL_DOME_PANELS_MASK, 0.0);
 
 #ifdef USE_WIFI
     // Télécommande désactivée

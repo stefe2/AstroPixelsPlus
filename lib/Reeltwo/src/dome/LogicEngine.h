@@ -151,7 +151,8 @@ public:
         kPurple             = 7,
         kMagenta            = 8,
         kPink               = 9,
-        kDefault            = 0
+        kDefault            = 0,
+        kWhite              = 0     // effets texte seulement : la couleur 0 y est rendue en blanc
     };
 
     /**
@@ -1168,7 +1169,8 @@ public:
         CRGB fontColors[3];
 
         byte hue = fAllColors[0].h + effectHue;
-        byte sat = fAllColors[0].s;
+        // Couleur 0 (kWhite) : texte blanc (saturation nulle). Avant, elle donnait le même rouge que kRed.
+        byte sat = (getEffectColor() == kWhite) ? 0 : fAllColors[0].s;
         fontColors[0].setHSV(hue, sat, 1);  /* dimmest */
         fontColors[1].setHSV(hue, sat, 16);
         fontColors[2].setHSV(hue, sat, 64); /* brightest */
