@@ -721,7 +721,7 @@ function drawFeet(t) {
   fctx.font = '13px system-ui'; fctx.fillStyle = ink; fctx.textAlign = 'center';
   // Vue de face : la jambe droite de R2 (1) à gauche de l'image
   const top = 92, step = 21.5;
-  [[1, 80, 'Jambe droite'], [0, 380, 'Jambe gauche']].forEach(([leg, cx, name]) => {
+  [[1, 50, 'Jambe droite'], [0, 410, 'Jambe gauche']].forEach(([leg, cx, name]) => {
     fctx.fillStyle = ink; fctx.fillText(name, cx, 40);
     fctx.fillText('battery box', cx, 62);
     fctx.fillText('pied', cx, top + 24 * step + 30);
@@ -729,10 +729,10 @@ function drawFeet(t) {
       dot(cx - 13 + hose * 26, top + lvl * step, 7, F.legs[leg][hose][lvl]);
   });
   fctx.fillStyle = ink; fctx.fillText('Face', W / 2, 150);
-  // 33 LEDs de la face sur trois rangées de 11 (gauche → droite, rangée par rangée)
-  for (let x = 0; x < 33; x++) dot(W / 2 - 5 * 17 + (x % 11) * 17, 172 + Math.floor(x / 11) * 17, 6.5, F.front[x]);
+  // 33 LEDs de la face sur une seule ligne, de gauche à droite (vu de face)
+  for (let x = 0; x < 33; x++) dot(W / 2 + (x - 16) * 9.4, 172, 4.2, F.front[x]);
   fctx.fillStyle = ink;
-  fctx.fillText((F.ma / 1000).toFixed(1) + ' A' + (F.k < 1 ? ' (limité)' : ''), W / 2, 250);
+  fctx.fillText((F.ma / 1000).toFixed(1) + ' A' + (F.k < 1 ? ' (limité)' : ''), W / 2, 210);
 }
 function feetText(t) {
   const eL = fxAt(feetData.legs, t), eF = fxAt(feetData.front, t);
