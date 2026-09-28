@@ -687,8 +687,6 @@ void resetSequence()
         "HPA000|0\n"   // Holo Projectors to Normal
         "CB00000\n"    // Charge Bay to Normal
         "DP00000\n")); // Data Panel to Normal
-    // Close all panels progressively (wave = sequential, no brownout risk)
-    SEQUENCE_PLAY_ONCE(servoSequencer, SeqPanelWaveCustom, ALL_DOME_PANELS_MASK);
 }
 
 ////////////////////////////////
