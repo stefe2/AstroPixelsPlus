@@ -45,12 +45,13 @@ Après les corrections 2, 3 et 4 (commit 94cbf35, flashé le même jour) :
 - [x] `*HA01` : les holos bougent, 431 lectures `UscCmd` sans erreur ; `*HZ00` les recentre et les arrête (canaux 13–18 à 0)
 - [x] `@1P6` puis `@1P1` : le PSI avant revient à son effet de démarrage (color wipe bleu/rouge), sans mélange avec Leia
 - [x] `:SE02` : séquence complète, tous les panneaux refermés à la fin, `errors: 0x0000`, 24 canaux relâchés
+- [x] `@1P11` : PSI avant en March (non-régression)
+- [x] `:OW$3F` (vague) et `:OP$3F,300,300` (ouverture, panneaux restés ouverts) : tous les panneaux du dôme, car
+  `$3F` est un masque de types de panneaux, pas de numéros ; `:OC$8` n'actionne que les 4 pie panels ; aucune erreur
 
 Encore à faire :
 
 - [ ] Contrôleur Serial2 (Kyber) : les commandes habituelles fonctionnent, une rafale n'en perd aucune (problème 7)
-- [ ] `@1P11` : PSI March (non-régression)
-- [ ] `:OW$3F`, `:OP$3F,300,300` : même comportement qu'avant
 - [ ] Séquences longues (`:SE07`, `$815`) : pas de redémarrage par le watchdog (`Reset reason: TASK_WDT`) (problème 8)
 - [x] Porte 11 (canal 11) : se ferme complètement à 1552 µs, sans forcer
 - [x] `@1M` seul : le texte défile une fois après ~2 s d'écran noir (pas un défaut, il avait été manqué)
