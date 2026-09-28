@@ -248,7 +248,7 @@ class Choreographer:
             # ---- montée : les panneaux s'entrouvrent, les logics accélèrent -------------
             if buildup[i] is not None:
                 beats_left = buildup[i] - i
-                if down:
+                if down and beats_left > 1:
                     bars_left = max(1, (beats_left + 3) // 4)
                     self.panels(t, ALL, int(10 * (5 - min(4, bars_left))), bm * 3.5)
                     self.logic(t, FLD, FLASH, col, bars_left - 1)
@@ -289,6 +289,16 @@ class Choreographer:
                     continue
                 if tier <= 1:
                     self.panels(t, ALL, 0, 300)
+                elif tier == 2:
+                    if i > 0 and buildup[i - 1] is not None:
+                        # Fin de montée : tout s'ouvre en grand un temps, puis se referme
+                        self.panels(t, ALL, 100, 200)
+                        self.panels(t + bm, ALL, 0, 250)
+                        self.logic(t, FLD, SOLID, col)
+                        self.logic(t, RLD, SOLID, comp)
+                        self.holo_led_cmd(t, HOLO_ALL, 5, str(HOLO_COLOR[col]))
+                        continue
+                    self.panels(t, ALL, 0, 250)
 
             # ---- niveau 0 : calme ----------------------------------------------------
             if tier == 0:
