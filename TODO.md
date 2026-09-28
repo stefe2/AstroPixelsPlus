@@ -102,8 +102,8 @@ Dans l'ordre recommandé :
 
 - [ ] Pass-through Maestro externe sur GPIO 18 (MaestroCommandRouter). Conception détaillée dans l'annexe « Étape 11 » de [l'historique](docs/maestro-migration-history.md)
 - [ ] Commenter `ServoDispatchMaestro.h` (Doxygen)
-- [x] Compilation avec Wi-Fi (`-DUSE_WIFI`) réparée : réglages Serial2 obsolètes retirés de la page web `/serial`
-  (compilation seulement, Wi-Fi non testé sur le droïde)
+- [x] Wi-Fi, page web, OTA, SPIFFS, préférences (`#APWIFI`, `#APZERO`), son (DFPlayer) et code mort de la
+  télécommande et des écrans LCD retirés du firmware ; traces `Holo#… moved` désactivées
 - [ ] Tag de version une fois les corrections validées (ex. `v1.0.0-maestro`)
 
 ## 5. Matériel — nouveau PCB (plus tard)

@@ -7,7 +7,7 @@
 > Kyber community on Facebook for support.
 
 > ⚠️ **Work in progress.** Features may change, break or be incomplete. Use at your own risk.
-> Wi-Fi and the web interface are compiled out: send commands over USB or Serial2.
+> No Wi-Fi, web interface or sound: send commands over USB or Serial2.
 
 ## What this fork adds
 
@@ -15,8 +15,8 @@
   `ServoDispatchMaestro` implements the Reeltwo `ServoDispatch` interface and interpolates movements on the ESP32.
 - **Interpolated sequences `:SE22`–`:SE38`**: copies of `:SE02`–`:SE09` and `:SE50`–`:SE58` driven at
   125 ms per step, the reliable minimum measured for the dome panels.
-- **Safer panel handling**: all dome panels close at the end of every sequence, then servos are released;
-  `:CL00` closes the panels at any time.
+- **Safer panel handling**: dome panels close at power-up and at the end of sequences (open commands such
+  as `:OP00` leave them open until `:CL00`); servos are released once in position.
 - **Holo animations**: continuous random moves (`*HA01`–`*HA03`) and "R2 alive" moves with blue↔white
   LED fades (`*HV01`–`*HV03`).
 - **Heartbeat LED** on GPIO 2 (1 Hz) to show the main loop is running.
@@ -62,7 +62,7 @@ hardware tests still to run.
 | Path | Content |
 | --- | --- |
 | `src/main.cpp` | Firmware entry point: device setup, servo table, main loop |
-| `src/` | Also the command handlers (`Marcduino*.h`), custom sequences, logic effects, web pages |
+| `src/` | Also the command handlers (`Marcduino*.h`), custom sequences, logic effects |
 | `lib/Reeltwo/` | Reeltwo 23.5.3 with the local changes (Maestro driver) |
 | `firmware/` | Prebuilt binaries |
 | `tools/` | Binary merge script and HTML generator |
@@ -74,16 +74,12 @@ hardware tests still to run.
 - Wiki: <https://github.com/reeltwo/AstroPixelsPlus/wiki>
 - Web installer (original firmware): <https://reeltwo.github.io/AstroPixels-Installer/>
 
-Original Wi-Fi defaults, for reference if Wi-Fi is compiled back in (`#define USE_WIFI`): SSID `AstroPixels`,
-password `Astromech`, web interface at <http://192.168.4.1>.
-
 ## Libraries
 
 - [Reeltwo](https://github.com/reeltwo/Reeltwo) 23.5.3, included in `lib/Reeltwo/` with local changes
   ([LOCAL-CHANGES.md](lib/Reeltwo/LOCAL-CHANGES.md))
 - [Adafruit NeoPixel](https://github.com/adafruit/Adafruit_NeoPixel) 1.15.2
 - [FastLED](https://github.com/FastLED/FastLED) 3.7.0
-- [DFRobotDFPlayerMini](https://github.com/DFRobot/DFRobotDFPlayerMini) 1.0.6
 
 ## License
 
