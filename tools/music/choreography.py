@@ -187,6 +187,8 @@ class Choreographer:
         self.holo_pos = {h: CENTER for h in HOLOS}
         self.holo_led = {}
         self.motifs = []           # (temps, motif, niveau, étiquette) pour la prévisualisation
+        # Plan de la chanson, repris par la piste des pieds (feet.py) pour rester synchronisée
+        self.plan = {'buildups': [], 'peak': None, 'end': None, 'explosions': {}}
 
     def rng(self, *key):
         return random.Random('%s/%s' % (self.seed, '/'.join(str(k) for k in key)))
@@ -602,6 +604,7 @@ class Choreographer:
                         self.panels(t + q * fill_beats * bm / len(order), [p], 50, 400)
                     self.panels(t, [p for p in MOVABLE if p not in order], 0, 300)
                     self.motifs.append({'t': int(t), 'motif': 'montée et suspense', 'tier': tier})
+                    self.plan['buildups'].append({'t': int(t), 'drop': int(beats[b0] * 1000) if b0 < n else int(t_end)})
                 if down and beats_left > 1:
                     bars_left = max(1, (beats_left + 3) // 4)
                     self.logic(t, FLD, FLASH, col, bars_left - 1)
@@ -627,6 +630,7 @@ class Choreographer:
                     self.logic(t + bm, d, LIGHTSOUT, force=True)
                 self.holo_led_cmd(t + bm, HOLO_ALL, 96)
                 self.motifs.append({'t': int(t), 'motif': 'coup de théâtre', 'tier': tier})
+                self.plan['peak'] = int(t)
                 skip_until = i + 1
                 continue
             if i <= skip_until:
@@ -645,6 +649,7 @@ class Choreographer:
                     # autre change seulement d'effet.
                     eff = FIRE if fire_next else RAINBOW
                     fire_next = not fire_next
+                    self.plan['explosions'][k] = 'fire' if eff == FIRE else 'rainbow'
                     if prev_tier != 3:
                         # Tout s'ouvre un temps, puis le motif de l'apogée prend le relais
                         self.panels(t, MOVABLE, 100, 200)
@@ -764,6 +769,7 @@ class Choreographer:
             self.pulse(tb, MINIS, 100, 150, 300)
             self.pulse(tb + 800, MINIS, 100, 150, 300)
         self.motifs.append({'t': int(te), 'motif': 'salut final (%s)' % bow, 'tier': 0})
+        self.plan['end'] = int(te)
 
         self.events.sort(key=lambda e: e['t'])
         return self.merge()
@@ -789,5 +795,6 @@ def choreograph(analysis, title, font_h, layout_path=None):
     seed = hashlib.md5(analysis['file'].encode('utf-8')).hexdigest()[:8]
     ch = Choreographer(analysis, title_ms, Dome(layout_path), seed)
     events = ch.build()
+    ch.plan.update(seed=seed, color_at=ch.color_at, companion=ch.companion)
     duration_ms = int(analysis['sound_end'] * 1000 + 800)
-    return events, duration_ms, title_ms, [s['tier'] for s in analysis['sections']], ch.motifs
+    return events, duration_ms, title_ms, [s['tier'] for s in analysis['sections']], ch.motifs, ch.plan

@@ -51,3 +51,33 @@ def validate(events, duration_ms, title_ms):
     stats = {'max_per_second': max(per_second.values()) if per_second else 0,
              'avg_per_second': len(events) / max(1.0, duration_ms / 1000)}
     return errors, stats
+
+
+def validate_feet(events, duration_ms):
+    """Vérifie la piste des pieds (R2-Bling). Renvoie la liste des erreurs."""
+    import feet
+    errors = []
+    last_t = -1
+    for e in events:
+        t = e['t']
+        if t < last_t:
+            errors.append('pieds : événements non triés à %d ms' % t)
+        last_t = t
+        if not 0 <= t <= duration_ms:
+            errors.append('pieds : événement hors de la chanson à %d ms' % t)
+        k = e['kind']
+        if k == 'legs' or k == 'front':
+            names = feet.LEG_FX if k == 'legs' else feet.FRONT_FX
+            if e['fx'] not in names:
+                errors.append('pieds : effet %s inconnu pour %s à %d ms' % (e['fx'], k, t))
+            if not (0 <= e['col'] <= 9 and 0 <= e['col2'] <= 9 and 0 <= e['p'] <= 65535):
+                errors.append('pieds : réglage invalide à %d ms' % t)
+        elif k == 'beat':
+            if not (0 <= e['bass'] <= 255 and 0 <= e['high'] <= 255 and -127 <= e['bal'] <= 127):
+                errors.append('pieds : battement invalide à %d ms' % t)
+        elif k == 'hit':
+            if not 0 <= e['strength'] <= 255:
+                errors.append('pieds : attaque invalide à %d ms' % t)
+        else:
+            errors.append('pieds : type inconnu à %d ms' % t)
+    return errors

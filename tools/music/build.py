@@ -25,6 +25,7 @@ sys.path.insert(0, HERE)
 
 import analysis            # noqa: E402
 import choreography as ch  # noqa: E402
+import feet                # noqa: E402
 import validate            # noqa: E402
 
 MP3_DIR = os.path.join(ROOT, 'mp3')
@@ -126,7 +127,7 @@ def write_preview(songs, results):
         if not r:
             continue
         data.append({'mu': s['mu'], 'title': s['title'], 'file': s['file'], 'duration': r['duration_ms'],
-                     'titleMs': r['title_ms'], 'tempo': r['tempo'], 'events': r['events'], 'motifs': r['motifs'],
+                     'titleMs': r['title_ms'], 'tempo': r['tempo'], 'events': r['events'], 'motifs': r['motifs'], 'feet': r['feet'],
                      'beats': [round(b * 1000) for b in r['analysis']['beats']]})
     with open(PREVIEW_TEMPLATE, encoding='utf-8') as f:
         html = f.read()
@@ -152,8 +153,10 @@ def main():
             print(':MU%02d  %-34s absent ou désactivé' % (s['mu'], s['file']))
             continue
         a = analysis.analyze_cached(path, CACHE_DIR)
-        events, duration_ms, title_ms, tiers, motifs = ch.choreograph(a, s['title'], FONT_H, LAYOUT_JSON)
+        events, duration_ms, title_ms, tiers, motifs, plan = ch.choreograph(a, s['title'], FONT_H, LAYOUT_JSON)
+        feet_events = feet.feet_track(a, plan)
         errors, stats = validate.validate(events, duration_ms, title_ms)
+        errors += validate.validate_feet(feet_events, duration_ms)
         if errors:
             print(':MU%02d  %s : %d erreur(s)' % (s['mu'], s['file'], len(errors)))
             for e in errors[:10]:
@@ -161,12 +164,13 @@ def main():
             failed = True
             continue
         results[s['mu']] = {'events': events, 'duration_ms': duration_ms, 'title_ms': title_ms,
-                            'tempo': a['tempo'], 'tiers': tiers, 'motifs': motifs, 'analysis': a}
+                            'tempo': a['tempo'], 'tiers': tiers, 'motifs': motifs, 'feet': feet_events, 'analysis': a}
         if not only or s['mu'] in only:
             write_song_header(s, events, duration_ms)
-        print(':MU%02d  %-34s %5.1f s  %3d BPM  %4d événements (max %2d/s)  sections %s'
+        n_feet = sum(1 for e in feet_events if e['kind'] != 'beat')
+        print(':MU%02d  %-34s %5.1f s  %3d BPM  %4d événements (max %2d/s)  pieds %3d  sections %s'
               % (s['mu'], s['file'], duration_ms / 1000, round(a['tempo']), len(events),
-                 stats['max_per_second'], ''.join(str(x) for x in tiers)))
+                 stats['max_per_second'], n_feet, ''.join(str(x) for x in tiers)))
     if failed:
         sys.exit('Génération interrompue : corriger les erreurs ci-dessus.')
     write_songs_table(songs, results)

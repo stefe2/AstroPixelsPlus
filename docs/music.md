@@ -136,6 +136,33 @@ On top of the motif:
 `tools/music/validate.py` checks every generated choreography against these limits and the command
 formats. The build stops if one fails.
 
+## Feet (R2-Bling) — in progress
+
+R2-Bling, the ESP32 that lights the legs (two hoses of 25 LEDs per leg, from the battery box to the
+foot) and the 33 front LEDs, will follow the same songs. Status: the feet track is generated and shown in
+the preview; R2-Bling does not play it yet.
+
+- **Wiring**: the Kyber line to the dome gets a Y splitter in the body, before the slip ring: R2-Bling
+  receives the same `:MUnn` as AstroPixels at the same instant, and no slip-ring wire is needed.
+- **How it plays**: R2-Bling will keep its own track per song, started by `:MUnn` and stopped by `:MU00`,
+  like AstroPixels. The track holds one entry per beat (bass, treble, stereo, hits), so R2-Bling draws
+  its effects on the beat without computing the tempo, plus a few effect changes per section.
+- **Same plan as the dome** (`tools/music/feet.py`): same sections and colors (the chord color of each
+  bar), same build-ups, drop, big moment and end; a repeated chorus gets the same feet effect.
+
+| Moment | Legs | Front (33 LEDs) |
+| --- | --- | --- |
+| Calm (0) | breathing, sparkle, Morse | breathing, balance, heartbeat, sparkle |
+| Groove (1) | wave from the battery box to the foot on each kick, bounce, Morse, breathing | sweep, heartbeat, balance |
+| Energy (2) | ping-pong between legs, crossed hoses, bounce, wave | sweep, centered VU meter, balance, heartbeat |
+| Peak (3) | white bolt down to the feet, then fire or disco (following the logics: fire ↔ fire, rainbow ↔ disco) for 4 bars, then VU meter or strobe | white flash, fire or disco, then VU meter or sweep |
+| Build-up | the legs fill up from the foot, freeze half full for the last bar, then go dark | same, from the center out |
+| Big moment | white flash on the whole droid, one beat of darkness | same |
+| End | the energy goes back up to the battery box, then the normal idle look | same, shrinking to the center |
+
+On stereo songs, the leg on the side of the sound (seen from the audience) is brighter. The preview
+shows the legs and front as seen from the front, with the same 2.7 A current limit as the board.
+
 ## Adding or changing a song
 
 1. Copy the MP3 the Kyber plays into `mp3/` (never committed: see `.gitignore`).
@@ -170,7 +197,8 @@ later build uses it. Edits are also kept in the browser meanwhile.
 | --- | --- |
 | `tools/music/songs.json` | Song table: number, MP3 file, title, offset |
 | `tools/music/analysis.py` | Audio analysis |
-| `tools/music/choreography.py` | Choreography rules |
+| `tools/music/choreography.py` | Choreography rules (dome) |
+| `tools/music/feet.py` | Feet track rules (R2-Bling) |
 | `tools/music/validate.py` | Format and mechanical checks |
 | `tools/music/build.py` | Runs everything and writes the outputs |
 | `tools/music/preview_template.html` | Preview page template |

@@ -78,7 +78,13 @@ body.editing svg [data-id] { cursor: grab; }
         Les effets lumineux sont une approximation de ceux du droïde.</div>
     </div>
   </div>
-  <div class="card" style="margin-top:12px"><canvas id="timeline" width="960" height="110"></canvas></div>
+  <div class="card" style="margin-top:12px">
+    <canvas id="feet" width="960" height="330" role="img" aria-label="Jambes et face de R2, vues de face"></canvas>
+    <div class="legend">Pieds (R2-Bling), vus de face : chaque jambe a deux hoses de 25 LEDs, de la battery box
+      (en haut) au pied (en bas) ; au centre, les 33 LEDs de la face. La jambe droite de R2 est donc à gauche de
+      l'image. Luminosité limitée comme sur la carte (2,7 A).</div>
+  </div>
+  <div class="card" style="margin-top:12px"><canvas id="timeline" width="960" height="140"></canvas></div>
   <p class="meta">Page générée par <code>tools/music/build.py</code>. Elle joue les MP3 du dossier <code>mp3/</code> :
     ouvrez-la depuis ce dossier. Cliquez sur la ligne de temps pour vous déplacer dans la chanson.
     <code>#mu=11&amp;t=32</code> à la fin de l'adresse ouvre :MU11 figé à 32 s.</p>
@@ -359,6 +365,7 @@ function load(i) {
   document.getElementById('info').textContent =
     Math.round(song.tempo) + ' BPM · ' + song.events.length + ' événements · ' + fmt(song.duration);
   if (rldText) rldText.textContent = song.title;
+  prepareFeet(song);
   reset();
 }
 function reset() { state = freshState(); idx = 0; lastT = -1; }
@@ -472,13 +479,21 @@ function draw(t) {
 function drawTimeline(t) {
   const W = tl.width, H = tl.height, D = song.duration;
   tctx.clearRect(0, 0, W, H);
-  const rows = {cmd: 30, panels: 58, holo: 86};
+  const rows = {cmd: 30, panels: 58, holo: 86, feet: 114};
   tctx.fillStyle = css('--muted'); tctx.font = '11px system-ui';
   tctx.fillText('lumières', 2, rows.cmd + 4); tctx.fillText('panneaux', 2, rows.panels + 4); tctx.fillText('holos', 2, rows.holo + 4);
+  tctx.fillText('pieds', 2, rows.feet + 4);
   const x0 = 62, w = W - 72;
   for (const e of song.events) {
     tctx.fillStyle = e.kind === 'cmd' ? '#f59e0b' : e.kind === 'panels' ? '#3b82f6' : '#10b981';
     tctx.fillRect(x0 + w * e.t / D, rows[e.kind] - 6, 1.5, 12);
+  }
+  // Pieds : une bande colorée par effet des jambes
+  const legs = feetData.legs;
+  for (let k = 0; k < legs.length; k++) {
+    const e = legs[k], t1 = k + 1 < legs.length ? legs[k + 1].t : D;
+    tctx.fillStyle = FEET_TL_COLOR[e.fx] || '#a855f7';
+    tctx.fillRect(x0 + w * e.t / D, rows.feet - 6, Math.max(1, w * (t1 - e.t) / D - 1), 12);
   }
   tctx.fillStyle = css('--accent');
   tctx.fillRect(x0 + w * Math.min(t, D) / D, 8, 2, H - 16);
@@ -500,7 +515,229 @@ function stateText(t) {
   return fmt(t) + ' / ' + fmt(song.duration) + (t < song.titleMs ? '   titre sur la logic arrière' : '') + '\n\n' +
     'FLD   ' + describeLogic(L[1]) + '\nRLD   ' + (t < song.titleMs ? 'titre' : describeLogic(L[3])) + '\n' +
     'FPSI  ' + describeLogic(L[4]) + '\nRPSI  ' + describeLogic(L[5]) + '\n\n' +
-    'Motif : ' + motif + '\nPanneaux : ' + open + '\n\n' + holos.join('\n');
+    'Motif : ' + motif + '\nPanneaux : ' + open + '\n\n' + holos.join('\n') + '\n\n' + feetText(t);
+}
+
+// ---- pieds (R2-Bling) -------------------------------------------------------------------
+// Imitation des effets que R2-Bling dessinera : référence pour le code de la carte.
+// Jambe : 2 hoses de 25 niveaux, 0 = battery box, 24 = pied. Face : 33 LEDs, 0 = gauche du public.
+const FEET_NAMES = {
+  breathe: 'respiration', sparkle: 'scintillement', morse: 'morse', wave: 'onde', bounce: 'rebond',
+  vu: 'vumètre', strobe: 'stroboscope', pingpong: 'ping-pong', cross: 'hoses croisés', fill: 'montée',
+  freeze: 'suspense', black: 'noir', bolt: 'éclair', fire: 'feu', disco: 'disco', white: 'flash blanc',
+  bow: 'salut', idle: 'repos', sweep: 'balayage', balance: 'balance', heart: 'battement'};
+const FEET_FRONT_NAMES = Object.assign({}, FEET_NAMES, {vu: 'vumètre centré'});
+const FEET_TL_COLOR = {
+  breathe: '#64748b', sparkle: '#94a3b8', morse: '#78716c', wave: '#0ea5e9', bounce: '#06b6d4', vu: '#22c55e',
+  strobe: '#eab308', pingpong: '#8b5cf6', cross: '#6366f1', fill: '#f97316', freeze: '#fb923c', black: '#111827',
+  bolt: '#f8fafc', fire: '#ef4444', disco: '#ec4899', white: '#f8fafc', bow: '#a3a3a3', idle: '#1e3a8a'};
+const FEET_RGB = [[255, 255, 255], [255, 0, 0], [255, 110, 0], [255, 220, 0], [0, 255, 40], [0, 220, 255],
+  [0, 40, 255], [140, 0, 255], [255, 0, 180], [255, 90, 150]];
+const KICK = 1, SNARE = 2, DOWN = 4;
+const LED_MAX_MA = 2700, MA_PER_CHANNEL = 20;
+let feetData = {legs: [], front: [], beats: [], hits: []};
+
+function prepareFeet(s) {
+  const f = s.feet || [];
+  feetData = {legs: f.filter(e => e.kind === 'legs'), front: f.filter(e => e.kind === 'front'),
+              beats: f.filter(e => e.kind === 'beat'), hits: f.filter(e => e.kind === 'hit')};
+}
+function lastAt(arr, t) {           // dernier élément avec e.t <= t (recherche dichotomique)
+  let lo = 0, hi = arr.length - 1, r = -1;
+  while (lo <= hi) { const m = (lo + hi) >> 1; if (arr[m].t <= t) { r = m; lo = m + 1; } else hi = m - 1; }
+  return r;
+}
+function hash3(a, b, c) {
+  let h = (a * 374761393 + b * 668265263 + c * 2147483647) | 0;
+  h = Math.imul(h ^ (h >>> 13), 1274126177);
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+}
+function mix(a, b, k) { return [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k, a[2] + (b[2] - a[2]) * k]; }
+function scale(c, k) { return [c[0] * k, c[1] * k, c[2] * k]; }
+function fireColor(h) {             // 0 noir → rouge → orange → jaune
+  h = Math.max(0, Math.min(1, h));
+  return h < 0.4 ? [h / 0.4 * 255, 0, 0] : h < 0.8 ? [255, (h - 0.4) / 0.4 * 160, 0] : [255, 160 + (h - 0.8) / 0.2 * 90, (h - 0.8) / 0.2 * 60];
+}
+function hueColor(h) { const k = n => { const x = (n + h / 60) % 6; return 255 * (1 - Math.max(0, Math.min(1, Math.min(x, 4 - x)))); }; return [k(5), k(3), k(1)]; }
+
+function beatCtx(t) {
+  const B = feetData.beats, i = lastAt(B, t);
+  if (i < 0) return {i: 0, tb: 0, bm: 500, frac: 0, bass: 0, high: 0, bal: 0, flags: 0, prevKick: -1e9};
+  const b = B[i], bn = i + 1 < B.length ? B[i + 1].t : b.t + (i > 0 ? b.t - B[i - 1].t : 500);
+  let prevKick = -1e9;               // dernière grosse caisse (ou premier temps) jusqu'à t
+  for (let j = i; j >= 0 && j > i - 4; j--) if (B[j].flags & (KICK | DOWN)) { prevKick = B[j].t; break; }
+  return {i, tb: b.t, bm: bn - b.t, frac: Math.min(1, (t - b.t) / (bn - b.t)), bass: b.bass / 255,
+          high: b.high / 255, bal: b.bal / 127, flags: b.flags, prevKick};
+}
+function fxAt(list, t) { const k = lastAt(list, t); return k < 0 ? {fx: 'idle', col: 0, col2: 0, p: 0, t: 0} : list[k]; }
+
+// Couleur d'un niveau de hose (leg 0 = gauche de R2, 1 = droite ; hose 0 ou 1 ; lvl 0–24)
+function legPixel(e, B, t, leg, hose, lvl) {
+  const c1 = FEET_RGB[e.col], c2 = FEET_RGB[e.col2], age = t - e.t, x = lvl / 24;
+  const tail = (pos, len) => { const d = pos - lvl; return d >= 0 && d < len ? 1 - d / len : 0; };
+  switch (e.fx) {
+    case 'breathe': {
+      const ph = ((B.i % 4) + B.frac) / 4, k = 0.12 + 0.88 * (0.5 - 0.5 * Math.cos(2 * Math.PI * ph));
+      return scale(mix(c1, c2, x * 0.4), k);
+    }
+    case 'sparkle': {
+      const on = hash3(leg * 2 + hose, lvl, Math.floor(t / 90)) < 0.03 + 0.2 * B.high;
+      return on ? mix(c1, [255, 255, 255], 0.5) : scale(c1, 0.07);
+    }
+    case 'morse': {
+      const H = feetData.hits, k = lastAt(H, t);
+      if (k < 0) return scale(c1, 0.05);
+      const long = k + 1 < H.length ? H[k + 1].t - H[k].t > B.bm * 0.75 : true;
+      const d = Math.exp(-(t - H[k].t) / (long ? 380 : 110)) * H[k].strength / 255;
+      return scale(mix(c1, [255, 255, 255], d * 0.3), 0.05 + 0.95 * d);
+    }
+    case 'wave': {
+      const pos = (t - B.prevKick) / (0.7 * B.bm) * 24, k = tail(pos, 6);
+      return k > 0 ? mix(scale(c1, k), [255, 255, 255], k > 0.8 ? 0.5 : 0) : scale(c1, 0.08);
+    }
+    case 'bounce': {
+      const pos = B.i % 2 === 0 ? B.frac * 24 : (1 - B.frac) * 24;
+      const d = Math.abs(pos - lvl), k = d < 4 ? 1 - d / 4 : 0;
+      return k > 0 ? mix(c1, c2, 1 - k) : scale(c1, 0.06);
+    }
+    case 'vu': {
+      const bass = B.flags & KICK ? Math.max(B.bass, 0.85) : B.bass;
+      const level = bass * 25 * (1 - 0.6 * B.frac), from = 24 - lvl;
+      return from < level ? (from + 1 >= level ? [255, 255, 255] : mix(c1, c2, from / 25)) : [0, 0, 0];
+    }
+    case 'strobe': {
+      const dt = t - B.tb, on = dt < 60 || (B.high > 0.6 && Math.abs(dt - B.bm / 2) < 30);
+      return on ? (B.flags & DOWN ? [255, 255, 255] : c1) : [0, 0, 0];
+    }
+    case 'pingpong': return (B.i % 2) === leg ? scale(c1, Math.pow(1 - B.frac, 1.5)) : scale(c2, 0.05);
+    case 'cross': {
+      const pos = hose === 0 ? B.frac * 24 : (1 - B.frac) * 24;
+      const d = hose === 0 ? pos - lvl : lvl - pos, k = d >= 0 && d < 5 ? 1 - d / 5 : 0;
+      return k > 0 ? scale(hose ? c2 : c1, k) : scale(c1, 0.05);
+    }
+    case 'fill': {
+      const k = Math.min(1, age / Math.max(1, e.p)), from = 24 - lvl;
+      const flick = 0.65 + 0.35 * Math.sin(age * (0.004 + 0.03 * k) + lvl);
+      return from < k * 25 ? scale(mix(c1, [255, 255, 255], from > k * 25 - 1.5 ? 0.6 : 0), flick) : [0, 0, 0];
+    }
+    case 'freeze': return 24 - lvl < 12.5 ? scale(c1, 0.8 + 0.2 * hash3(lvl, hose, Math.floor(t / 70))) : [0, 0, 0];
+    case 'black': return [0, 0, 0];
+    case 'bolt': {
+      if (age < e.p) return lvl <= age / e.p * 24 ? [255, 255, 255] : [0, 0, 0];
+      return scale(mix([255, 255, 255], c2, Math.min(1, (age - e.p) / 300)), Math.max(0, 1 - (age - e.p) / 600));
+    }
+    case 'fire': {
+      const h = Math.pow(x, 1.3) * (0.55 + 0.45 * hash3(lvl, hose + leg * 2, Math.floor(t / 60)));
+      return fireColor(h * 1.15);
+    }
+    case 'disco': {
+      if (hash3(lvl, leg * 2 + hose, Math.floor(t / 70)) < 0.04) return [255, 255, 255];
+      const hole = Math.abs(((t / 12) % 40) - lvl - hose * 6) < 2;
+      return hole ? [0, 0, 0] : hueColor((t / 4 + lvl * 14 + hose * 90 + leg * 180) % 360);
+    }
+    case 'white': return scale([255, 255, 255], Math.exp(-age / Math.max(50, e.p * 0.4)));
+    case 'bow': {
+      const k = Math.min(1, age / Math.max(1, e.p));
+      return lvl < (1 - k) * 25 ? scale(c1, 0.8 * (1 - k * 0.5)) : [0, 0, 0];
+    }
+    default: {                       // repos : plasma bleu qui respire (approximation de POWERFLOW)
+      const b = 0.5 + 0.5 * Math.sin(t / 3000 * 2 * Math.PI);
+      return [1, 20 + 10 * (b - 0.5) * 2, 96 + 48 * (b - 0.5) * 2].map(v => v * (0.8 + 0.2 * hash3(lvl, hose, Math.floor(t / 200))));
+    }
+  }
+}
+const STEREO_FX = new Set(['breathe', 'sparkle', 'morse', 'wave', 'bounce', 'vu', 'strobe', 'cross']);
+
+// Couleur d'une LED de la face (x 0–32, 0 = gauche du public)
+function frontPixel(e, B, t, x) {
+  const c1 = FEET_RGB[e.col], c2 = FEET_RGB[e.col2], age = t - e.t, dc = Math.abs(x - 16);
+  switch (e.fx) {
+    case 'vu': {
+      const bass = B.flags & KICK ? Math.max(B.bass, 0.85) : B.bass, w = bass * 16.5 * (1 - 0.5 * B.frac);
+      return dc < w ? (dc + 1 >= w ? [255, 255, 255] : mix(c1, c2, dc / 16)) : [0, 0, 0];
+    }
+    case 'sweep': {
+      const ph = ((B.i % 2) + B.frac) / 2, pos = ph < 0.5 ? ph * 2 * 32 : (1 - (ph - 0.5) * 2) * 32;
+      const d = Math.abs(pos - x), k = d < 5 ? 1 - d / 5 : 0;
+      return k > 0 ? mix(scale(c1, k), [255, 255, 255], k > 0.85 ? 0.6 : 0) : scale(c2, 0.04);
+    }
+    case 'balance': {
+      const center = 16 + B.bal * 14, d = Math.abs(x - center);
+      return d < 7 ? scale(mix(c1, c2, d / 7), (0.3 + 0.7 * B.bass) * (1 - d / 8)) : [0, 0, 0];
+    }
+    case 'heart': {
+      const dt = t - B.prevKick, k = Math.exp(-Math.pow(dt / 60, 2)) + 0.7 * Math.exp(-Math.pow((dt - 180) / 60, 2));
+      return dc < 5 ? mix(scale(c1, 0.06), [255, 0, 0], Math.min(1, k) * (1 - dc / 6)) : scale(c1, 0.06);
+    }
+    case 'breathe': {
+      const ph = ((B.i % 4) + B.frac) / 4;
+      return scale(mix(c1, c2, dc / 16 * 0.5), 0.12 + 0.88 * (0.5 - 0.5 * Math.cos(2 * Math.PI * ph)));
+    }
+    case 'sparkle': return hash3(x, 7, Math.floor(t / 90)) < 0.03 + 0.2 * B.high ? mix(c1, [255, 255, 255], 0.5) : scale(c1, 0.07);
+    case 'fill': { const k = Math.min(1, age / Math.max(1, e.p)); return dc < k * 16.5 ? scale(c1, 0.7 + 0.3 * Math.sin(age * 0.02)) : [0, 0, 0]; }
+    case 'freeze': return dc < 8 ? scale(c1, 0.85) : [0, 0, 0];
+    case 'black': return [0, 0, 0];
+    case 'fire': return fireColor((0.45 + 0.55 * hash3(x, 3, Math.floor(t / 60))) * 0.9);
+    case 'disco': return hash3(x, 9, Math.floor(t / 60)) < 0.06 ? [255, 255, 255] : hueColor((t / 2 + x * 22) % 360);
+    case 'white': return scale([255, 255, 255], Math.exp(-age / Math.max(50, e.p * 0.4)));
+    case 'bow': { const k = Math.min(1, age / Math.max(1, e.p)); return dc < (1 - k) * 16.5 ? scale(c1, 0.8) : [0, 0, 0]; }
+    default: {                       // repos : îlots cyan sur fond bleu (approximation de LIFEFLOW, 50 %)
+      const n = 0.5 + 0.5 * Math.sin(x * 0.7 + t / 900) * Math.sin(x * 0.23 - t / 1400);
+      return scale(mix([0, 30, 140], [0, 200, 255], n > 0.7 ? (n - 0.7) / 0.3 : 0), 0.5);
+    }
+  }
+}
+
+const feetCanvas = document.getElementById('feet'), fctx = feetCanvas.getContext('2d');
+function feetFrame(t) {
+  const B = beatCtx(t), eL = fxAt(feetData.legs, t), eF = fxAt(feetData.front, t);
+  // leds[leg][hose][lvl], front[x]
+  const legs = [0, 1].map(leg => [0, 1].map(hose => Array.from({length: 25}, (_, lvl) => {
+    let c = legPixel(eL, B, t, leg, hose, lvl);
+    if (STEREO_FX.has(eL.fx) && B.bal) {
+      // Son à droite du public = jambe gauche de R2 plus forte
+      const g = leg === 0 ? 1 - Math.max(0, -B.bal) * 0.7 : 1 - Math.max(0, B.bal) * 0.7;
+      c = scale(c, g);
+    }
+    return c;
+  })));
+  const front = Array.from({length: 33}, (_, x) => frontPixel(eF, B, t, x));
+  // Limite de courant, comme FastLED sur la carte
+  let ma = 0;
+  const add = c => { ma += (c[0] + c[1] + c[2]) / 255 * MA_PER_CHANNEL; };
+  legs.forEach(l => l.forEach(h => h.forEach(add))); front.forEach(add);
+  const k = ma > LED_MAX_MA ? LED_MAX_MA / ma : 1;
+  return {legs, front, ma: Math.round(ma * k), k, eL, eF};
+}
+function drawFeet(t) {
+  const F = feetFrame(t), W = feetCanvas.width, H = feetCanvas.height;
+  fctx.clearRect(0, 0, W, H);
+  const off = css('--led-off'), ink = css('--muted');
+  const rgb = c => `rgb(${c.map(v => Math.round(Math.min(255, v * F.k))).join(',')})`;
+  const dot = (x, y, r, c) => {
+    const lit = c[0] + c[1] + c[2] > 6;
+    fctx.fillStyle = lit ? rgb(c) : off;
+    fctx.beginPath(); fctx.arc(x, y, r, 0, 2 * Math.PI); fctx.fill();
+  };
+  fctx.font = '12px system-ui'; fctx.fillStyle = ink; fctx.textAlign = 'center';
+  // Vue de face : la jambe droite de R2 (1) à gauche de l'image
+  [[1, 150, 'Jambe droite (RIGHT)'], [0, 810, 'Jambe gauche (LEFT)']].forEach(([leg, cx, name]) => {
+    fctx.fillStyle = ink; fctx.fillText(name, cx, 16);
+    fctx.fillText('battery box', cx, 34);
+    fctx.fillText('pied', cx, H - 6);
+    for (let hose = 0; hose < 2; hose++) for (let lvl = 0; lvl < 25; lvl++)
+      dot(cx - 14 + hose * 28, 48 + lvl * 10.5, 4.2, F.legs[leg][hose][lvl]);
+  });
+  fctx.fillStyle = ink; fctx.fillText('Face (33 LEDs)', W / 2, 140);
+  for (let x = 0; x < 33; x++) dot(W / 2 - 16 * 13 + x * 13, 162, 5, F.front[x]);
+  fctx.fillStyle = ink; fctx.textAlign = 'left';
+  fctx.fillText('Consommation estimée : ' + (F.ma / 1000).toFixed(1) + ' A' + (F.k < 1 ? ' (limitée)' : ''), W / 2 - 200, 210);
+}
+function feetText(t) {
+  const eL = fxAt(feetData.legs, t), eF = fxAt(feetData.front, t);
+  const cn = c => c ? COLOR_NAMES[c] : 'blanc';
+  const col = e => ['black', 'fire', 'disco', 'idle', 'white'].includes(e.fx) ? '' : ' ' + cn(e.col);
+  return 'Pieds : ' + (FEET_NAMES[eL.fx] || eL.fx) + col(eL) + '\nFace  : ' + (FEET_FRONT_NAMES[eF.fx] || eF.fx) + col(eF);
 }
 
 // Adresse #mu=11&t=31 : ouvre :MU11 figé à 31 s (captures d'écran, partage d'un moment précis)
@@ -517,7 +754,7 @@ audio.onplay = () => { frozenT = null; };
 function frame() {
   if (song) {
     const t = frozenT !== null ? frozenT : audio.currentTime * 1000;
-    advance(t); draw(t); drawTimeline(t);
+    advance(t); draw(t); drawTimeline(t); drawFeet(t);
     document.getElementById('state').textContent = stateText(t);
   }
   requestAnimationFrame(frame);
