@@ -93,22 +93,24 @@ To check the Maestro while the ESP32 runs: close Maestro Control Center, then ru
 ## Maestro channel mapping
 
 From `servoSettings[]` in `src/main.cpp`. "Closed" and "open" are the pulses sent for positions 0.0 and 1.0.
+Panel numbers P1–P13 are those of the dome plan, checked one by one on the droid: channel N drives P(N+1).
+P6 and P13 have no servo.
 
-| Channel | Servo | Type | Group | Closed (µs) | Open (µs) |
+| Channel | Panel | Type | Group | Closed (µs) | Open (µs) |
 | --- | --- | --- | --- | --- | --- |
-| 0 | Door 4 | Small panel | 1 | 1840 | 992 |
-| 1 | Door 3 | Small panel | 2 | 1888 | 992 |
-| 2 | Door 2 | Small panel | 3 | 1872 | 992 |
-| 3 | Door 1 | Medium panel | 4 | 1872 | 992 |
-| 4 | Door 5 | Medium panel | 5 | 1872 | 992 |
-| 5 | Door 9 | Big panel | 6 | 2000 | 992 |
-| 6 | Pie panel 1 | Pie panel | 7 | 2000 | 992 |
-| 7 | Pie panel 2 | Pie panel | 8 | 2000 | 992 |
-| 8 | Pie panel 3 | Pie panel | 9 | 2000 | 992 |
-| 9 | Pie panel 4 | Pie panel | 10 | 1920 | 992 |
-| 10 | Mini door 2 | Mini panel | 11 | 1872 | 992 |
-| 11 | Mini front PSI door | Mini panel | 12 | 1552 | 992 |
-| 12 | Dome top panel | Top pie panel | 13 | 2000 | 992 |
+| 0 | P1 | Small panel | 1 | 1840 | 992 |
+| 1 | P2 | Small panel | 2 | 1888 | 992 |
+| 2 | P3 | Small panel | 3 | 1872 | 992 |
+| 3 | P4 | Medium panel | 4 | 1872 | 992 |
+| 4 | P5 | Medium panel | 5 | 1872 | 992 |
+| 5 | P6 (no servo) | Big panel | 6 | 2000 | 992 |
+| 6 | P7 | Pie panel | 7 | 2000 | 992 |
+| 7 | P8 | Pie panel | 8 | 2000 | 992 |
+| 8 | P9 | Pie panel | 9 | 2000 | 992 |
+| 9 | P10 | Pie panel | 10 | 1920 | 992 |
+| 10 | P11 | Mini panel | 11 | 1872 | 992 |
+| 11 | P12, mini front PSI door | Mini panel | 12 | 1552 | 992 |
+| 12 | P13, dome top (no servo) | Top pie panel | 13 | 2000 | 992 |
 | 13 | Front holo, horizontal | Holo H | — | 1248 | 1744 |
 | 14 | Front holo, vertical | Holo V | — | 1248 | 1744 |
 | 15 | Top holo, horizontal | Holo H | — | 1248 | 1744 |

@@ -159,6 +159,11 @@ public:
         topHolo.moveHP(1, 500);
     }
 
+    // Pause sans recentrer les holos (chorégraphie musicale), puis reprise aux mêmes délais
+    void suspend() { fEnabled = false; }
+    void resume() { enable(fMinDelay, fMaxDelay); }
+    bool isEnabled() const { return fEnabled; }
+
     virtual void animate() override
     {
         if (!fEnabled)
@@ -216,6 +221,8 @@ public:
             setColor(holos[i], 0, fWhite[i]);
         }
     }
+
+    bool isEnabled() const { return fEnabled; }
 
     virtual void animate() override
     {
@@ -341,19 +348,19 @@ HoloLEDAnimator holoLED;
 const ServoSettings servoSettings[] PROGMEM = {
 #ifndef USE_MAESTRO_ADDRESS
     // First PCA9685 controller
-    {0, 1840, 992,   PANEL_GROUP_1  | SMALL_PANEL},     // Maestro PIN 0: door 4
-    {1, 1888, 992,   PANEL_GROUP_2  | SMALL_PANEL},     // Maestro PIN 1: door 3
-    {2, 1872, 992,   PANEL_GROUP_3  | SMALL_PANEL},     // Maestro PIN 2: door 2
-    {3, 1872, 992,   PANEL_GROUP_4  | MEDIUM_PANEL},    // Maestro PIN 3: door 1
-    {4, 1872, 992,   PANEL_GROUP_5  | MEDIUM_PANEL},    // Maestro PIN 4: door 5
-    {5, 2000, 992,   PANEL_GROUP_6  | BIG_PANEL},       // Maestro PIN 5: door 9
-    {6, 2000, 992,   PANEL_GROUP_7  | PIE_PANEL},       // Maestro PIN 6: pie panel 1
-    {7, 2000, 992,   PANEL_GROUP_8  | PIE_PANEL},       // Maestro PIN 7: pie panel 2
-    {8, 2000, 992,   PANEL_GROUP_9  | PIE_PANEL},       // Maestro PIN 8: pie panel 3
-    {9, 1920, 992,   PANEL_GROUP_10 | PIE_PANEL},       // Maestro PIN 9: pie panel 4
-    {10, 1872, 992,  PANEL_GROUP_11 | MINI_PANEL},      // Maestro PIN 10: mini door 2
-    {11, 1552, 992,  PANEL_GROUP_12 | MINI_PANEL},      // Maestro PIN 11: mini front psi door (1552 = limite du Maestro, vérifié)
-    {12, 2000, 992,  PANEL_GROUP_13 | TOP_PIE_PANEL},   // Maestro PIN 12: dome top panel
+    {0, 1840, 992,   PANEL_GROUP_1  | SMALL_PANEL},     // Maestro PIN 0: P1 (numéros du plan du dôme, vérifiés sur le droïde)
+    {1, 1888, 992,   PANEL_GROUP_2  | SMALL_PANEL},     // Maestro PIN 1: P2
+    {2, 1872, 992,   PANEL_GROUP_3  | SMALL_PANEL},     // Maestro PIN 2: P3
+    {3, 1872, 992,   PANEL_GROUP_4  | MEDIUM_PANEL},    // Maestro PIN 3: P4
+    {4, 1872, 992,   PANEL_GROUP_5  | MEDIUM_PANEL},    // Maestro PIN 4: P5
+    {5, 2000, 992,   PANEL_GROUP_6  | BIG_PANEL},       // Maestro PIN 5: P6, pas de servo
+    {6, 2000, 992,   PANEL_GROUP_7  | PIE_PANEL},       // Maestro PIN 6: P7 (pie)
+    {7, 2000, 992,   PANEL_GROUP_8  | PIE_PANEL},       // Maestro PIN 7: P8 (pie)
+    {8, 2000, 992,   PANEL_GROUP_9  | PIE_PANEL},       // Maestro PIN 8: P9 (pie)
+    {9, 1920, 992,   PANEL_GROUP_10 | PIE_PANEL},       // Maestro PIN 9: P10 (pie)
+    {10, 1872, 992,  PANEL_GROUP_11 | MINI_PANEL},      // Maestro PIN 10: P11 (mini)
+    {11, 1552, 992,  PANEL_GROUP_12 | MINI_PANEL},      // Maestro PIN 11: P12, mini porte du PSI avant (1552 = limite du Maestro, vérifié)
+    {12, 2000, 992,  PANEL_GROUP_13 | TOP_PIE_PANEL},   // Maestro PIN 12: P13, dessus du dôme, pas de servo
     {13, 1248, 1744, HOLO_HSERVO},                      // Maestro PIN 13: horizontal front holo
     {14, 1248, 1744, HOLO_VSERVO},                      // Maestro PIN 14: vertical front holo
     {15, 1248, 1744, HOLO_HSERVO},                      // Maestro PIN 15: horizontal top holo
@@ -391,7 +398,17 @@ private:
     
 public:
     ServoSequencerWithAutoStop(ServoDispatch& dispatch) : ServoSequencer(dispatch) {}
-    
+
+    // Arrête la séquence en cours sans fermeture automatique ni relâchement global différé :
+    // une chorégraphie musicale prend la main sur les panneaux.
+    void abortQuietly()
+    {
+        stop();
+        fLastIsFinished = true;
+        fStopDelayMS = 0;
+        dispatch().setSequenceActive(false);
+    }
+
     virtual void animate() override
     {
         bool wasFinished = fLastIsFinished;   // state from previous frame
@@ -412,7 +429,10 @@ public:
             // (:OP00, :OP01–:OP20, :OP$…, $720) : ils restent ouverts jusqu'à :CL00. Avant, ils se
             // refermaient ~250 ms après l'ouverture (revue, problème 4). Une séquence interrompue
             // par une autre commande est toujours refermée.
-            bool leftPanelsOpen = completed() && (lastServoSetMask() & ALL_DOME_PANELS_MASK) != 0;
+            // lastServoSetMask() est déjà filtré par le groupe de la séquence : qu'il vise des types
+            // de panneaux ($…) ou des panneaux précis (PANEL_GROUP_n de :OP01–:OP20), il suffit
+            // qu'un servo y ait été ouvert.
+            bool leftPanelsOpen = completed() && lastServoSetMask() != 0;
             if (!leftPanelsOpen)
                 dispatch().moveServosTo(ALL_DOME_PANELS_MASK, 125, 0.0);
             dispatch().setSequenceActive(false);
@@ -548,6 +568,7 @@ bool numberparams(const char *cmd, uint8_t &argcount, int32_t *args, uint8_t max
 #include "MarcduinoSequence.h"
 #include "MarcduinoPanel.h"
 #include "MarcduinoPSI.h"
+#include "MarcduinoMusic.h"
 
 ////////////////////////////////
 // Diagnostic (#APSTAT)

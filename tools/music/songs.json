@@ -1,0 +1,249 @@
+{
+  "_aide": [
+    "mu : numéro de la commande :MUnn envoyée par le Kyber (01–98)",
+    "file : nom exact du MP3 dans mp3/ (le fichier joué par le Kyber)",
+    "title : titre affiché sur la logic arrière (majuscules, sans accents)",
+    "offset_ms : > 0 retarde la chorégraphie si le Kyber démarre le son en retard",
+    "enabled : false pour exclure une chanson du firmware"
+  ],
+  "songs": [
+    {
+      "mu": 1,
+      "file": "0176-cantinaR2.mp3",
+      "title": "Cantina R2",
+      "offset_ms": 0,
+      "enabled": true
+    },
+    {
+      "mu": 2,
+      "file": "0177-mainthemeR2.mp3",
+      "title": "Main Theme R2",
+      "offset_ms": 0,
+      "enabled": true
+    },
+    {
+      "mu": 3,
+      "file": "0178-VaderR2.mp3",
+      "title": "Vader R2",
+      "offset_ms": 0,
+      "enabled": true
+    },
+    {
+      "mu": 4,
+      "file": "0179-menoumR2.mp3",
+      "title": "Menoum R2",
+      "offset_ms": 0,
+      "enabled": true
+    },
+    {
+      "mu": 5,
+      "file": "0180-mus-5.mp3",
+      "title": "Mus 5",
+      "offset_ms": 0,
+      "enabled": true
+    },
+    {
+      "mu": 6,
+      "file": "0181-stayingaliveR2.mp3",
+      "title": "Staying Alive",
+      "offset_ms": 0,
+      "enabled": true
+    },
+    {
+      "mu": 7,
+      "file": "0182-ImperielMarch.mp3",
+      "title": "Imperial March",
+      "offset_ms": 0,
+      "enabled": true
+    },
+    {
+      "mu": 8,
+      "file": "0183-ThromeRoom.mp3",
+      "title": "Throne Room",
+      "offset_ms": 0,
+      "enabled": true
+    },
+    {
+      "mu": 9,
+      "file": "0184-MainTheme.mp3",
+      "title": "Star Wars",
+      "offset_ms": 0,
+      "enabled": true
+    },
+    {
+      "mu": 10,
+      "file": "0185-304.mp3",
+      "title": "304",
+      "offset_ms": 0,
+      "enabled": true
+    },
+    {
+      "mu": 11,
+      "file": "0186-Thunderstruck.mp3",
+      "title": "Thunderstruck",
+      "offset_ms": 0,
+      "enabled": true
+    },
+    {
+      "mu": 12,
+      "file": "0187-BootScootinBoogie.mp3",
+      "title": "Boot Scootin Boogie",
+      "offset_ms": 0,
+      "enabled": true
+    },
+    {
+      "mu": 13,
+      "file": "0188-Caramelle.mp3",
+      "title": "Caramelle",
+      "offset_ms": 0,
+      "enabled": true
+    },
+    {
+      "mu": 14,
+      "file": "0189-UpsideDown.mp3",
+      "title": "Upside Down",
+      "offset_ms": 0,
+      "enabled": true
+    },
+    {
+      "mu": 15,
+      "file": "0190-Emotion.mp3",
+      "title": "Emotion",
+      "offset_ms": 0,
+      "enabled": true
+    },
+    {
+      "mu": 16,
+      "file": "0191-FastCarsSuperstars.mp3",
+      "title": "Fast Cars Superstars",
+      "offset_ms": 0,
+      "enabled": true
+    },
+    {
+      "mu": 17,
+      "file": "0192-DoubleDutchBus.mp3",
+      "title": "Double Dutch Bus",
+      "offset_ms": 0,
+      "enabled": true
+    },
+    {
+      "mu": 18,
+      "file": "0193-Insomnia.mp3",
+      "title": "Insomnia",
+      "offset_ms": 0,
+      "enabled": true
+    },
+    {
+      "mu": 19,
+      "file": "0194-RingOfFire.mp3",
+      "title": "Ring of Fire",
+      "offset_ms": 0,
+      "enabled": true
+    },
+    {
+      "mu": 20,
+      "file": "0195-IsisBillieJean.mp3",
+      "title": "Billie Jean",
+      "offset_ms": 0,
+      "enabled": true
+    },
+    {
+      "mu": 21,
+      "file": "0196-Sandstorm.mp3",
+      "title": "Sandstorm",
+      "offset_ms": 0,
+      "enabled": true
+    },
+    {
+      "mu": 22,
+      "file": "0197-PumpUpTheJam.mp3",
+      "title": "Pump Up The Jam",
+      "offset_ms": 0,
+      "enabled": true
+    },
+    {
+      "mu": 23,
+      "file": "0198-BlackBetty.mp3",
+      "title": "Black Betty",
+      "offset_ms": 0,
+      "enabled": true
+    },
+    {
+      "mu": 24,
+      "file": "0199-Satisfaction.mp3",
+      "title": "Satisfaction",
+      "offset_ms": 0,
+      "enabled": true
+    },
+    {
+      "mu": 25,
+      "file": "0200-SwingRave.mp3",
+      "title": "Swing Rave",
+      "offset_ms": 0,
+      "enabled": true
+    },
+    {
+      "mu": 26,
+      "file": "0201-TakeMeUp.mp3",
+      "title": "Take Me Up",
+      "offset_ms": 0,
+      "enabled": true
+    },
+    {
+      "mu": 27,
+      "file": "0202-TheGitUp.mp3",
+      "title": "The Git Up",
+      "offset_ms": 0,
+      "enabled": true
+    },
+    {
+      "mu": 28,
+      "file": "0203-Blade.mp3",
+      "title": "Blade",
+      "offset_ms": 0,
+      "enabled": true
+    },
+    {
+      "mu": 29,
+      "file": "0204-BREATHE.mp3",
+      "title": "Breathe",
+      "offset_ms": 0,
+      "enabled": true
+    },
+    {
+      "mu": 30,
+      "file": "0205-UpToNoGood.mp3",
+      "title": "Up To No Good",
+      "offset_ms": 0,
+      "enabled": true
+    },
+    {
+      "mu": 31,
+      "file": "0206-WeLikeToParty.mp3",
+      "title": "We Like To Party",
+      "offset_ms": 0,
+      "enabled": true
+    },
+    {
+      "mu": 32,
+      "file": "0207-ZombieNation.mp3",
+      "title": "Zombie Nation",
+      "offset_ms": 0,
+      "enabled": true
+    },
+    {
+      "mu": 33,
+      "file": "0208-9to5.mp3",
+      "title": "9 to 5",
+      "offset_ms": 0,
+      "enabled": true
+    },
+    {
+      "mu": 34,
+      "file": "0254-UniversalPicturesMinions.mp3",
+      "title": "Minions",
+      "offset_ms": 0,
+      "enabled": true
+    }
+  ]
+}

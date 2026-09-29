@@ -1,0 +1,777 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chorégraphies R2</title>
+<style>
+:root {
+  --bg: #f4f5f7; --panel: #ffffff; --ink: #1b1f24; --muted: #5d6673; --line: #d5d9df;
+  --dome: #e3e6ea; --edge: #8b939e; --closed: #c7ccd3; --open: #2563eb; --accent: #2563eb; --led-off: #1d2127;
+  --select: #f59e0b;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1116; --panel: #161b22; --ink: #e6e9ee; --muted: #8b949e; --line: #2a313b;
+    --dome: #1f252d; --edge: #5b6470; --closed: #343c47; --open: #60a5fa; --accent: #60a5fa; --led-off: #0b0d10;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1116; --panel: #161b22; --ink: #e6e9ee; --muted: #8b949e; --line: #2a313b;
+  --dome: #1f252d; --edge: #5b6470; --closed: #343c47; --open: #60a5fa; --accent: #60a5fa; --led-off: #0b0d10;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink);
+  font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+main { max-width: 1200px; margin: 0 auto; padding: 16px; }
+h1 { font-size: 20px; margin: 4px 0 12px; }
+.bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 8px; }
+select, button { font: inherit; color: var(--ink); background: var(--panel); border: 1px solid var(--line);
+  border-radius: 8px; padding: 6px 10px; max-width: 100%; cursor: pointer; }
+button[aria-pressed="true"] { background: var(--accent); color: #fff; border-color: var(--accent); }
+audio { width: 100%; margin: 6px 0 10px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px; min-width: 0; }
+.grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+@media (min-width: 700px) { .grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+@media (min-width: 900px) { .state { columns: 3; column-gap: 28px; } }
+svg { width: 100%; height: auto; display: block; touch-action: none; }
+canvas { width: 100%; display: block; }
+.meta { color: var(--muted); font-size: 13px; }
+.state { font: 12px/1.7 ui-monospace, Consolas, monospace; white-space: pre-wrap; }
+.state > span { break-inside: avoid; display: block; }
+.legend { font-size: 13px; color: var(--muted); margin-top: 10px; }
+.help { font-size: 13px; margin-top: 10px; padding: 10px; border-radius: 8px; border: 1px dashed var(--select); display: none; }
+body.editing .help { display: block; }
+body.editing svg [data-id] { cursor: grab; }
+.lbl { font: 600 11px system-ui, sans-serif; fill: var(--muted); }
+.plbl { font: 600 11px system-ui, sans-serif; fill: var(--ink); pointer-events: none; }
+.sel { stroke: var(--select) !important; stroke-width: 2.5 !important; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Chorégraphies R2 — prévisualisation</h1>
+  <div class="bar">
+    <select id="song"></select>
+    <span class="meta" id="info"></span>
+  </div>
+  <audio id="audio" controls preload="auto"></audio>
+  <div class="bar">
+    <button id="edit" aria-pressed="false">Mode édition</button>
+    <button id="save">Enregistrer la disposition</button>
+    <button id="reset">Réinitialiser</button>
+    <span class="meta" id="layoutInfo"></span>
+  </div>
+  <div class="grid">
+    <div class="card"><svg id="dome" viewBox="0 0 460 700" role="img" aria-label="Vue de dessus du dôme"></svg></div>
+    <div class="card"><canvas id="feet" width="460" height="700" role="img" aria-label="Jambes et face de R2, vues de face"></canvas></div>
+  </div>
+  <div class="card" style="margin-top:12px">
+    <div class="state" id="state"></div>
+    <div class="help" id="help">
+      <b>Mode édition</b><br>
+      Glisser : déplacer (les panneaux glissent le long de leur anneau).<br>
+      Molette : largeur d'un panneau, taille d'un holo, d'un PSI ou d'une logic.<br>
+      Maj + molette : épaisseur d'un panneau.<br>
+      « Enregistrer la disposition » télécharge <code>layout.json</code> : déposez-le dans
+      <code>tools/music/</code> pour les prochaines générations. Les modifications restent aussi dans ce navigateur.
+      <div id="selInfo" class="meta" style="margin-top:6px"></div>
+    </div>
+    <div class="legend">À gauche, le dôme vu de dessus, l'avant en bas (FLD, FPSI, FHP) : un panneau ouvert se
+      colore et s'écarte ; plus il est clair, plus il est ouvert ; les flèches des holos montrent où ils regardent.
+      À droite, les pieds (R2-Bling) vus de face : chaque jambe a deux hoses de 25 LEDs, de la battery box (en haut)
+      au pied (en bas), et la face a 33 LEDs ; la jambe droite de R2 est donc à gauche. Luminosité des pieds
+      limitée comme sur la carte (2,7 A). Les effets lumineux sont une approximation de ceux du droïde.</div>
+  </div>
+  <div class="card" style="margin-top:12px"><canvas id="timeline" width="960" height="140"></canvas></div>
+  <p class="meta">Page générée par <code>tools/music/build.py</code>. Elle joue les MP3 du dossier <code>mp3/</code> :
+    ouvrez-la depuis ce dossier. Cliquez sur la ligne de temps pour vous déplacer dans la chanson.
+    <code>#mu=11&amp;t=32</code> à la fin de l'adresse ouvre :MU11 figé à 32 s.</p>
+</main>
+<script>
+const SONGS = /*SONGS*/[];
+const FILE_LAYOUT = /*LAYOUT*/null;
+
+const SMALL = 1, MEDIUM = 2, BIG = 4, PIE = 8, TOP = 16, MINI = 32;
+const LOGIC_RGB = ['#9fc7ff', '#ff2a2a', '#ff8a00', '#ffe000', '#2cff5a', '#00e5ff', '#2f6bff', '#9a45ff', '#ff36c8', '#ff8fbf'];
+const HOLO_RGB = ['#ffffff', '#ff2a2a', '#ffe000', '#2cff5a', '#00e5ff', '#2f6bff', '#ff36c8', '#ff8a00', '#9a45ff', '#ffffff'];
+const EFFECT_NAMES = {0: 'normal', 5: 'couleur', 6: 'flash', 7: 'flip-flop', 10: 'arc-en-ciel', 14: 'noir', 22: 'feu', 23: 'balayage'};
+const COLOR_NAMES = ['', 'rouge', 'orange', 'jaune', 'vert', 'cyan', 'bleu', 'violet', 'magenta', 'rose'];
+const HOLO_COLOR_NAME = [null, 1, 3, 4, 5, 6, 8, 2, 7, 0];
+const HOLO_POS = [[0, 1], [0, 0], [0, -1], [-1, 0], [-1, -1], [-1, 1], [1, 0], [1, -1], [1, 1]];
+const HOLO_POS_NAMES = ['bas', 'centre', 'haut', 'gauche', 'haut-gauche', 'bas-gauche', 'droite', 'haut-droite', 'bas-droite'];
+
+// Panneaux du plan : type et canal du Maestro (vérifiés un par un sur le droïde : canal N = P(N+1)).
+// P6 et P13 n'ont pas de servo : dessinés en gris, jamais ouverts.
+const PANELS = {
+  P1: {type: SMALL, ch: 0}, P2: {type: SMALL, ch: 1}, P3: {type: SMALL, ch: 2}, P4: {type: MEDIUM, ch: 3},
+  P5: {type: MEDIUM, ch: 4}, P6: {type: BIG, ch: 5, noServo: true}, P7: {type: PIE, ch: 6}, P8: {type: PIE, ch: 7},
+  P9: {type: PIE, ch: 8}, P10: {type: PIE, ch: 9}, P11: {type: MINI, ch: 10}, P12: {type: MINI, ch: 11},
+  P13: {type: TOP, ch: 12, noServo: true}};
+
+// Disposition par défaut (angles en degrés, 0 = droite, sens horaire, avant en bas).
+// arc : panneau sur un anneau ; disc : panneau rond ; dev : appareil (x, y, échelle)
+const C = [230, 350];
+const DEFAULT_LAYOUT = {
+  P1: {kind: 'arc', a: 54, w: 12, r0: 158, r1: 174}, P2: {kind: 'arc', a: 40, w: 9, r0: 158, r1: 174},
+  P3: {kind: 'arc', a: 26, w: 9, r0: 158, r1: 174}, P4: {kind: 'arc', a: 6, w: 12, r0: 158, r1: 174},
+  P5: {kind: 'arc', a: -45, w: 12, r0: 158, r1: 174}, P6: {kind: 'arc', a: 160, w: 24, r0: 158, r1: 174},
+  P11: {kind: 'arc', a: 133, w: 6, r0: 158, r1: 174}, P12: {kind: 'arc', a: 110, w: 7, r0: 158, r1: 174},
+  P10: {kind: 'arc', a: 0, w: 56, r0: 42, r1: 112}, P9: {kind: 'arc', a: 60, w: 56, r0: 42, r1: 112},
+  P8: {kind: 'arc', a: 120, w: 56, r0: 42, r1: 112}, P7: {kind: 'arc', a: 180, w: 56, r0: 42, r1: 112},
+  S5: {kind: 'arc', a: -60, w: 56, r0: 42, r1: 112, fixed: true},   // secteur du holo du dessus
+  S6: {kind: 'arc', a: -120, w: 56, r0: 42, r1: 112, fixed: true},  // 6e secteur
+  P13: {kind: 'disc', r: 36},
+  FHP: {kind: 'dev', x: 310, y: 548, s: 1}, RHP: {kind: 'dev', x: 208, y: 108, s: 1},
+  THP: {kind: 'dev', x: 290, y: 238, s: 1},
+  FPSI: {kind: 'dev', x: 236, y: 585, s: 1}, RPSI: {kind: 'dev', x: 330, y: 150, s: 1},
+  FLD: {kind: 'dev', x: 92, y: 598, s: 1}, RLD: {kind: 'dev', x: 10, y: 168, s: 1},
+};
+const STORAGE_KEY = 'r2-dome-layout';
+
+function loadLayout() {
+  let stored = null;
+  try { stored = JSON.parse(localStorage.getItem(STORAGE_KEY)); } catch (e) { stored = null; }
+  const base = JSON.parse(JSON.stringify(DEFAULT_LAYOUT));
+  for (const src of [FILE_LAYOUT, stored]) if (src) for (const k in src) if (base[k]) Object.assign(base[k], src[k]);
+  return base;
+}
+let layout = loadLayout();
+function saveLocal() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(layout)); } catch (e) { /* stockage indisponible */ } }
+
+// ---- dessin ---------------------------------------------------------------------------
+const NS = 'http://www.w3.org/2000/svg';
+const svg = document.getElementById('dome');
+function el(tag, attrs, parent = svg) {
+  const e = document.createElementNS(NS, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  parent.appendChild(e);
+  return e;
+}
+function pt(a, r) { const t = a * Math.PI / 180; return [C[0] + Math.cos(t) * r, C[1] + Math.sin(t) * r]; }
+function arcPath(a0, a1, r0, r1) {
+  const [x0, y0] = pt(a0, r1), [x1, y1] = pt(a1, r1), [x2, y2] = pt(a1, r0), [x3, y3] = pt(a0, r0);
+  const big = (a1 - a0) > 180 ? 1 : 0;
+  return `M${x0},${y0} A${r1},${r1} 0 ${big} 1 ${x1},${y1} L${x2},${y2} A${r0},${r0} 0 ${big} 0 ${x3},${y3} Z`;
+}
+
+let els = {};        // id -> {g, shape, label, ...}
+let holoEls = [], psiEls = {}, fld1, fld2, rld, rldText;
+
+function ledGrid(parent, x, y, cols, rows, px) {
+  const cells = [];
+  el('rect', {x: x - 4, y: y - 4, width: cols * px + 8, height: rows * px + 8, rx: 3, fill: '#0f3d2a'}, parent);
+  for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++)
+    cells.push({c, r, e: el('rect', {x: x + c * px + 1, y: y + r * px + 1, width: px - 2, height: px - 2, rx: 1.2, fill: 'var(--led-off)'}, parent)});
+  return {cells, cols, rows};
+}
+
+function build() {
+  svg.textContent = '';
+  els = {};
+  el('circle', {cx: C[0], cy: C[1], r: 180, fill: 'var(--dome)', stroke: 'var(--edge)', 'stroke-width': 2});
+  el('circle', {cx: C[0], cy: C[1], r: 156, fill: 'none', stroke: 'var(--edge)', 'stroke-width': 1});
+  el('circle', {cx: C[0], cy: C[1], r: 116, fill: 'none', stroke: 'var(--edge)', 'stroke-width': 1});
+  // Panneaux et secteurs fixes
+  for (const id in layout) {
+    const L = layout[id];
+    if (L.kind === 'arc') {
+      const g = el('g', {'data-id': id});
+      const shape = el('path', {stroke: 'var(--edge)', 'stroke-width': 1}, g);
+      const label = el('text', {'text-anchor': 'middle', class: L.r0 < 120 ? 'plbl' : 'lbl'}, g);
+      label.textContent = L.fixed ? (id === 'S5' ? '' : '') : id;
+      els[id] = {g, shape, label};
+    } else if (L.kind === 'disc') {
+      const g = el('g', {'data-id': id});
+      const shape = el('circle', {cx: C[0], cy: C[1], stroke: 'var(--edge)', 'stroke-width': 1}, g);
+      const label = el('text', {x: C[0], y: C[1] + 4, 'text-anchor': 'middle', class: 'plbl'}, g);
+      label.textContent = id;
+      els[id] = {g, shape, label};
+    }
+  }
+  // Holos
+  holoEls = ['FHP', 'RHP', 'THP'].map(id => {
+    const g = el('g', {'data-id': id});
+    const ring = el('circle', {cx: 0, cy: 0, r: 20, fill: 'var(--panel)', stroke: 'var(--edge)', 'stroke-width': 1.5}, g);
+    const led = el('circle', {cx: 0, cy: 0, r: 12, fill: 'var(--led-off)'}, g);
+    const arrow = el('line', {x1: 0, y1: 0, x2: 0, y2: 0, stroke: 'var(--ink)', 'stroke-width': 3, 'stroke-linecap': 'round'}, g);
+    el('text', {x: 26, y: 4, class: 'lbl'}, g).textContent = id;
+    els[id] = {g, shape: ring};
+    return {led, arrow};
+  });
+  // PSI
+  for (const [id, n] of [['FPSI', 4], ['RPSI', 5]]) {
+    const g = el('g', {'data-id': id});
+    const ring = el('circle', {cx: 0, cy: 0, r: 20, fill: 'var(--panel)', stroke: 'var(--edge)', 'stroke-width': 1.5}, g);
+    psiEls[n] = el('circle', {cx: 0, cy: 0, r: 14, fill: 'var(--led-off)'}, g);
+    el('text', {x: 26, y: 4, class: 'lbl'}, g).textContent = id;
+    els[id] = {g, shape: ring};
+  }
+  // Logics : FLD = 2 cartes de 9 × 5, RLD = 27 × 4
+  {
+    const g = el('g', {'data-id': 'FLD'});
+    fld1 = ledGrid(g, 0, 0, 9, 5, 7);
+    fld2 = ledGrid(g, 0, 44, 9, 5, 7);
+    el('text', {x: -32, y: 32, class: 'lbl'}, g).textContent = 'FLD';
+    els.FLD = {g, shape: g.firstChild};
+  }
+  {
+    const g = el('g', {'data-id': 'RLD'});
+    rld = ledGrid(g, 0, 0, 27, 4, 6);
+    el('text', {x: 0, y: -10, class: 'lbl'}, g).textContent = 'RLD';
+    const clip = el('clipPath', {id: 'rldclip'}, g);
+    el('rect', {x: 0, y: 0, width: 27 * 6, height: 24}, clip);
+    rldText = el('text', {x: 4, y: 18, fill: '#fff', 'font-size': 16, 'font-weight': 700, 'font-family': 'system-ui',
+      'clip-path': 'url(#rldclip)'}, g);
+    rldText.textContent = song ? song.title : '';
+    els.RLD = {g, shape: g.firstChild};
+  }
+  applyLayout();
+}
+
+function applyLayout() {
+  for (const id in layout) {
+    const L = layout[id], e = els[id];
+    if (!e) continue;
+    if (L.kind === 'arc') {
+      e.shape.setAttribute('d', arcPath(L.a - L.w / 2, L.a + L.w / 2, L.r0, L.r1));
+      if (L.fixed) e.shape.setAttribute('fill', 'var(--dome)');
+      const [lx, ly] = pt(L.a, L.r0 < 120 ? (L.r0 + L.r1) / 2 : L.r1 + 16);
+      e.label.setAttribute('x', lx); e.label.setAttribute('y', ly + 4);
+    } else if (L.kind === 'disc') {
+      e.shape.setAttribute('r', L.r);
+    } else if (L.kind === 'dev') {
+      e.g.setAttribute('transform', `translate(${L.x},${L.y}) scale(${L.s})`);
+    }
+  }
+  markSelection();
+}
+
+// ---- mode édition ---------------------------------------------------------------------
+let editing = false, selected = null, drag = null;
+const editBtn = document.getElementById('edit');
+editBtn.onclick = () => {
+  editing = !editing;
+  editBtn.setAttribute('aria-pressed', editing);
+  document.body.classList.toggle('editing', editing);
+  if (!editing) { selected = null; markSelection(); }
+};
+function svgPoint(evt) {
+  const p = svg.createSVGPoint();
+  p.x = evt.clientX; p.y = evt.clientY;
+  return p.matrixTransform(svg.getScreenCTM().inverse());
+}
+function targetId(evt) {
+  const g = evt.target.closest && evt.target.closest('[data-id]');
+  return g ? g.getAttribute('data-id') : null;
+}
+function markSelection() {
+  for (const id in els) {
+    const s = els[id].shape;
+    if (s && s.classList) s.classList.toggle('sel', id === selected);
+  }
+  const L = selected && layout[selected];
+  const info = document.getElementById('selInfo');
+  if (!L) { info.textContent = 'Cliquez sur un élément.'; return; }
+  const p = PANELS[selected];
+  info.textContent = selected + (p ? ' (canal ' + p.ch + (p.noServo ? ', pas de servo' : '') + ')' : '') + ' — ' +
+    (L.kind === 'arc' ? `angle ${Math.round(L.a)}°, largeur ${L.w.toFixed(1)}°, rayons ${Math.round(L.r0)}–${Math.round(L.r1)}` :
+     L.kind === 'disc' ? `rayon ${Math.round(L.r)}` : `x ${Math.round(L.x)}, y ${Math.round(L.y)}, taille ${L.s.toFixed(2)}`);
+}
+svg.addEventListener('pointerdown', evt => {
+  if (!editing) return;
+  const id = targetId(evt);
+  selected = id; markSelection();
+  if (!id || layout[id].kind === 'disc') return;
+  const p = svgPoint(evt), L = layout[id];
+  drag = {id, dx: L.kind === 'dev' ? p.x - L.x : 0, dy: L.kind === 'dev' ? p.y - L.y : 0,
+          dr: L.kind === 'arc' ? Math.hypot(p.x - C[0], p.y - C[1]) - (L.r0 + L.r1) / 2 : 0};
+  svg.setPointerCapture(evt.pointerId);
+  evt.preventDefault();
+});
+svg.addEventListener('pointermove', evt => {
+  if (!drag) return;
+  const p = svgPoint(evt), L = layout[drag.id];
+  if (L.kind === 'dev') { L.x = p.x - drag.dx; L.y = p.y - drag.dy; }
+  else {
+    L.a = Math.atan2(p.y - C[1], p.x - C[0]) * 180 / Math.PI;
+    const mid = Math.hypot(p.x - C[0], p.y - C[1]) - drag.dr, half = (L.r1 - L.r0) / 2;
+    L.r0 = Math.max(10, mid - half); L.r1 = L.r0 + 2 * half;
+  }
+  applyLayout();
+});
+svg.addEventListener('pointerup', () => { if (drag) { drag = null; saveLocal(); } });
+svg.addEventListener('wheel', evt => {
+  if (!editing) return;
+  const id = targetId(evt) || selected;
+  if (!id) return;
+  evt.preventDefault();
+  selected = id;
+  const L = layout[id], up = evt.deltaY < 0;
+  if (L.kind === 'arc') {
+    if (evt.shiftKey) L.r0 = Math.min(L.r1 - 4, Math.max(10, L.r0 + (up ? -1 : 1)));
+    else L.w = Math.min(120, Math.max(2, L.w + (up ? 0.5 : -0.5)));
+  } else if (L.kind === 'disc') L.r = Math.min(80, Math.max(8, L.r + (up ? 1 : -1)));
+  else L.s = Math.min(3, Math.max(0.3, L.s * (up ? 1.04 : 1 / 1.04)));
+  applyLayout(); saveLocal();
+}, {passive: false});
+
+document.getElementById('save').onclick = () => {
+  const out = {};
+  for (const id in layout) {
+    const L = layout[id], o = {};
+    for (const k in L) if (k !== 'kind' && k !== 'fixed') o[k] = typeof L[k] === 'number' ? Math.round(L[k] * 10) / 10 : L[k];
+    out[id] = o;
+  }
+  const blob = new Blob([JSON.stringify(out, null, 2) + '\n'], {type: 'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = 'layout.json';
+  document.body.appendChild(a); a.click(); a.remove();
+  document.getElementById('layoutInfo').textContent = 'layout.json téléchargé : déposez-le dans tools/music/.';
+};
+document.getElementById('reset').onclick = () => {
+  try { localStorage.removeItem(STORAGE_KEY); } catch (e) { /* stockage indisponible */ }
+  layout = loadLayout(); build();
+  document.getElementById('layoutInfo').textContent = FILE_LAYOUT ? 'Disposition de tools/music/layout.json.' : 'Disposition par défaut.';
+};
+
+// ---- lecture ------------------------------------------------------------------------
+const audio = document.getElementById('audio');
+const sel = document.getElementById('song');
+const tl = document.getElementById('timeline');
+const tctx = tl.getContext('2d');
+let song = null, state = null, idx = 0, lastT = -1;
+
+SONGS.forEach((s, i) => {
+  const o = document.createElement('option');
+  o.value = i; o.textContent = ':MU' + String(s.mu).padStart(2, '0') + ' — ' + s.title;
+  sel.appendChild(o);
+});
+sel.onchange = () => load(+sel.value);
+function css(v) { return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+
+function freshState() {
+  const logic = () => ({effect: 0, color: 0, speed: 0, since: 0});
+  return {
+    logic: {1: logic(), 3: logic(), 4: {effect: 23, color: 1, speed: 0, since: 0}, 5: {effect: 23, color: 3, speed: 0, since: 0}},
+    panels: Object.fromEntries(Object.keys(PANELS).map(id => [id, {from: 0, to: 0, t0: 0, ms: 1}])),
+    holos: [0, 1, 2].map(() => ({from: 1, to: 1, t0: 0, ms: 1, led: 'off', color: 0})),
+  };
+}
+function load(i) {
+  song = SONGS[i];
+  audio.src = encodeURI(song.file);
+  document.getElementById('info').textContent =
+    Math.round(song.tempo) + ' BPM · ' + song.events.length + ' événements · ' + fmt(song.duration);
+  if (rldText) rldText.textContent = song.title;
+  prepareFeet(song);
+  reset();
+}
+function reset() { state = freshState(); idx = 0; lastT = -1; }
+function fmt(ms) { const s = Math.max(0, Math.round(ms / 1000)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
+
+function panelAt(p, t) {
+  const k = Math.min(1, Math.max(0, (t - p.t0) / p.ms));
+  return p.from + (p.to - p.from) * k;
+}
+function applyEvent(e) {
+  if (e.kind === 'panels') {
+    // Un bit par panneau du plan : bit n-1 pour Pn (MP(n) dans le firmware)
+    for (const id in PANELS) if (e.mask & (1 << (+id.slice(1) - 1))) {
+      const p = state.panels[id];
+      p.from = panelAt(p, e.t); p.to = e.pct / 100; p.t0 = e.t; p.ms = e.ms;
+    }
+  } else if (e.kind === 'holo') {
+    for (let h = 0; h < 3; h++) if (e.holo === 3 || e.holo === h) {
+      const s = state.holos[h];
+      s.from = s.to; s.to = e.pos; s.t0 = e.t; s.ms = e.ms;
+    }
+  } else {
+    for (const c of e.cmd.split('\n')) {
+      if (c.startsWith('LE')) {
+        state.logic[+c[2]] = {effect: +c.substr(3, 2), color: +c[5], speed: +c[6], since: e.t};
+      } else if (c.startsWith('HP')) {
+        const who = c[2], fn = +c.substr(4, 2), opt = +(c[6] || 0);
+        for (const h of (who === 'A' ? [0, 1, 2] : [{F: 0, R: 1, T: 2}[who]])) {
+          const s = state.holos[h];
+          if (fn === 5) { s.led = 'solid'; s.color = opt; }
+          else if (fn === 3) { s.led = 'pulse'; s.color = opt; }
+          else if (fn === 6) { s.led = 'rainbow'; }
+          else if (fn === 96) { s.led = 'off'; }
+        }
+      }
+    }
+  }
+}
+function advance(t) {
+  if (t < lastT) reset();
+  while (idx < song.events.length && song.events[idx].t <= t) applyEvent(song.events[idx++]);
+  lastT = t;
+}
+
+// Couleur d'une LED de logic (approximation des effets du LogicEngine)
+function logicColor(l, t, x, y, seed) {
+  const age = t - l.since;
+  const base = LOGIC_RGB[l.color] || LOGIC_RGB[0];
+  const twinkle = ((seed * 7919 + Math.floor(t / 180) * 104729) % 97) / 97;
+  switch (l.effect) {
+    case 14: return null;
+    case 5: return twinkle > 0.25 ? base : null;
+    case 6: return (Math.floor(age / (250 * (l.speed + 1))) % 2) ? base : (twinkle > 0.6 ? base : null);
+    case 7: return ((Math.floor(age / (200 * (l.speed + 1))) + (x < 0.5 ? 0 : 1)) % 2) ? base : null;
+    case 10: return 'hsl(' + ((age / (200 * (l.speed + 1)) * 28 + x * 90) % 360) + ',100%,55%)';
+    case 22: return 'hsl(' + (5 + 40 * twinkle * (1 - y)) + ',100%,' + (30 + 30 * twinkle) + '%)';
+    case 23: return base;
+    case 0: return twinkle > 0.66 ? '#ffffff' : twinkle > 0.2 ? '#2f6bff' : null;
+    default: return base;
+  }
+}
+function paintGrid(g, l, t, text) {
+  const off = css('--led-off');
+  for (const cell of g.cells) {
+    const col = text ? null : logicColor(l, t, cell.c / g.cols, cell.r / g.rows, cell.c * 31 + cell.r * 17 + g.cols);
+    cell.e.setAttribute('fill', col || off);
+  }
+}
+
+function draw(t) {
+  const openCol = css('--open'), closedCol = css('--closed');
+  for (const id in PANELS) {
+    const e = els[id], L = layout[id];
+    if (!e) continue;
+    const open = PANELS[id].noServo ? 0 : panelAt(state.panels[id], t);
+    if (PANELS[id].noServo) { e.shape.setAttribute('fill', 'var(--dome)'); e.shape.setAttribute('stroke-dasharray', '3 3'); continue; }
+    e.shape.setAttribute('fill', open > 0.02 ? `color-mix(in srgb, ${openCol} ${Math.round(35 + open * 65)}%, ${closedCol})` : closedCol);
+    if (L.kind === 'arc') {
+      const d = open * 9, a = L.a * Math.PI / 180;
+      e.g.setAttribute('transform', `translate(${Math.cos(a) * d},${Math.sin(a) * d})`);
+    } else {
+      e.g.setAttribute('transform', `translate(${C[0]},${C[1]}) scale(${1 + open * 0.18}) translate(${-C[0]},${-C[1]})`);
+    }
+  }
+  state.holos.forEach((h, i) => {
+    const e = holoEls[i];
+    const k = Math.min(1, Math.max(0, (t - h.t0) / h.ms));
+    const a = HOLO_POS[h.from], b = HOLO_POS[h.to];
+    const dx = a[0] + (b[0] - a[0]) * k, dy = a[1] + (b[1] - a[1]) * k;
+    e.arrow.setAttribute('x2', dx * 18); e.arrow.setAttribute('y2', dy * 18);
+    let col = css('--led-off');
+    if (h.led === 'solid') col = HOLO_RGB[h.color];
+    else if (h.led === 'pulse') col = `color-mix(in srgb, ${HOLO_RGB[h.color]} ${Math.round(40 + 60 * (0.5 + 0.5 * Math.sin(t / 350)))}%, black)`;
+    else if (h.led === 'rainbow') col = 'hsl(' + (t / 8 % 360) + ',100%,55%)';
+    e.led.setAttribute('fill', col);
+  });
+  for (const n of [4, 5]) psiEls[n].setAttribute('fill', logicColor(state.logic[n], t, 0.5, 0.5, n * 13) || css('--led-off'));
+  paintGrid(fld1, state.logic[1], t, false);
+  paintGrid(fld2, state.logic[1], t, false);
+  // Titre : 2 s d'écran noir puis défilement de droite à gauche, 1 pixel toutes les 50 ms
+  const titleOn = t < song.titleMs;
+  paintGrid(rld, state.logic[3], t, titleOn);
+  if (titleOn && t > 2000) {
+    rldText.setAttribute('x', 27 * 6 - (t - 2000) / 50 * 6);
+    rldText.setAttribute('visibility', 'visible');
+  } else {
+    rldText.setAttribute('visibility', 'hidden');
+  }
+}
+
+function drawTimeline(t) {
+  const W = tl.width, H = tl.height, D = song.duration;
+  tctx.clearRect(0, 0, W, H);
+  const rows = {cmd: 30, panels: 58, holo: 86, feet: 114};
+  tctx.fillStyle = css('--muted'); tctx.font = '11px system-ui';
+  tctx.fillText('lumières', 2, rows.cmd + 4); tctx.fillText('panneaux', 2, rows.panels + 4); tctx.fillText('holos', 2, rows.holo + 4);
+  tctx.fillText('pieds', 2, rows.feet + 4);
+  const x0 = 62, w = W - 72;
+  for (const e of song.events) {
+    tctx.fillStyle = e.kind === 'cmd' ? '#f59e0b' : e.kind === 'panels' ? '#3b82f6' : '#10b981';
+    tctx.fillRect(x0 + w * e.t / D, rows[e.kind] - 6, 1.5, 12);
+  }
+  // Pieds : une bande colorée par effet des jambes
+  const legs = feetData.legs;
+  for (let k = 0; k < legs.length; k++) {
+    const e = legs[k], t1 = k + 1 < legs.length ? legs[k + 1].t : D;
+    tctx.fillStyle = FEET_TL_COLOR[e.fx] || '#a855f7';
+    tctx.fillRect(x0 + w * e.t / D, rows.feet - 6, Math.max(1, w * (t1 - e.t) / D - 1), 12);
+  }
+  tctx.fillStyle = css('--accent');
+  tctx.fillRect(x0 + w * Math.min(t, D) / D, 8, 2, H - 16);
+}
+
+function describeLogic(l) {
+  return (EFFECT_NAMES[l.effect] || ('effet ' + l.effect)) + (l.color ? ' ' + COLOR_NAMES[l.color] : '');
+}
+function stateText(t) {
+  const L = state.logic;
+  const open = Object.keys(PANELS).filter(id => panelAt(state.panels[id], t) > 0.05)
+    .map(id => id + ' ' + Math.round(panelAt(state.panels[id], t) * 100) + ' %').join(', ') || 'fermés';
+  const cur = (song.motifs || []).filter(m => m.t <= t).pop();
+  const motif = cur ? cur.motif + (cur.label != null ? ' (partie ' + 'ABCDEFGHIJKL'[cur.label] + ')' : '') +
+    ' · niveau ' + cur.tier : '—';
+  const holos = state.holos.map((h, i) => ['FHP', 'RHP', 'THP'][i] + ' ' + HOLO_POS_NAMES[h.to] + ', ' +
+    (h.led === 'off' ? 'éteint' : h.led === 'rainbow' ? 'arc-en-ciel' :
+     (h.led === 'pulse' ? 'pulsation ' : '') + (COLOR_NAMES[HOLO_COLOR_NAME[h.color]] || 'blanc')));
+  return fmt(t) + ' / ' + fmt(song.duration) + (t < song.titleMs ? '   titre sur la logic arrière' : '') + '\n\n' +
+    'FLD   ' + describeLogic(L[1]) + '\nRLD   ' + (t < song.titleMs ? 'titre' : describeLogic(L[3])) + '\n' +
+    'FPSI  ' + describeLogic(L[4]) + '\nRPSI  ' + describeLogic(L[5]) + '\n\n' +
+    'Motif : ' + motif + '\nPanneaux : ' + open + '\n\n' + holos.join('\n') + '\n\n' + feetText(t);
+}
+
+// ---- pieds (R2-Bling) -------------------------------------------------------------------
+// Imitation des effets que R2-Bling dessinera : référence pour le code de la carte.
+// Jambe : 2 hoses de 25 niveaux, 0 = battery box, 24 = pied. Face : 33 LEDs, 0 = gauche du public.
+const FEET_NAMES = {
+  breathe: 'respiration', sparkle: 'scintillement', morse: 'morse', wave: 'onde', bounce: 'rebond',
+  vu: 'vumètre', strobe: 'stroboscope', pingpong: 'ping-pong', cross: 'hoses croisés', fill: 'montée',
+  freeze: 'suspense', black: 'noir', bolt: 'éclair', fire: 'feu', disco: 'disco', white: 'flash blanc',
+  bow: 'salut', idle: 'repos', sweep: 'balayage', balance: 'balance', heart: 'battement'};
+const FEET_FRONT_NAMES = Object.assign({}, FEET_NAMES, {vu: 'vumètre centré'});
+const FEET_TL_COLOR = {
+  breathe: '#64748b', sparkle: '#94a3b8', morse: '#78716c', wave: '#0ea5e9', bounce: '#06b6d4', vu: '#22c55e',
+  strobe: '#eab308', pingpong: '#8b5cf6', cross: '#6366f1', fill: '#f97316', freeze: '#fb923c', black: '#111827',
+  bolt: '#f8fafc', fire: '#ef4444', disco: '#ec4899', white: '#f8fafc', bow: '#a3a3a3', idle: '#1e3a8a'};
+const FEET_RGB = [[255, 255, 255], [255, 0, 0], [255, 110, 0], [255, 220, 0], [0, 255, 40], [0, 220, 255],
+  [0, 40, 255], [140, 0, 255], [255, 0, 180], [255, 90, 150]];
+const KICK = 1, SNARE = 2, DOWN = 4;
+const LED_MAX_MA = 2700, MA_PER_CHANNEL = 20;
+let feetData = {legs: [], front: [], beats: [], hits: []};
+
+function prepareFeet(s) {
+  const f = s.feet || [];
+  feetData = {legs: f.filter(e => e.kind === 'legs'), front: f.filter(e => e.kind === 'front'),
+              beats: f.filter(e => e.kind === 'beat'), hits: f.filter(e => e.kind === 'hit')};
+}
+function lastAt(arr, t) {           // dernier élément avec e.t <= t (recherche dichotomique)
+  let lo = 0, hi = arr.length - 1, r = -1;
+  while (lo <= hi) { const m = (lo + hi) >> 1; if (arr[m].t <= t) { r = m; lo = m + 1; } else hi = m - 1; }
+  return r;
+}
+function hash3(a, b, c) {
+  let h = (a * 374761393 + b * 668265263 + c * 2147483647) | 0;
+  h = Math.imul(h ^ (h >>> 13), 1274126177);
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+}
+function mix(a, b, k) { return [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k, a[2] + (b[2] - a[2]) * k]; }
+function scale(c, k) { return [c[0] * k, c[1] * k, c[2] * k]; }
+function fireColor(h) {             // 0 noir → rouge → orange → jaune
+  h = Math.max(0, Math.min(1, h));
+  return h < 0.4 ? [h / 0.4 * 255, 0, 0] : h < 0.8 ? [255, (h - 0.4) / 0.4 * 160, 0] : [255, 160 + (h - 0.8) / 0.2 * 90, (h - 0.8) / 0.2 * 60];
+}
+function hueColor(h) { const k = n => { const x = (n + h / 60) % 6; return 255 * (1 - Math.max(0, Math.min(1, Math.min(x, 4 - x)))); }; return [k(5), k(3), k(1)]; }
+
+function beatCtx(t) {
+  const B = feetData.beats, i = lastAt(B, t);
+  if (i < 0) return {i: 0, tb: 0, bm: 500, frac: 0, bass: 0, high: 0, bal: 0, flags: 0, prevKick: -1e9};
+  const b = B[i], bn = i + 1 < B.length ? B[i + 1].t : b.t + (i > 0 ? b.t - B[i - 1].t : 500);
+  let prevKick = -1e9;               // dernière grosse caisse (ou premier temps) jusqu'à t
+  for (let j = i; j >= 0 && j > i - 4; j--) if (B[j].flags & (KICK | DOWN)) { prevKick = B[j].t; break; }
+  return {i, tb: b.t, bm: bn - b.t, frac: Math.min(1, (t - b.t) / (bn - b.t)), bass: b.bass / 255,
+          high: b.high / 255, bal: b.bal / 127, flags: b.flags, prevKick};
+}
+function fxAt(list, t) { const k = lastAt(list, t); return k < 0 ? {fx: 'idle', col: 0, col2: 0, p: 0, t: 0} : list[k]; }
+
+// Couleur d'un niveau de hose (leg 0 = gauche de R2, 1 = droite ; hose 0 ou 1 ; lvl 0–24)
+function legPixel(e, B, t, leg, hose, lvl) {
+  const c1 = FEET_RGB[e.col], c2 = FEET_RGB[e.col2], age = t - e.t, x = lvl / 24;
+  const tail = (pos, len) => { const d = pos - lvl; return d >= 0 && d < len ? 1 - d / len : 0; };
+  switch (e.fx) {
+    case 'breathe': {
+      const ph = ((B.i % 4) + B.frac) / 4, k = 0.12 + 0.88 * (0.5 - 0.5 * Math.cos(2 * Math.PI * ph));
+      return scale(mix(c1, c2, x * 0.4), k);
+    }
+    case 'sparkle': {
+      const on = hash3(leg * 2 + hose, lvl, Math.floor(t / 90)) < 0.03 + 0.2 * B.high;
+      return on ? mix(c1, [255, 255, 255], 0.5) : scale(c1, 0.07);
+    }
+    case 'morse': {
+      const H = feetData.hits, k = lastAt(H, t);
+      if (k < 0) return scale(c1, 0.05);
+      const long = k + 1 < H.length ? H[k + 1].t - H[k].t > B.bm * 0.75 : true;
+      const d = Math.exp(-(t - H[k].t) / (long ? 380 : 110)) * H[k].strength / 255;
+      return scale(mix(c1, [255, 255, 255], d * 0.3), 0.05 + 0.95 * d);
+    }
+    case 'wave': {
+      const pos = (t - B.prevKick) / (0.7 * B.bm) * 24, k = tail(pos, 6);
+      return k > 0 ? mix(scale(c1, k), [255, 255, 255], k > 0.8 ? 0.5 : 0) : scale(c1, 0.08);
+    }
+    case 'bounce': {
+      const pos = B.i % 2 === 0 ? B.frac * 24 : (1 - B.frac) * 24;
+      const d = Math.abs(pos - lvl), k = d < 4 ? 1 - d / 4 : 0;
+      return k > 0 ? mix(c1, c2, 1 - k) : scale(c1, 0.06);
+    }
+    case 'vu': {
+      const bass = B.flags & KICK ? Math.max(B.bass, 0.85) : B.bass;
+      const level = bass * 25 * (1 - 0.6 * B.frac), from = 24 - lvl;
+      return from < level ? (from + 1 >= level ? [255, 255, 255] : mix(c1, c2, from / 25)) : [0, 0, 0];
+    }
+    case 'strobe': {
+      const dt = t - B.tb, on = dt < 60 || (B.high > 0.6 && Math.abs(dt - B.bm / 2) < 30);
+      return on ? (B.flags & DOWN ? [255, 255, 255] : c1) : [0, 0, 0];
+    }
+    case 'pingpong': return (B.i % 2) === leg ? scale(c1, Math.pow(1 - B.frac, 1.5)) : scale(c2, 0.05);
+    case 'cross': {
+      const pos = hose === 0 ? B.frac * 24 : (1 - B.frac) * 24;
+      const d = hose === 0 ? pos - lvl : lvl - pos, k = d >= 0 && d < 5 ? 1 - d / 5 : 0;
+      return k > 0 ? scale(hose ? c2 : c1, k) : scale(c1, 0.05);
+    }
+    case 'fill': {
+      const k = Math.min(1, age / Math.max(1, e.p)), from = 24 - lvl;
+      const flick = 0.65 + 0.35 * Math.sin(age * (0.004 + 0.03 * k) + lvl);
+      return from < k * 25 ? scale(mix(c1, [255, 255, 255], from > k * 25 - 1.5 ? 0.6 : 0), flick) : [0, 0, 0];
+    }
+    case 'freeze': return 24 - lvl < 12.5 ? scale(c1, 0.8 + 0.2 * hash3(lvl, hose, Math.floor(t / 70))) : [0, 0, 0];
+    case 'black': return [0, 0, 0];
+    case 'bolt': {
+      if (age < e.p) return lvl <= age / e.p * 24 ? [255, 255, 255] : [0, 0, 0];
+      return scale(mix([255, 255, 255], c2, Math.min(1, (age - e.p) / 300)), Math.max(0, 1 - (age - e.p) / 600));
+    }
+    case 'fire': {
+      const h = Math.pow(x, 1.3) * (0.55 + 0.45 * hash3(lvl, hose + leg * 2, Math.floor(t / 60)));
+      return fireColor(h * 1.15);
+    }
+    case 'disco': {
+      if (hash3(lvl, leg * 2 + hose, Math.floor(t / 70)) < 0.04) return [255, 255, 255];
+      const hole = Math.abs(((t / 12) % 40) - lvl - hose * 6) < 2;
+      return hole ? [0, 0, 0] : hueColor((t / 4 + lvl * 14 + hose * 90 + leg * 180) % 360);
+    }
+    case 'white': return scale([255, 255, 255], Math.exp(-age / Math.max(50, e.p * 0.4)));
+    case 'bow': {
+      const k = Math.min(1, age / Math.max(1, e.p));
+      return lvl < (1 - k) * 25 ? scale(c1, 0.8 * (1 - k * 0.5)) : [0, 0, 0];
+    }
+    default: {                       // repos : plasma bleu qui respire (approximation de POWERFLOW)
+      const b = 0.5 + 0.5 * Math.sin(t / 3000 * 2 * Math.PI);
+      return [1, 20 + 10 * (b - 0.5) * 2, 96 + 48 * (b - 0.5) * 2].map(v => v * (0.8 + 0.2 * hash3(lvl, hose, Math.floor(t / 200))));
+    }
+  }
+}
+const STEREO_FX = new Set(['breathe', 'sparkle', 'morse', 'wave', 'bounce', 'vu', 'strobe', 'cross']);
+
+// Couleur d'une LED de la face (x 0–32, 0 = gauche du public)
+function frontPixel(e, B, t, x) {
+  const c1 = FEET_RGB[e.col], c2 = FEET_RGB[e.col2], age = t - e.t, dc = Math.abs(x - 16);
+  switch (e.fx) {
+    case 'vu': {
+      const bass = B.flags & KICK ? Math.max(B.bass, 0.85) : B.bass, w = bass * 16.5 * (1 - 0.5 * B.frac);
+      return dc < w ? (dc + 1 >= w ? [255, 255, 255] : mix(c1, c2, dc / 16)) : [0, 0, 0];
+    }
+    case 'sweep': {
+      const ph = ((B.i % 2) + B.frac) / 2, pos = ph < 0.5 ? ph * 2 * 32 : (1 - (ph - 0.5) * 2) * 32;
+      const d = Math.abs(pos - x), k = d < 5 ? 1 - d / 5 : 0;
+      return k > 0 ? mix(scale(c1, k), [255, 255, 255], k > 0.85 ? 0.6 : 0) : scale(c2, 0.04);
+    }
+    case 'balance': {
+      const center = 16 + B.bal * 14, d = Math.abs(x - center);
+      return d < 7 ? scale(mix(c1, c2, d / 7), (0.3 + 0.7 * B.bass) * (1 - d / 8)) : [0, 0, 0];
+    }
+    case 'heart': {
+      const dt = t - B.prevKick, k = Math.exp(-Math.pow(dt / 60, 2)) + 0.7 * Math.exp(-Math.pow((dt - 180) / 60, 2));
+      return dc < 5 ? mix(scale(c1, 0.06), [255, 0, 0], Math.min(1, k) * (1 - dc / 6)) : scale(c1, 0.06);
+    }
+    case 'breathe': {
+      const ph = ((B.i % 4) + B.frac) / 4;
+      return scale(mix(c1, c2, dc / 16 * 0.5), 0.12 + 0.88 * (0.5 - 0.5 * Math.cos(2 * Math.PI * ph)));
+    }
+    case 'sparkle': return hash3(x, 7, Math.floor(t / 90)) < 0.03 + 0.2 * B.high ? mix(c1, [255, 255, 255], 0.5) : scale(c1, 0.07);
+    case 'fill': { const k = Math.min(1, age / Math.max(1, e.p)); return dc < k * 16.5 ? scale(c1, 0.7 + 0.3 * Math.sin(age * 0.02)) : [0, 0, 0]; }
+    case 'freeze': return dc < 8 ? scale(c1, 0.85) : [0, 0, 0];
+    case 'black': return [0, 0, 0];
+    case 'fire': return fireColor((0.45 + 0.55 * hash3(x, 3, Math.floor(t / 60))) * 0.9);
+    case 'disco': return hash3(x, 9, Math.floor(t / 60)) < 0.06 ? [255, 255, 255] : hueColor((t / 2 + x * 22) % 360);
+    case 'white': return scale([255, 255, 255], Math.exp(-age / Math.max(50, e.p * 0.4)));
+    case 'bow': { const k = Math.min(1, age / Math.max(1, e.p)); return dc < (1 - k) * 16.5 ? scale(c1, 0.8) : [0, 0, 0]; }
+    default: {                       // repos : îlots cyan sur fond bleu (approximation de LIFEFLOW, 50 %)
+      const n = 0.5 + 0.5 * Math.sin(x * 0.7 + t / 900) * Math.sin(x * 0.23 - t / 1400);
+      return scale(mix([0, 30, 140], [0, 200, 255], n > 0.7 ? (n - 0.7) / 0.3 : 0), 0.5);
+    }
+  }
+}
+
+const feetCanvas = document.getElementById('feet'), fctx = feetCanvas.getContext('2d');
+function feetFrame(t) {
+  const B = beatCtx(t), eL = fxAt(feetData.legs, t), eF = fxAt(feetData.front, t);
+  // leds[leg][hose][lvl], front[x]
+  const legs = [0, 1].map(leg => [0, 1].map(hose => Array.from({length: 25}, (_, lvl) => {
+    let c = legPixel(eL, B, t, leg, hose, lvl);
+    if (STEREO_FX.has(eL.fx) && B.bal) {
+      // Son à droite du public = jambe gauche de R2 plus forte
+      const g = leg === 0 ? 1 - Math.max(0, -B.bal) * 0.7 : 1 - Math.max(0, B.bal) * 0.7;
+      c = scale(c, g);
+    }
+    return c;
+  })));
+  const front = Array.from({length: 33}, (_, x) => frontPixel(eF, B, t, x));
+  // Limite de courant, comme FastLED sur la carte
+  let ma = 0;
+  const add = c => { ma += (c[0] + c[1] + c[2]) / 255 * MA_PER_CHANNEL; };
+  legs.forEach(l => l.forEach(h => h.forEach(add))); front.forEach(add);
+  const k = ma > LED_MAX_MA ? LED_MAX_MA / ma : 1;
+  return {legs, front, ma: Math.round(ma * k), k, eL, eF};
+}
+function drawFeet(t) {
+  const F = feetFrame(t), W = feetCanvas.width, H = feetCanvas.height;
+  fctx.clearRect(0, 0, W, H);
+  const off = css('--led-off'), ink = css('--muted');
+  const rgb = c => `rgb(${c.map(v => Math.round(Math.min(255, v * F.k))).join(',')})`;
+  const dot = (x, y, r, c) => {
+    const lit = c[0] + c[1] + c[2] > 6;
+    fctx.fillStyle = lit ? rgb(c) : off;
+    fctx.beginPath(); fctx.arc(x, y, r, 0, 2 * Math.PI); fctx.fill();
+  };
+  fctx.font = '13px system-ui'; fctx.fillStyle = ink; fctx.textAlign = 'center';
+  // Vue de face : la jambe droite de R2 (1) à gauche de l'image
+  const top = 92, step = 21.5;
+  [[1, 50, 'Jambe droite'], [0, 410, 'Jambe gauche']].forEach(([leg, cx, name]) => {
+    fctx.fillStyle = ink; fctx.fillText(name, cx, 40);
+    fctx.fillText('battery box', cx, 62);
+    fctx.fillText('pied', cx, top + 24 * step + 30);
+    for (let hose = 0; hose < 2; hose++) for (let lvl = 0; lvl < 25; lvl++)
+      dot(cx - 13 + hose * 26, top + lvl * step, 7, F.legs[leg][hose][lvl]);
+  });
+  fctx.fillStyle = ink; fctx.fillText('Face', W / 2, 150);
+  // 33 LEDs de la face sur une seule ligne, de gauche à droite (vu de face)
+  for (let x = 0; x < 33; x++) dot(W / 2 + (x - 16) * 9.4, 172, 4.2, F.front[x]);
+  fctx.fillStyle = ink;
+  fctx.fillText((F.ma / 1000).toFixed(1) + ' A' + (F.k < 1 ? ' (limité)' : ''), W / 2, 210);
+}
+function feetText(t) {
+  const eL = fxAt(feetData.legs, t), eF = fxAt(feetData.front, t);
+  const cn = c => c ? COLOR_NAMES[c] : 'blanc';
+  const col = e => ['black', 'fire', 'disco', 'idle', 'white'].includes(e.fx) ? '' : ' ' + cn(e.col);
+  return 'Pieds : ' + (FEET_NAMES[eL.fx] || eL.fx) + col(eL) + '\nFace  : ' + (FEET_FRONT_NAMES[eF.fx] || eF.fx) + col(eF);
+}
+
+// Adresse #mu=11&t=31 : ouvre :MU11 figé à 31 s (captures d'écran, partage d'un moment précis)
+const hash = new URLSearchParams(location.hash.slice(1));
+let frozenT = null;
+if (hash.has('mu')) {
+  const i = SONGS.findIndex(s => s.mu === +hash.get('mu'));
+  if (i >= 0) { sel.value = i; load(i); }
+  if (hash.has('t')) frozenT = +hash.get('t') * 1000;
+}
+if (hash.has('edit')) editBtn.click();
+audio.onplay = () => { frozenT = null; };
+
+function frame() {
+  if (song) {
+    const t = frozenT !== null ? frozenT : audio.currentTime * 1000;
+    advance(t); draw(t); drawTimeline(t); drawFeet(t);
+    // Texte par blocs (temps, logics, panneaux, holos, pieds), répartis en colonnes sur grand écran
+    document.getElementById('state').innerHTML = stateText(t).split('\n\n')
+      .map(b => '<span>' + b.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '\n\n</span>').join('');
+  }
+  requestAnimationFrame(frame);
+}
+tl.onclick = e => {
+  const r = tl.getBoundingClientRect();
+  const k = ((e.clientX - r.left) * tl.width / r.width - 62) / (tl.width - 72);
+  audio.currentTime = Math.max(0, k * song.duration / 1000);
+  frozenT = null;
+};
+if (SONGS.length && !song) load(0);
+build();
+document.getElementById('layoutInfo').textContent = FILE_LAYOUT ? 'Disposition de tools/music/layout.json.' : '';
+frame();
+</script>
+</body>
+</html>
